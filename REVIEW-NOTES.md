@@ -22,9 +22,9 @@ model review it, runs a security pass, and presents you with something to accept
 It runs on one Windows machine, against consumer CLI subscriptions, over loopback only. It holds no
 credentials and never uses an API key.
 
-**Scale.** 8 Maven modules, 286 main classes in 79 packages, 84 test files. Roughly 25,000 lines
-of main Java, plus a ~1,300-line single-file dashboard and nine `.bat`/`.ps1` scripts at the root.
-*(Updated after the audit in §15; it was 281 classes before those fixes.)*
+**Scale.** 8 Maven modules, 341 main classes in 83 packages, 94 test files. Roughly 33,000 lines
+of main Java, plus a ~2,500-line single-file dashboard and eleven `.bat`/`.ps1` scripts at the root.
+*(Measured 2026-10-17. It was 281 classes at the audit in §15, and 286 just after it.)*
 
 ## 2. The one idea
 
@@ -297,22 +297,25 @@ These are house rules, and most of them exist because something went wrong once.
 redeploys the editor. On a failed build it restores `forge/last-good/forge.jar` so the editor keeps
 running.
 
-Current: **743 Java tests**, **29 Playwright tests**, all passing (measured 2026-09-27 after the
-audit fixes; 721 before them). Instruction coverage 81.6% across all modules, reported and
-deliberately not enforced:
+Current: **935 Java tests**, **51 Playwright tests**, all passing (measured 2026-10-17 by a full
+`verify.bat` run; 743 and 29 on 2026-09-27, and 721 before that date's audit fixes). Instruction
+coverage 84.0% across all modules, reported and deliberately not enforced:
 
 ```
  56%   forge-app       (cli about 8%: the command classes only wire and print; Args is tested)
- 80%   forge-report
- 83%   forge-marketing
- 84%   forge-core
- 85%   forge-security, forge-deploy
- 86%   forge-pipeline
- 91%   forge-review
+ 83%   forge-report
+ 85%   forge-security, forge-deploy, forge-core
+ 88%   forge-marketing, forge-pipeline
+ 93%   forge-review
 ```
 
-*(Corrected after the audit: the figures first written here — 83% overall, forge-app 64%, cli 13% —
-did not match the JaCoCo report generated the same afternoon, which said 81.5%, 56% and about 8%.)*
+Those are rounded from the aggregate JaCoCo report the same run wrote to
+`forge/target/site/jacoco/`, which is where to check them rather than trusting this file.
+
+*(History, so the figures here can be trusted: the first set written in this section — 83% overall,
+forge-app 64%, cli 13% — did not match the JaCoCo report generated the same afternoon, which said
+81.5%, 56% and about 8%. The audit corrected them. Every number in this section since has come from
+a report on disk.)*
 
 There is no coverage threshold and should not be one. The number is a symptom to read, not a target
 to hit; the `cli` figure is low because those classes wire and print, which is the right shape for
@@ -427,14 +430,25 @@ Ordered by how much they would cost if they went wrong.
    it degrades rather than crashes. But it degrades **silently**, and the fallback is exactly the
    stale-list problem this replaced. `forge models` will show it; nothing will announce it.
 
-2. **The Codex sandbox on this machine is currently broken** (`helper_unknown_error: apply deny-read
-   ACLs`, because `windows.sandbox = "elevated"` needs an elevated parent and Forge's is not). Agents
-   therefore run under whatever containment the CLI can still provide. *(Corrected after the audit:)*
-   the original said Forge's own confinement was unaffected and this was a "second layer". There is
-   no first layer: Forge confines nothing beyond choosing the working directory, the gate runs
-   whatever an agent writes into its tests with full permissions, and until the audit Forge's own
-   `git commit` ran any hook the agent left in the repository. With the sandbox broken, every Codex
-   build turn is a `TOOL_BROKEN` turn — which now waits for a person after one.
+2. **Agents are confined by the CLI's sandbox, and by almost nothing else.** *(Updated 2026-10-17;
+   this entry previously said Codex was broken outright, which it no longer is.)*
+
+   Forge sets `windows.sandbox` per invocation from `vendors.json`, currently `unelevated`, so Codex
+   turns run normally. The machine's *global* `~/.codex/config.toml` is still `elevated`, and that
+   still fails to provision — `helper_unknown_error: apply deny-read ACLs`, because applying
+   deny-read ACLs needs an elevated parent process and Forge's is not. Verified both ways on
+   2026-10-17: `codex sandbox -- cmd /c echo ok` fails, and the same command with
+   `-c windows.sandbox=unelevated` succeeds. So a bare `codex` outside Forge is still broken here,
+   and the per-invocation override works around that rather than fixing it.
+
+   What the override costs is the part worth reviewing. `unelevated` is the mode without the
+   deny-read layer, so an agent can read more of the disk than a working `elevated` sandbox would
+   allow; writes stay restricted. *(Corrected after the audit:)* an earlier version of this entry
+   called that a "second layer", implying Forge provided a first. It does not. Forge confines
+   nothing beyond choosing the working directory, the gate runs whatever an agent writes into its
+   tests with full permissions, and until the audit Forge's own `git commit` ran any hook an agent
+   left in the repository. **Read agent code as running with the privileges of the user who started
+   Forge.**
 
 3. **Tests that pin exact wording are brittle by construction.** `LineSenseTest` asserts specific
    sentences; `MotionTest` asserts timing relationships. A deliberate rewording fails them, which is
@@ -507,7 +521,7 @@ Honest uncertainty, not hedging. These are the things I would ask someone else t
    code, but "read" is not "worked on". The descriptions in §5 of the gate, security layers and
    marketing kit are the thinnest, because I have touched them least.
 
-# 13. Known-polluted state, right now
+# 13. Polluted state, as recorded on 2026-09-27
 
 Not defects in the code — artefacts in the live data that would mislead you if you read the
 dashboard as fact.
@@ -524,6 +538,11 @@ dashboard as fact.
   retried every ten minutes without charge, which is its own problem (§15).
 - If either parks at its limit, that is an artefact, not a verdict, and reopening is the right call.
 
+*(Updated 2026-10-17.)* Both have since moved on: **004 is `ACCEPTED`** and **005 is `SUSPENDED`**,
+each showing 0 repair rounds and around 26 sessions. The section is kept as a record of how the
+counters came to read the way they did, not as a description of the dashboard today — check the
+state files before acting on any of it.
+
 # 14. What I would look at first
 
 If I had an hour to review this and wanted to find the real problems:
@@ -537,7 +556,7 @@ If I had an hour to review this and wanted to find the real problems:
 5. `forge/CLAUDE.md`'s traps list — the cheapest way to understand what has actually gone wrong here.
 
 And the question I would put to the author, which I cannot answer myself: **is the 8-classes-per-
-package cap earning its cost?** It has produced 79 packages for 281 classes. It reliably prevents
+package cap earning its cost?** It has produced 83 packages for 341 classes. It reliably prevents
 hub classes. It also means a lot of navigation, and a lot of `package-info.java` prose to keep
 honest.
 
