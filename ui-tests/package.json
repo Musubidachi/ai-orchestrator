@@ -1,0 +1,12 @@
+{
+  "name": "forge-ui-tests",
+  "private": true,
+  "description": "Browser tests for the Forge dashboard. Java covers everything reachable by URL; these cover what only a browser can see.",
+  "scripts": {
+    "test": "playwright test",
+    "install-browser": "playwright install chromium"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.49.1"
+  }
+}

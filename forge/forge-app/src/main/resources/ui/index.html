@@ -1,0 +1,2538 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Forge — wishlist</title>
+<style>
+  /* Dark, always. The layout was chosen in these colours, and the dashboard is a page left open for
+     hours, often late; the values are the ones the old dark scheme used. */
+  :root {
+    color-scheme: dark;
+    --bg:#121211; --panel:#1a1a19; --card:#1e1e1d; --raise:#242423; --field:#161615;
+    --fg:#ededeb; --soft:#c9c9c5; --muted:#9a9a96; --line:#2e2e2c; --line2:#262625;
+    --accent:#7aa2f7; --on-accent:#0d1220; --pass:#4ade80; --fail:#f87171; --wait:#fbbf24;
+    --sel:#1f2638; --selline:#3a4566; --move:#1f2233; --hold-bg:#211d10; --hold-line:#4a3d17;
+    --red-bg:#3a1d1d; --red-fg:#fca5a5; --amber-bg:#2a2412; --amber-fg:#fcd34d;
+    --green-bg:#173322; --green-fg:#86efac; --blue-bg:#1f2840; --blue-fg:#a5c0fa;
+    --grey-bg:#262625; --grey-fg:#c9c9c5;
+    /* The open project's column on a wide screen. Percentages resolve against the jobs view, so the
+       table's padding and the panel's width come out the same. */
+    --pane:clamp(380px, 40%, 600px);
+  }
+  *{box-sizing:border-box}
+  /* Hidden means hidden, whatever display a class gives the element. An element+class rule outweighs
+     the browser's own [hidden] -- that once un-hid Review & Decide on projects nobody had reviewed --
+     and this layout sets display on a great many things. */
+  [hidden]{display:none !important}
+  body{margin:0;height:100vh;display:flex;flex-direction:column;background:var(--bg);color:var(--fg);
+       font:14px/1.5 "Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,sans-serif}
+  a{color:var(--blue-fg)}
+  .muted{color:var(--muted)}
+
+  /* ----------------------------------------------------------- the bar across the top */
+  .top{flex:none;display:flex;flex-wrap:wrap;align-items:center;gap:.5rem 1rem;padding:.5rem 1.5rem;
+       background:var(--panel);border-bottom:1px solid var(--line)}
+  .brand{display:flex;align-items:center;gap:.5rem;font-weight:700;font-size:1.05rem}
+  .nav{display:flex;gap:.25rem}
+  .tab{min-height:2.5rem;padding:0 .9rem;border:0;border-radius:.5rem;background:transparent;
+       color:var(--soft)}
+  .tab:hover{background:var(--raise)}
+  .tab.active{background:var(--sel);color:var(--accent);font-weight:600}
+  .spacer{flex:1 1 0}
+  .vendors{display:flex;flex-wrap:wrap;gap:.4rem}
+  .vchip{display:inline-flex;align-items:center;gap:.4rem;padding:.25rem .7rem;white-space:nowrap;
+         border:1px solid var(--line);border-radius:999px;font-size:.8rem}
+  .vchip b{font-weight:600;color:var(--fg)}
+  .vdot{width:8px;height:8px;border-radius:50%;background:var(--pass)}
+  .vchip .vstate{color:var(--green-fg)}
+  .vchip.closed{border-color:var(--hold-line);background:var(--hold-bg);color:var(--amber-fg)}
+  .vchip.closed .vstate{color:var(--amber-fg)}
+
+  .shell{flex:1;min-height:0;display:flex}
+  aside{width:16rem;flex:none;border-right:1px solid var(--line);display:flex;flex-direction:column;
+        background:var(--panel)}
+  #list{flex:1;overflow-y:auto}
+  .item{padding:.6rem 1rem;border-bottom:1px solid var(--line);cursor:pointer}
+  .item:hover{background:var(--raise)}
+  .item.active{background:var(--sel);box-shadow:inset 0 0 0 1px var(--selline)}
+  .item .t{font-weight:600}
+  .item .m{color:var(--muted);font-size:.78rem}
+  .item.bad .t{color:var(--fail)}
+
+  /* No bottom padding: the action bar is sticky and pins to the bottom of this element's
+     padding box, so any padding here becomes a gap below the bar that the document scrolls
+     through -- which reads as the bar floating on top of the text. Views that need breathing
+     room at the end add their own. */
+  main{flex:1;min-width:0;overflow-y:auto;padding:1.25rem 1.5rem 0}
+  #jobsView{padding-bottom:2rem}
+  h2{font-size:.78rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);
+     margin:2rem 0 .6rem;font-weight:600}
+  h2:first-of-type{margin-top:0}
+  label{display:block;font-size:.8rem;color:var(--muted);margin-bottom:.2rem}
+  input,select,textarea{width:100%;padding:.45rem .6rem;border:1px solid var(--line);
+      border-radius:.35rem;background:var(--field);color:var(--fg);font:inherit}
+  textarea{font-family:ui-monospace,"Cascadia Code",Consolas,monospace;font-size:13px;
+      line-height:1.6;resize:vertical}
+  .row{display:flex;gap:.75rem;margin-bottom:.75rem;flex-wrap:wrap}
+  .row>div{flex:1;min-width:8rem}
+  .hint{color:var(--muted);font-size:.8rem;margin:.15rem 0 .6rem}
+  .listrow{display:flex;gap:.5rem;margin-bottom:.4rem}
+  .listrow input{font-family:ui-monospace,Consolas,monospace;font-size:13px}
+  /* a.btn is here so a control that navigates can still look like a button. Review & Decide
+     opens the report in a tab, which is an anchor's job -- window.open from a click handler is
+     silently swallowed by popup blockers, and a dead primary button is the worst of both. */
+  button,a.btn{min-height:2.4rem;padding:.35rem .9rem;border:1px solid var(--line);border-radius:.5rem;
+      background:var(--raise);color:var(--fg);font:inherit;cursor:pointer}
+  a.btn{text-decoration:none;display:inline-flex;align-items:center;line-height:normal}
+  button:hover,a.btn:hover{border-color:var(--accent)}
+  button.primary,a.btn.primary{background:var(--accent);border-color:var(--accent);
+      color:var(--on-accent);font-weight:600}
+  button.icon{padding:.35rem .6rem;color:var(--muted)}
+  button.danger:hover{border-color:var(--fail);color:var(--fail)}
+  .bar{position:sticky;bottom:0;background:var(--bg);border-top:1px solid var(--line);
+       padding:.9rem 0 1.25rem;margin-top:2rem;display:flex;gap:.6rem;align-items:center}
+  .status{flex:1;font-size:.85rem;white-space:pre-wrap}
+  .ok{color:var(--pass)} .err{color:var(--fail)}
+  code{font-family:ui-monospace,"Cascadia Code",Consolas,monospace;font-size:.85em}
+  .draft{border:1px solid var(--line);border-radius:.75rem;padding:1rem 1.25rem;
+         margin-bottom:2rem;background:var(--card)}
+  .draft textarea{min-height:4.5rem}
+  .sect{border:1px solid var(--line);border-radius:.75rem;padding:.75rem .9rem;
+        margin-bottom:.9rem;background:var(--card)}
+  .secthead{display:flex;align-items:baseline;gap:.6rem;margin-bottom:.35rem}
+  .secthead label{margin:0;font-size:.85rem;font-weight:600;color:var(--fg)}
+  .sectnote{margin:0}
+  .sectbar{display:flex;gap:.5rem;margin-top:.5rem}
+  .sectfb{flex:1;font-size:.85rem}
+  .refine{white-space:nowrap}
+  .sectmsg{margin-top:.5rem;font-size:.82rem;border-left:3px solid var(--accent);
+           padding:.35rem .6rem;color:var(--muted)}
+  .sectmsg.err{border-left-color:var(--fail);color:var(--fail)}
+  button[disabled]{opacity:.55;cursor:progress}
+  /* Unavailable, not busy: a progress cursor here would suggest it is working. */
+  .xreview[disabled],.tile[disabled]{cursor:not-allowed}
+  input[type=range]{padding:0;accent-color:var(--accent);height:1.6rem}
+  .modelname{color:var(--fg);font-weight:600;font-family:ui-monospace,Consolas,monospace;
+             font-size:.8rem}
+  .pulse{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--pass);
+         animation:pulse 1.4s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+
+  /* ------------------------------------------------- above the table */
+  /* As loud as each other on purpose: while either is up, nothing new will start, and a dashboard
+     that looked normal while refusing every Start would be the confusing version. */
+  #quotaBar{display:flex;flex-direction:column;gap:.5rem;margin:0 0 .9rem}
+  #quotaBar:empty{display:none}
+  .quota,.stopping{display:flex;gap:.7rem;align-items:flex-start;padding:.7rem 1rem;
+         border:1px solid var(--hold-line);background:var(--hold-bg);border-radius:.75rem;font-size:.88rem}
+  .stopping{display:block;margin:0 0 .9rem}
+  .stopping.done{border-color:#5a2c2c;background:var(--red-bg)}
+  .quota svg{flex:none;margin-top:.2rem;color:var(--amber-fg)}
+  .quota b{color:var(--fg)}
+  .quota .why,.stopping .why{color:#c9c3ad;font-size:.78rem;display:block;margin-top:.2rem}
+  .quota .retry{margin-top:.45rem;font:inherit;font-size:.8rem;padding:.3rem .75rem;border-radius:.4rem;
+         border:1px solid var(--hold-line);background:transparent;color:var(--fg);cursor:pointer}
+  .quota .retry:disabled{opacity:.5;cursor:default}
+  /* Laid out in normal flow. Nudging these into place with negative margins broke the
+     moment the note beside the button was empty, which is most of the time. */
+  #jobsSummary{margin:0 0 .5rem;color:var(--soft)}
+  .jobsbar{display:flex;align-items:center;gap:.6rem;margin:0 0 1rem;flex-wrap:wrap}
+  .jobsbar .hint{margin:0}
+  .auto{display:flex;align-items:center;gap:.4rem;font-size:.85rem;color:var(--fg);
+        margin:0;white-space:nowrap}
+  .auto input{width:auto;margin:0}
+  /* The filters a phone gets instead of the table's headings. */
+  .tiles{display:none}
+  .tile{flex:none;min-width:5.5rem;min-height:3.75rem;padding:.4rem .8rem;border-radius:.9rem;
+        background:var(--card);text-align:left}
+  .tile[aria-pressed=true]{border-color:var(--accent);background:var(--sel)}
+  .tile .n{display:block;font-size:1.25rem;font-weight:700;line-height:1.2}
+  .tile .l{display:block;font-size:.75rem;color:var(--soft);white-space:nowrap}
+  .tile.you .n{color:var(--red-fg)} .tile.waiting .n{color:var(--amber-fg)}
+  .tile.working .n{color:var(--green-fg)}
+
+  /* ------------------------------------------------- the table, and the open project beside it */
+  #jobs{position:relative;display:flex;flex-direction:column;
+        padding-right:calc(var(--pane) + 1.25rem)}
+  .job{display:contents}
+  .ledgerhead,.lrow{display:grid;column-gap:.75rem;align-items:center;
+        grid-template-columns:2.6rem minmax(0,1fr) 8.5rem 4.8rem 4.4rem minmax(0,11rem)}
+  .ledgerhead{order:-1;padding:.4rem .75rem;font-size:.7rem;letter-spacing:.06em;
+        text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--line)}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .grouphead{order:var(--od);display:flex;align-items:center;gap:.4rem;padding:1rem .75rem .35rem;
+        font-size:.72rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase}
+  .grouphead .gn{font-weight:600;opacity:.8}
+  .g-fail{color:var(--red-fg)} .g-wait{color:var(--amber-fg)} .g-pass{color:var(--green-fg)}
+  .g-todo{color:var(--muted)}
+  .lrow{order:var(--od);width:100%;min-height:3.5rem;padding:.45rem .75rem;border:0;
+        border-bottom:1px solid var(--line2);border-radius:0;background:transparent;color:var(--fg);
+        text-align:left;font-size:.86rem;font-weight:400}
+  .lrow:hover{background:var(--card);border-color:var(--line2)}
+  .lrow:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+  .lrow[aria-current=true]{background:var(--sel);box-shadow:inset 0 0 0 1px var(--selline)}
+  .lrow .rank{color:var(--muted);font-weight:700;font-variant-numeric:tabular-nums}
+  .lrow[aria-current=true] .rank{color:var(--accent)}
+  .lrow .main{min-width:0}
+  .child .lrow .main{padding-left:1rem}
+  .lrow .ttl,.lrow .sub{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .lrow .ttl{font-weight:600}
+  .running .lrow .ttl::before{content:"";display:inline-block;width:7px;height:7px;margin-right:.4rem;
+        border-radius:50%;background:var(--pass);vertical-align:middle;animation:pulse 1.4s infinite}
+  .lrow .sub{font-size:.75rem;color:var(--muted)}
+  .lrow .mob,.lrow .chev{display:none}
+  .lrow .stage{display:flex;align-items:center;gap:.45rem;min-width:0}
+  .mini{flex:none;width:2.4rem;height:4px;border-radius:2px;background:var(--line)}
+  .mini span{display:block;height:4px;border-radius:2px}
+  .flags{display:flex;flex-wrap:wrap;gap:.25rem}
+  .pill{display:inline-block;padding:.05rem .55rem;border-radius:999px;font-size:.74rem;
+        font-weight:600;white-space:nowrap}
+  .chip{display:inline-block;padding:.05rem .45rem;border-radius:.35rem;font-size:.72rem;
+        white-space:nowrap}
+  .t-fail{background:var(--red-bg);color:var(--red-fg)}
+  .t-wait{background:var(--amber-bg);color:var(--amber-fg)}
+  .t-pass{background:var(--green-bg);color:var(--green-fg)}
+  .t-accent{background:var(--blue-bg);color:var(--blue-fg)}
+  .t-todo{background:var(--grey-bg);color:var(--grey-fg)}
+  .b-fail{background:var(--fail)} .b-wait{background:var(--wait)} .b-pass{background:var(--pass)}
+  .b-accent{background:var(--accent)} .b-todo{background:#4a4a47}
+  #usageBar{order:99998;margin:1.25rem 0 .75rem;font-size:.8rem;color:var(--muted)}
+  #usageBar div{margin:.1rem 0}
+  #usageBar b{color:var(--fg);font-weight:600}
+  #league{order:99999;margin:0 0 1rem;font-size:.85rem}
+  #league summary{cursor:pointer;color:var(--muted)}
+  #league summary b{color:var(--fg);font-weight:600}
+  #league table{border-collapse:collapse;margin:.5rem 0 .3rem;width:100%}
+  #league th,#league td{text-align:left;padding:.3rem .9rem .3rem 0;border-bottom:1px solid var(--line);
+                        vertical-align:top}
+  #league th{font-size:.72rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600}
+  #league td.pts{font-weight:700;font-size:1rem}
+  #league .legend{color:var(--muted);font-size:.78rem}
+
+  .detail{display:none;position:absolute;top:0;right:0;width:var(--pane);flex-direction:column;
+          gap:.9rem;padding:1.1rem 1.2rem;background:var(--card);border:1px solid var(--line);
+          border-radius:1rem}
+  .job.open .detail{display:flex}
+  .dhead{display:flex;align-items:flex-start;gap:.6rem;flex-wrap:wrap}
+  .dhead .dt{flex:1 1 14rem;min-width:0}
+  .dhead .id{font-size:.8rem;color:var(--muted)}
+  .dhead h2{margin:.1rem 0 0;font-size:1.35rem;line-height:1.25;letter-spacing:-.01em;font-weight:700;
+            text-transform:none;color:var(--fg);display:flex;align-items:center;gap:.5rem}
+  .tag{display:inline-block;margin-top:.2rem;padding:.15rem .6rem;border-radius:999px;font-size:.68rem;
+       font-weight:700;letter-spacing:.06em}
+  .dtools{display:flex;gap:.35rem;align-items:center}
+  .dtools button{width:2.4rem;padding:0;color:var(--soft)}
+  /* Drawn rather than typed. A "+" glyph sits wherever the font's metrics put it, which is
+     rarely the middle of a small square; two bars positioned by whole pixels are centred and
+     stay sharp at any zoom. The character stays in the markup for anything reading the page. */
+  .add{position:relative;font-size:0;line-height:0}
+  .add::before,.add::after{content:"";position:absolute;left:50%;top:50%;background:currentColor}
+  .add::before{width:12px;height:2px;margin:-1px 0 0 -6px}
+  .add::after{width:2px;height:12px;margin:-6px 0 0 -1px}
+  .add:hover{color:var(--accent)}
+  .add:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .move{display:flex;flex-direction:column;gap:.55rem;padding:1rem;background:var(--move);
+        border:1px solid var(--selline);border-radius:.9rem}
+  .move-label{font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+              color:var(--muted)}
+  .move-label.accent{color:var(--accent)} .move-label.pass{color:var(--green-fg)}
+  .move-head{font-size:1.05rem;font-weight:600;line-height:1.35}
+  .move-sub,.move .caveat{color:var(--soft);font-size:.88rem}
+  .move-acts{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center}
+  .clips{display:flex;flex-direction:column;gap:.5rem}
+  .clipq{padding:.6rem .75rem;border-radius:.6rem;background:var(--card);border:1px solid var(--line)}
+  .clipwhy{margin-top:.15rem;font-size:.82rem;color:var(--amber-fg)}
+  .clipacts{display:flex;flex-wrap:wrap;gap:.4rem;align-items:center;margin-top:.5rem}
+  .twinlabel{display:flex;align-items:center;gap:.4rem;margin:0;font-size:.82rem;color:var(--soft)}
+  .twin{width:auto;min-height:2.4rem}
+  .clipq.kept{border-color:var(--selline)}
+  .clipnote{display:block;margin:.5rem 0 0;font-size:.8rem;color:var(--soft)}
+  .clipnote input{margin-top:.25rem}
+  /* What the last press came to. Said in full-strength text: in small grey it went unread, and a
+     button whose answer nobody sees is a button that seems to do nothing. */
+  .move .msg{display:block;padding:.5rem .75rem;border-radius:.5rem;background:var(--raise);
+             color:var(--fg);font-size:.9rem}
+  .msg:empty{display:none}
+  .play .where{display:none}
+  .steps{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:.35rem}
+  .step{min-width:0;padding:.45rem .6rem;border-radius:.6rem;background:var(--raise);
+        border-top:4px solid #4a4a47}
+  .step b{display:block;font-size:.8rem}
+  .step span{display:block;font-size:.72rem;color:var(--muted);white-space:nowrap;overflow:hidden;
+             text-overflow:ellipsis}
+  .s-pass{border-top-color:var(--pass)} .s-fail{border-top-color:var(--fail)}
+  .s-wait{border-top-color:var(--wait)} .s-accent{border-top-color:var(--accent)}
+  .phaseline{display:flex;justify-content:space-between;gap:1rem;font-size:.8rem;color:var(--muted);
+             margin-top:-.4rem}
+  .doing{font-family:ui-monospace,Consolas,monospace;font-size:.78rem;color:var(--fg);
+         background:var(--raise);border-radius:.4rem;padding:.4rem .6rem;overflow:hidden;
+         text-overflow:ellipsis;white-space:nowrap}
+  .prob{color:var(--red-fg);white-space:normal}
+  .stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(7.5rem,1fr));gap:1px;
+         background:var(--line);border:1px solid var(--line);border-radius:.6rem;overflow:hidden}
+  .stat{background:var(--card);padding:.5rem .75rem}
+  .stat b{display:block;font-weight:600;font-size:.95rem}
+  .stat span{color:var(--muted);font-size:.75rem}
+  .slow{color:var(--amber-fg);font-size:.82rem}
+  .plan{padding:.6rem .8rem;border-radius:.6rem;background:var(--raise)}
+  .plan-head{font-size:.82rem;font-weight:600}
+  .plan-next{font-size:.82rem;color:var(--soft);margin-top:.15rem}
+  .plan-sum{font-size:.8rem;color:var(--muted);margin-top:.3rem}
+  .deployline{font-size:.82rem;color:var(--soft)}
+  .groups{display:grid;grid-template-columns:repeat(auto-fit,minmax(13rem,1fr));gap:.6rem}
+  .grp{display:flex;flex-wrap:wrap;gap:.4rem;align-content:flex-start;padding:.6rem;
+       border-radius:.7rem;background:var(--raise)}
+  .grp-h{flex-basis:100%;font-size:.7rem;font-weight:600;letter-spacing:.05em;
+         text-transform:uppercase;color:var(--muted)}
+  .grp button,.grp a.btn{background:var(--card)}
+  .grp button.primary,.grp a.btn.primary{background:var(--accent)}
+  .saidtext{white-space:pre-wrap;font-size:.85rem;color:var(--soft);padding:.6rem .8rem;
+            border-radius:.6rem;background:var(--raise)}
+  .repbox{border:1px solid var(--line);border-radius:.6rem;overflow:hidden}
+  .repframe{display:block;width:100%;height:24rem;border:0;background:#fff}
+
+  @media (max-width:1399px){
+    .ledgerhead,.lrow{grid-template-columns:2.4rem minmax(0,1fr) 8rem 4.6rem minmax(0,10rem)}
+    .tokens{display:none}
+  }
+
+  /* A phone, or any window too narrow for two columns: one ranked list, each project's details
+     opening under its own line, and the filters standing in for the table's headings. */
+  @media (max-width:1199px){
+    .top{padding:.5rem .75rem}
+    .vendors{order:9;flex:1 1 100%;flex-wrap:nowrap;overflow-x:auto}
+    .shell{flex-direction:column}
+    aside{width:auto;max-height:35vh;border-right:0;border-bottom:1px solid var(--line)}
+    main{padding:.75rem .75rem 0}
+    button,a.btn,.tab{min-height:44px}
+    .tiles{display:flex;gap:.5rem;overflow-x:auto;margin:0 0 .75rem;padding-bottom:.25rem}
+    #jobs{padding-right:0;gap:.5rem}
+    .ledgerhead,.grouphead{display:none}
+    .lrow{order:var(--om);grid-template-columns:2rem minmax(0,1fr) 1.5rem;min-height:4rem;
+          border:1px solid var(--line);border-radius:1rem;background:var(--card)}
+    .lrow:hover{border-color:var(--line)}
+    .lrow .stage,.lrow .num,.lrow .flags,.lrow .sub{display:none}
+    .lrow .mob{display:flex;align-items:center;gap:.4rem;margin-top:.2rem;min-width:0;
+               font-size:.75rem;color:var(--muted)}
+    .lrow .mob .reason{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .lrow .chev{display:block;color:var(--soft);transition:transform .15s}
+    .lrow[aria-expanded=true]{border-radius:1rem 1rem 0 0;border-bottom-color:transparent;
+                              background:var(--sel)}
+    .lrow[aria-expanded=true] .chev{transform:rotate(180deg)}
+    .detail{position:static;width:auto;order:var(--om);margin-top:-.5rem;border-top:0;
+            border-radius:0 0 1rem 1rem;background:var(--sel);padding:.9rem}
+    .step{padding:.4rem .35rem;text-align:center}
+    .play .where{display:inline}
+    /* The line just above already names the project. */
+    .dhead .dt{display:none}
+    .dhead{justify-content:space-between}
+    #jobs[data-filter=you] .job:not([data-kinds~=you]),
+    #jobs[data-filter=waiting] .job:not([data-kinds~=waiting]),
+    #jobs[data-filter=working] .job:not([data-kinds~=working]),
+    #jobs[data-filter=accepted] .job:not([data-kinds~=accepted]){display:none}
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="brand">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M2 7h14c0 3-2 5-5 5H9v3h3v3H4v-3h3v-3c-3 0-5-2-5-5z"/><path d="M16 7h6"/></svg>
+    Forge
+  </div>
+  <nav class="nav" aria-label="Views">
+    <button id="navJobs" class="tab active" onclick="showView('jobs')">Projects</button>
+    <button id="navWishlist" class="tab" onclick="showView('wishlist')">Wishlist</button>
+  </nav>
+  <div class="spacer"></div>
+  <!-- Each vendor, and whether it can take work: filled from the quota ledger and usage.json. -->
+  <div id="vendors" class="vendors"></div>
+  <button class="primary" id="newSpecBtn" onclick="startNewSpec()">New spec</button>
+</header>
+
+<div class="shell">
+<aside id="specs" hidden>
+  <div id="list"></div>
+</aside>
+
+<main>
+<div id="jobsView">
+  <div id="quotaBar"></div>
+  <div class="stopping" id="stoppingBar" hidden>
+    <span id="stoppingWhat"></span><span class="why" id="stoppingWhy"></span>
+  </div>
+  <p class="sub" id="jobsSummary">Loading…</p>
+  <div class="jobsbar">
+    <label class="auto"><input type="checkbox" id="autoRun" onchange="setAuto()">
+      Keep the queue moving</label>
+    <button onclick="renumber()">Renumber 1..N</button>
+    <button class="danger" id="stopForge" onclick="stopForge()"
+            title="Stops taking new work, waits for any agent turn to finish, then exits">
+      Finish and stop</button>
+    <span class="hint" id="jobsNote"></span>
+  </div>
+  <div id="tiles" class="tiles" role="group" aria-label="Show"></div>
+  <!-- The table, its group headings, and every project's details live in this one box, placed by
+       the order each is given rather than by where it sits in the markup. See upsert(). -->
+  <div id="jobs" data-filter="all">
+    <div class="ledgerhead" aria-hidden="true"><span>Rank</span><span>Project</span><span>Stage</span>
+      <span class="num">Worked</span><span class="num tokens">Tokens</span><span>Open items</span></div>
+    <div id="usageBar"></div>
+    <details id="league" hidden>
+      <summary id="leagueSummary"></summary>
+      <div id="leagueTable"></div>
+    </details>
+  </div>
+</div>
+
+<div id="wishlistView" hidden>
+  <div class="draft" id="draftBox">
+    <h2 style="margin-top:0">Start from a description</h2>
+    <p class="hint">Describe the idea however you like. An agent proposes a title, id, acceptance
+       commands and prose; everything lands in the fields below for you to change. Nothing is
+       written until you press Save.</p>
+    <textarea id="idea" rows="4"
+      placeholder="A tool that takes two crochet patterns and shows me what changed between them, as an HTML page I can open in a browser."></textarea>
+    <div class="row" id="ideaRow" hidden style="margin-top:.6rem;align-items:end">
+      <div style="flex:none"><button id="ideaBtn" onclick="newIdea()">💡 New Idea</button></div>
+      <div style="max-width:13rem"><label>Category</label>
+        <select id="ideaCategory"><option value="">Any</option></select></div>
+      <div style="max-width:8rem"><label>Most effort</label>
+        <select id="ideaEffort">
+          <option value="">Any</option><option value="1">1</option><option value="2">2</option>
+          <option value="3">3</option><option value="4">4</option><option value="5">5</option>
+        </select></div>
+      <div class="status" id="ideaStatus" style="padding-bottom:.5rem"></div>
+    </div>
+    <div class="row" style="margin-top:.6rem;align-items:end">
+      <div style="max-width:11rem">
+        <label>Ask</label>
+        <select id="suggestAgent">
+          <option value="codex">Codex</option>
+          <option value="claude">Claude</option>
+        </select>
+      </div>
+      <div style="flex:none"><button class="primary" id="suggestBtn" onclick="suggest()">Suggest</button></div>
+      <div class="status" id="suggestStatus" style="padding-bottom:.5rem"></div>
+    </div>
+  </div>
+
+  <h2>Contract</h2>
+  <div class="row">
+    <div style="max-width:7rem"><label>ID</label><input id="id" placeholder="001"></div>
+    <div style="flex:3"><label>Title</label><input id="title" placeholder="Crochet pattern differ"></div>
+    <div style="max-width:8rem"><label>Priority</label>
+      <input id="priority" type="number" min="1" value="50" title="lower runs first"></div>
+    <div style="max-width:16rem"><label>Improves</label>
+      <select id="parent"><option value="">nothing - a new project</option></select></div>
+  </div>
+  <p class="hint" id="parentHint" hidden>An improvement runs in that project's repository, against
+     its existing code. It is only started once the parent has been accepted, and its acceptance
+     commands are run <em>in addition to</em> the parent's - a change that breaks what already
+     worked is not accepted.</p>
+  <div class="row">
+    <div><label>Assign to</label>
+      <select id="assign">
+        <option value="auto">auto — balance across both</option>
+        <option value="claude">claude</option>
+        <option value="codex">codex</option>
+      </select>
+    </div>
+    <div><label>Stack</label><input id="stack" placeholder="java"></div>
+    <div style="max-width:9rem"><label>Repair rounds</label><input id="rounds" type="number" min="0" value="4"></div>
+    <div style="max-width:9rem"><label>Max sessions</label><input id="maxSessions" type="number" min="1" value="12"></div>
+  </div>
+  <div class="row">
+    <div><label>Agent timeout (min)</label><input id="agentTimeout" type="number" min="1" value="30"></div>
+    <div><label>Gate timeout (min)</label><input id="gateTimeout" type="number" min="1" value="20"></div>
+    <div style="max-width:11rem"><label>Fresh start every</label>
+      <input id="compactAfter" type="number" min="0" value="3"></div>
+  </div>
+
+  <h2>Models</h2>
+  <p class="hint">Which model each vendor uses for this spec. Leftmost is the CLI's own default —
+     drag right for a larger one. Order comes from <code>models.json</code> at the Forge root; edit
+     that file if the ranking is wrong or a new model appears.</p>
+  <p class="hint" id="modelWhy" hidden style="border-left:3px solid var(--accent);
+     padding-left:.7rem;color:var(--fg)"></p>
+  <div class="row">
+    <div><label>Claude &mdash; <span id="claudeModelName" class="modelname">default</span></label>
+      <input id="claudeModel" type="range" min="0" max="0" value="0"></div>
+    <div><label>Codex &mdash; <span id="codexModelName" class="modelname">default</span></label>
+      <input id="codexModel" type="range" min="0" max="0" value="0"></div>
+    <div><label>Antigravity &mdash; <span id="antigravityModelName" class="modelname">default</span></label>
+      <input id="antigravityModel" type="range" min="0" max="0" value="0"></div>
+  </div>
+
+  <h2>Acceptance commands</h2>
+  <p class="hint">Forge runs these itself and ignores what the agent claims. If none of them fail
+     when the project is broken, nothing else in this pipeline works. A spec without one is refused.</p>
+  <div id="acceptance"></div>
+  <button onclick="addRow('acceptance','')">+ command</button>
+
+  <h2>Evidence</h2>
+  <p class="hint">Files to keep and show in the report. Images render inline. Globs allowed.</p>
+  <div id="evidence"></div>
+  <button onclick="addRow('evidence','')">+ path</button>
+
+  <h2>Running it locally</h2>
+  <p class="hint">How to start the built app, with <code>{port}</code> where the port goes. Forge
+     picks the port on 127.0.0.1, starts it after the gate passes, probes it for security problems,
+     and stops it again. Leave blank for a project with nothing to serve.</p>
+  <div class="row">
+    <div><label>Serve command</label>
+      <input id="serve" placeholder="npm run preview -- --port {port} --host 127.0.0.1"></div>
+    <div style="max-width:12rem"><label>Page to probe</label><input id="servePath" placeholder="/"></div>
+  </div>
+
+  <h2>Deployment</h2>
+  <p class="hint">Run only when you press Deploy on an accepted project, and only after the security
+     check. The command uses a CLI you have installed and logged into yourself; Forge never logs in
+     and never holds a credential. Leave the command blank for a project that is not deployed.</p>
+  <div class="row">
+    <div><label>Deploy command</label>
+      <input id="deployCommand" placeholder="npx wrangler pages deploy dist --project-name my-app"></div>
+  </div>
+  <div class="row">
+    <div><label>URL (blank: taken from the command's output)</label>
+      <input id="deployUrl" placeholder="https://my-app.pages.dev"></div>
+    <div><label>Needs on PATH (comma-separated)</label><input id="deployRequires" placeholder="npx"></div>
+    <div><label>Health check command (blank: GET the URL)</label><input id="deployCheck" placeholder=""></div>
+  </div>
+
+  <h2>Ads</h2>
+  <p class="hint">Ads inside the app. <b>test</b> builds labelled test slots; <b>live</b> uses your
+     public ids, but only in a deploy — gates, tests and recordings always build test slots, so
+     nothing Forge runs routinely makes an impression on your account. Ids are public identifiers
+     (publisher id, ad unit id), never secrets.</p>
+  <div class="row">
+    <div style="max-width:10rem"><label>Ads</label>
+      <select id="adsMode"><option value="none">none</option><option value="test">test</option>
+        <option value="live">live</option></select></div>
+    <div style="max-width:12rem"><label>Provider</label>
+      <select id="adsProvider"><option value=""></option><option value="adsense">adsense</option>
+        <option value="admob">admob</option><option value="custom">custom</option></select></div>
+    <div><label>Public ids, one per line: name=value</label>
+      <textarea id="adsIds" rows="2" placeholder="publisher=ca-pub-1234567890123456"></textarea></div>
+  </div>
+
+  <h2>Description</h2>
+  <p class="hint">The prose handed to the agent, in three parts. Be specific about what "correct"
+     means for the tricky parts — the commands above can only check what you thought to check.
+     Ask for a better version of any one part and the model sees all three, so a change to the
+     Goal or the Non-goals comes back with the Notes reconciled.</p>
+
+  <div class="sect" id="sect-Goal">
+    <div class="secthead"><label>Goal</label>
+      <span class="hint sectnote">What the program does and why you want it.</span></div>
+    <textarea id="goal" rows="6"></textarea>
+    <div class="sectbar">
+      <input class="sectfb" id="fb-Goal" placeholder="What should be different about it? (optional)">
+      <button class="refine" onclick="refine('Goal')">Suggest alternative</button>
+    </div>
+    <div class="sectmsg" id="msg-Goal" hidden></div>
+  </div>
+
+  <div class="sect" id="sect-Non-goals">
+    <div class="secthead"><label>Non-goals</label>
+      <span class="hint sectnote">What it must not grow into.</span></div>
+    <textarea id="nonGoals" rows="5"></textarea>
+    <div class="sectbar">
+      <input class="sectfb" id="fb-Non-goals" placeholder="What should be different about it? (optional)">
+      <button class="refine" onclick="refine('Non-goals')">Suggest alternative</button>
+    </div>
+    <div class="sectmsg" id="msg-Non-goals" hidden></div>
+  </div>
+
+  <div class="sect" id="sect-Notes">
+    <div class="secthead"><label>Notes</label>
+      <span class="hint sectnote">How it ought to be built: libraries, CLI shape, formats, edge cases.</span></div>
+    <textarea id="notes" rows="12"></textarea>
+    <div class="sectbar">
+      <input class="sectfb" id="fb-Notes" placeholder="What should be different about it? (optional)">
+      <button class="refine" onclick="refine('Notes')">Suggest alternative</button>
+    </div>
+    <div class="sectmsg" id="msg-Notes" hidden></div>
+  </div>
+
+  <!-- Kept as the wire format: the file on disk stays one Markdown block, which is what an agent
+       reads as SPEC.md. The three fields above are joined into this on save. -->
+  <textarea id="body" hidden></textarea>
+
+  <div class="bar">
+    <button class="primary" onclick="save()">Save</button>
+    <button onclick="validate()">Check</button>
+    <button class="danger" onclick="del()">Delete</button>
+    <span class="status" id="status"></span>
+  </div>
+</div>
+</main>
+</div>
+
+<script src="/attach.js"></script>
+<script>
+const TEMPLATE = `## Goal
+
+What the program does and why you want it.
+
+## Non-goals
+
+What it must not grow into. This stops a small tool becoming a framework.
+
+## Notes
+
+How you think it ought to be built: libraries you want or refuse, the shape of the CLI,
+file formats, edge cases you already know about.`;
+
+// The file on disk keeps one Markdown block, because that is what an agent reads as SPEC.md.
+// These two turn it into the three fields a person edits and back again. Splitting is the fiddly
+// half and Java owns it for the refine call; this is the same rule in the one place the browser
+// needs it, kept deliberately simple: known heading, everything until the next one.
+const SECTION_FIELDS = {"Goal": "goal", "Non-goals": "nonGoals", "Notes": "notes"};
+
+function splitSections(body) {
+  const out = {Goal: "", "Non-goals": "", Notes: "", extra: ""};
+  let target = "extra";
+  for (const line of (body || "").split(/\r?\n/)) {
+    const heading = line.trim().match(/^#+\s*(.+?)\s*$/);
+    if (heading) {
+      const name = heading[1].toLowerCase();
+      if (name === "goal" || name === "goals") { target = "Goal"; continue; }
+      if (name.startsWith("non")) { target = "Non-goals"; continue; }
+      if (name === "notes" || name === "note") { target = "Notes"; continue; }
+      target = "extra";
+      out.extra += line + "\n";
+      continue;
+    }
+    out[target] += line + "\n";
+  }
+  for (const key of Object.keys(out)) out[key] = out[key].trim();
+  return out;
+}
+
+function setSections(body) {
+  const parts = splitSections(body);
+  for (const [name, field] of Object.entries(SECTION_FIELDS)) $(field).value = parts[name];
+  // Anything under a heading this does not know about is parked here rather than discarded. A
+  // spec is someone's own writing and the editor must not quietly lose part of it.
+  $("body").value = parts.extra;
+}
+
+function joinSections() {
+  const parts = [];
+  for (const [name, field] of Object.entries(SECTION_FIELDS)) {
+    const text = $(field).value.trim();
+    if (text) parts.push("## " + name + "\n" + text);
+  }
+  const extra = $("body").value.trim();
+  if (extra) parts.push(extra);
+  return parts.join("\n\n") + "\n";
+}
+
+async function refine(target) {
+  const btn = document.querySelector(`#sect-${CSS.escape(target)} .refine`);
+  const msg = $("msg-" + target);
+  const before = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = "Asking...";
+  msg.hidden = false;
+  msg.className = "sectmsg";
+  msg.textContent = "Sending all three sections for context...";
+
+  try {
+    // All three go every time. A goal rewritten without the non-goals in view drifts into what
+    // they exclude, and notes written without the goal describe how to build something else.
+    const r = await post("/api/refine", {
+      title: $("title").value,
+      goal: $("goal").value,
+      nonGoals: $("nonGoals").value,
+      notes: $("notes").value,
+      target,
+      feedback: $("fb-" + target).value,
+      agent: $("suggestAgent").value,
+    });
+
+    if (r.error) {
+      msg.className = "sectmsg err";
+      msg.textContent = r.error;
+      return;
+    }
+    if (r.section) $(SECTION_FIELDS[target]).value = r.section;
+
+    // Notes come back rewritten whenever the change could have invalidated them.
+    const reconciled = r.notes && target !== "Notes";
+    if (reconciled) $("notes").value = r.notes;
+
+    msg.textContent = (r.whatChanged || "Rewritten.")
+      + (reconciled ? " Notes reconciled to match." : "")
+      + " Nothing is written until you press Save.";
+  } catch (e) {
+    msg.className = "sectmsg err";
+    msg.textContent = String(e);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = before;
+  }
+}
+
+let current = "";
+
+const $ = id => document.getElementById(id);
+const post = (url, data) =>
+  fetch(url, {method:"POST", headers:{"Content-Type":"application/json"},
+              body: JSON.stringify(data)}).then(r => r.json());
+
+function addRow(container, value) {
+  const row = document.createElement("div");
+  row.className = "listrow";
+  const input = document.createElement("input");
+  input.value = value || "";
+  input.placeholder = container === "acceptance" ? "mvn -q test" : "out.html";
+  const remove = document.createElement("button");
+  remove.className = "icon";
+  remove.textContent = "×";
+  remove.title = "remove";
+  remove.onclick = () => row.remove();
+  row.append(input, remove);
+  $(container).append(row);
+}
+
+function values(container) {
+  return [...$(container).querySelectorAll("input")]
+    .map(i => i.value.trim()).filter(Boolean);
+}
+
+function setRows(container, list) {
+  $(container).innerHTML = "";
+  (list && list.length ? list : [""]).forEach(v => addRow(container, v));
+}
+
+function draft() {
+  return {
+    originalFile: current,
+    body: joinSections(),
+    // Starts from what was loaded, so settings this form does not show survive a save. It used to
+    // be built from the fields alone: saving silently reset compact_after_sessions, and a deploy
+    // or monetization block written by hand would have been deleted by the first edit.
+    front: {
+      ...loadedFront,
+      id: $("id").value.trim(),
+      title: $("title").value.trim(),
+      assign: $("assign").value,
+      stack: $("stack").value.trim() || "java",
+      parent: $("parent").value,
+      claude_model: modelAt("CLAUDE", +$("claudeModel").value),
+      codex_model: modelAt("CODEX", +$("codexModel").value),
+      antigravity_model: modelAt("ANTIGRAVITY", +$("antigravityModel").value),
+      priority: +$("priority").value,
+      acceptance: values("acceptance"),
+      evidence: values("evidence"),
+      max_repair_rounds: +$("rounds").value,
+      max_sessions: +$("maxSessions").value,
+      compact_after_sessions: +$("compactAfter").value,
+      serve: $("serve").value.trim(),
+      serve_path: $("servePath").value.trim(),
+      deploy: deployFromForm(),
+      monetization: adsFromForm(),
+      agent_timeout_minutes: +$("agentTimeout").value,
+      gate_timeout_minutes: +$("gateTimeout").value
+    }
+  };
+}
+
+/* ---------------------------------------------------- unsaved work */
+
+/* The one exit no in-page handler can catch. The browser shows its own wording, not ours. */
+window.addEventListener("beforeunload", event => {
+  if (isDirty()) {
+    event.preventDefault();
+    event.returnValue = "";
+  }
+});
+
+
+/* The fingerprint is the payload a save would send, so "changed" cannot drift from "different
+   from what is on disk". Watching individual fields would mean remembering to watch every field
+   added later; draft() is already the definition of the document, and the three-part description
+   made that worth getting right — there is a lot more here to lose in one click than there was. */
+let savedSnapshot = "";
+
+/* Null when no command is set, so a spec without a deploy carries no empty block. */
+function deployFromForm() {
+  const command = $("deployCommand").value.trim();
+  if (!command) return null;
+  return {
+    command,
+    url: $("deployUrl").value.trim(),
+    requires: $("deployRequires").value.split(",").map(x => x.trim()).filter(Boolean),
+    check: $("deployCheck").value.trim()
+  };
+}
+
+/* Null when nothing about ads is set; ids parsed from name=value lines. */
+function adsFromForm() {
+  const ads = $("adsMode").value;
+  const provider = $("adsProvider").value;
+  const ids = {};
+  $("adsIds").value.split(/\r?\n/).forEach(line => {
+    const at = line.indexOf("=");
+    if (at > 0) ids[line.slice(0, at).trim()] = line.slice(at + 1).trim();
+  });
+  if (ads === "none" && !provider && Object.keys(ids).length === 0) return null;
+  return { ads, provider, ids };
+}
+
+/* The front matter as it was opened, including what the form has no field for. */
+let loadedFront = {};
+
+/* The parent this spec was loaded with.
+   The dropdown is filled from a fetch, so for a moment after load the select reads empty while
+   the spec's real parent is already known. Taking the baseline before that lands, or after,
+   both go wrong: the first makes an untouched form look edited, and the second — waiting for
+   the fetch — captures whatever was typed in the meantime as though it had come from disk.
+   Playwright found the second within a second of trying. Substituting the known value on both
+   sides of the comparison removes the window rather than racing it. */
+let loadedParent = "";
+
+function fingerprint() {
+  try {
+    const d = draft();
+    const select = $("parent");
+    // Only while the options genuinely have not arrived. Once they have, the select is the
+    // truth, including when the reader has changed it.
+    if (!select.querySelector(`option[value="${CSS.escape(loadedParent)}"]`)) {
+      d.front.parent = loadedParent;
+    }
+    return JSON.stringify(d);
+  } catch (e) {
+    // Never let a broken read of the form invent unsaved work and block navigation.
+    return savedSnapshot;
+  }
+}
+
+function markClean() {
+  savedSnapshot = fingerprint();
+}
+
+function isDirty() {
+  return fingerprint() !== savedSnapshot;
+}
+
+/* Whether it is safe to replace what is on screen. */
+function discardOk(what) {
+  return !isDirty()
+    || confirm(what + "\n\nUnsaved changes to this spec will be lost.");
+}
+
+/* Guarded entry points. Deliberately only the ones a person triggers meaning to go elsewhere —
+   clearing the form after a save or a delete is not losing anything, and prompting there would
+   teach you to dismiss the prompt without reading it. */
+function startNewSpec() {
+  if (!discardOk("Start a new spec?")) return;
+  showView("wishlist");
+  newSpec();
+}
+
+function openSpecGuarded(spec) {
+  if (!discardOk("Open " + (spec.title || spec.file) + "?")) return;
+  if (spec.valid) {
+    openSpec(spec.file);
+  } else {
+    showRaw(spec);
+  }
+}
+
+function load(front, body, file) {
+  current = file || "";
+  loadedFront = front || {};
+  $("id").value = front.id || "";
+  $("title").value = front.title || "";
+  $("assign").value = front.assign || "auto";
+  $("stack").value = front.stack || "java";
+  $("priority").value = front.priority ?? 50;
+  setModelSlider("CLAUDE", front.claude_model || "");
+  setModelSlider("CODEX", front.codex_model || "");
+  setModelSlider("ANTIGRAVITY", front.antigravity_model || "");
+  loadedParent = front.parent || "";
+  setParentOptions(loadedParent);
+  $("rounds").value = front.max_repair_rounds ?? 4;
+  $("maxSessions").value = front.max_sessions ?? 12;
+  $("compactAfter").value = front.compact_after_sessions ?? 3;
+  $("agentTimeout").value = front.agent_timeout_minutes ?? 30;
+  $("gateTimeout").value = front.gate_timeout_minutes ?? 20;
+  $("serve").value = front.serve || "";
+  $("servePath").value = front.serve_path || "";
+  const dep = front.deploy || {};
+  $("deployCommand").value = dep.command || "";
+  $("deployUrl").value = dep.url || "";
+  $("deployRequires").value = (dep.requires || []).join(", ");
+  $("deployCheck").value = dep.check || "";
+  const ads = front.monetization || {};
+  $("adsMode").value = ads.ads || "none";
+  $("adsProvider").value = ads.provider || "";
+  $("adsIds").value = Object.entries(ads.ids || {}).map(([k, v]) => `${k}=${v}`).join("\n");
+  setRows("acceptance", front.acceptance);
+  setRows("evidence", front.evidence);
+  setSections(body || "");
+  status("");
+  refresh();
+  // Synchronously, so nothing typed during the parent fetch can be mistaken for what was on disk.
+  markClean();
+}
+
+function newSpec() {
+  load({assign:"auto", stack:"java", priority:50, acceptance:[""], evidence:[""],
+        max_repair_rounds:4, max_sessions:12, compact_after_sessions:3,
+        agent_timeout_minutes:30, gate_timeout_minutes:20},
+       TEMPLATE, "");
+  $("idea").value = "";
+  $("modelWhy").hidden = true;
+  suggestStatus("");
+  $("idea").focus();
+}
+
+/* ------------------------------------------------------------------ jobs */
+
+let jobsTimer = null;
+
+function showView(which) {
+  const onJobs = which === "jobs";
+  $("jobsView").hidden = !onJobs;
+  $("wishlistView").hidden = onJobs;
+  $("navJobs").classList.toggle("active", onJobs);
+  $("navWishlist").classList.toggle("active", !onJobs);
+  // The spec list belongs to the editor. The dashboard is the table and the project beside it.
+  $("specs").hidden = onJobs;
+  if (onJobs) { loadJobs(); startPolling(); } else { stopPolling(); refresh(); }
+}
+
+/* ---------------------------------------------------------- stopping Forge safely */
+
+/*
+ * Set from the moment the request goes out, and read by the poll below: once Forge exits, the
+ * dashboard stops getting answers, and without this it would sit there looking broken rather
+ * than saying the thing it was just asked to do had happened.
+ */
+let stopping = false;
+
+/*
+ * Asks Forge to finish what it is doing and stop.
+ *
+ * One long request rather than several short ones. Forge stops taking new work for as long as it
+ * is being asked to stop, and resumes if the wait runs out -- so asking repeatedly would let it
+ * start a fresh turn between attempts, which is the one thing a shutdown must not do.
+ */
+async function stopForge() {
+  const jobs = await fetch("/api/jobs").then(r => r.json()).catch(() => []);
+  const busy = jobs.filter(j => j.running).map(j => j.id);
+  const waiting = busy.length
+    ? `${busy.length} project(s) are working right now (${busy.join(", ")}), and Forge waits for them.`
+    : "Nothing is working right now, so it should stop straight away.";
+  if (!confirm(`Stop Forge?\n\n${waiting}\n\nIt stops taking new work, waits for any agent turn `
+      + `to reach its commit, and only then exits. Nothing is killed.\n\n`
+      + `This page will stop updating. Run forge-ui.bat to start Forge again.`)) return;
+
+  stopping = true;
+  const button = $("stopForge");
+  button.disabled = true;
+  button.textContent = "Stopping…";
+  banner("Stopping when the work in flight is finished.",
+         busy.length ? `Waiting for ${busy.join(", ")}. Nothing will be killed; a turn that is `
+                     + `interrupted loses whatever it has written but not yet committed.`
+                     : "Nothing is mid-turn.");
+
+  // The wait is generous because a turn is: the alternative to waiting is killing one.
+  const answer = await post("/api/quit?wait=900", {}).catch(() => null);
+  if (!answer) {
+    // It answers before it exits, so no answer usually means the connection went with the
+    // process. The poll settles it either way, so nothing is decided here.
+    return;
+  }
+  if (answer.stopped) {
+    stopped();
+    return;
+  }
+  stopping = false;
+  button.disabled = false;
+  button.textContent = "Finish and stop";
+  banner("Forge is still running, and nothing was killed.",
+         `${answer.detail}. It went back to taking work. Stop that project from its card, or `
+         + `press Finish and stop again to keep waiting.`);
+}
+
+function banner(what, why) {
+  const bar = $("stoppingBar");
+  bar.hidden = false;
+  bar.className = "stopping";
+  $("stoppingWhat").textContent = what;
+  $("stoppingWhy").textContent = why;
+}
+
+function stopped() {
+  stopping = false;
+  stopPolling();
+  $("stoppingBar").className = "stopping done";
+  $("stoppingBar").hidden = false;
+  $("stoppingWhat").textContent = "Forge has stopped.";
+  $("stoppingWhy").textContent = "No agent turn was in flight. Run forge-ui.bat to start it again.";
+  const button = $("stopForge");
+  button.disabled = true;
+  button.textContent = "Stopped";
+}
+
+function startPolling() {
+  stopPolling();
+  // Frequent enough to feel live during a turn, slow enough that walking the run
+  // directory for its size is not a constant cost.
+  jobsTimer = setInterval(loadJobs, 4000);
+}
+
+function stopPolling() {
+  if (jobsTimer) { clearInterval(jobsTimer); jobsTimer = null; }
+}
+
+function duration(seconds) {
+  if (!seconds || seconds < 0) return "—";
+  const d = Math.floor(seconds / 86400), h = Math.floor(seconds % 86400 / 3600);
+  const m = Math.floor(seconds % 3600 / 60), s = Math.floor(seconds % 60);
+  if (d) return `${d}d ${h}h`;
+  if (h) return `${h}h ${m}m`;
+  if (m) return `${m}m ${s}s`;
+  return `${s}s`;
+}
+
+/* 31415926 -> "31.4M". Tokens, where the leading digits are all anyone reads. */
+function count(n) {
+  const u = ["", "K", "M", "B"]; let i = 0;
+  while (n >= 1000 && i < u.length - 1) { n /= 1000; i++; }
+  return `${n.toFixed(n < 100 && i > 0 ? 1 : 0)}${u[i]}`;
+}
+
+function bytes(n) {
+  if (!n) return "—";
+  const u = ["B","KB","MB","GB"]; let i = 0;
+  while (n >= 1024 && i < u.length - 1) { n /= 1024; i++; }
+  return `${n.toFixed(n < 10 && i > 0 ? 1 : 0)} ${u[i]}`;
+}
+
+function whenLocal(iso) {
+  if (!iso) return "";
+  return new Date(iso).toLocaleTimeString([], {hour:"numeric", minute:"2-digit"});
+}
+
+/* "3h ago" from an ISO instant; blank for none. */
+function ago(iso) {
+  if (!iso) return "";
+  return duration((Date.now() - new Date(iso).getTime()) / 1000) + " ago";
+}
+
+/* "clean", "2 low", or how many findings wait for a decision on the report. */
+function securityText(j) {
+  if (j.securityState === "decide") return `${j.securityForRuling} to decide`;
+  if (j.securityState === "clean") return "clean";
+  return j.securitySummary || "checked";
+}
+
+function stat(label, value) {
+  return `<div class="stat"><b>${value}</b><span>${label}</span></div>`;
+}
+
+function esc(s) {
+  return String(s ?? "").replace(/[&<>"]/g, c =>
+    ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+}
+
+/*
+ * One element per project, #job-<id>, holding two things: its line in the table and its details.
+ *
+ * The element is display:contents, so both children are laid out by #jobs itself, each placed by the
+ * order it is given. On a wide screen the lines form the table, grouped by what each project is
+ * waiting for, and the chosen project's details sit beside it. On a narrow one the lines are ranked
+ * and the details open under their own line. Same element, same place, either way: nothing moves
+ * between containers when the screen or the choice changes.
+ *
+ * Created once and then updated field by field. Replacing the list's innerHTML on every poll rebuilt
+ * the buttons underneath the pointer, which loses text selection and can swallow a click that lands
+ * during a refresh -- and a Stop button that silently does nothing is exactly the wrong thing to have
+ * in a control panel.
+ */
+const ROW = `
+  <span class="rank"></span>
+  <span class="main"><span class="ttl"></span><span class="sub"></span>
+    <span class="mob"><span class="pill"></span><span class="reason"></span></span></span>
+  <span class="stage"><span class="pill"></span><span class="mini"><span></span></span></span>
+  <span class="num worked"></span>
+  <span class="num tokens"></span>
+  <span class="flags"></span>
+  <svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+       stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M6 9l6 6 6-6"/></svg>`;
+
+const DETAIL = `
+  <div class="dhead">
+    <div class="dt">
+      <div class="id"></div>
+      <h2><span class="dot"></span><span class="t"></span></h2>
+    </div>
+    <span class="tag"></span>
+    <div class="dtools">
+      <button class="up" title="Move up the queue" aria-label="Move up the queue">&#8593;</button>
+      <button class="down" title="Move down the queue" aria-label="Move down the queue">&#8595;</button>
+      <button class="add" aria-label="Add an enhancement to this project"
+              title="Add an enhancement to this project">+</button>
+    </div>
+  </div>
+  <section class="move">
+    <div class="move-label"></div>
+    <div class="move-head"></div>
+    <div class="move-sub"></div>
+    <div class="caveat" hidden></div>
+    <div class="clips" hidden></div>
+    <div class="move-acts">
+      <button class="recheck" hidden>Check Again</button>
+      <button class="act-btn"></button>
+      <button class="fixblocking" hidden></button>
+      <a class="decide btn primary" target="_blank" hidden>Review &amp; Decide</a>
+      <a class="quick btn" target="_blank" hidden>Quick Review</a>
+      <button class="play" hidden>&#9654; Play<span class="where"> on the PC</span></button>
+      <button class="rep" hidden>Report</button>
+    </div>
+    <span class="status msg"></span>
+  </section>
+  <div class="steps"></div>
+  <div class="phaseline"><span class="lbl"></span><span class="resume"></span></div>
+  <div class="doing act" hidden></div>
+  <div class="doing prob" hidden></div>
+  <div class="stats"></div>
+  <div class="slow" hidden></div>
+  <div class="plan" hidden>
+    <div class="plan-head"></div>
+    <div class="plan-next"></div>
+    <div class="plan-sum"></div>
+  </div>
+  <div class="deployline" hidden></div>
+  <div class="groups">
+    <div class="grp"><div class="grp-h">Look</div>
+      <button class="readaloud" hidden></button>
+      <!-- Also a.btn: a bare blue link sitting between buttons read as a mistake on the row. -->
+      <a class="notes btn" target="_blank" hidden>Notes</a>
+      <a class="recording btn" target="_blank" hidden>&#9835; recording</a>
+    </div>
+    <div class="grp"><div class="grp-h">Check</div>
+      <button class="xreview" hidden></button>
+      <button class="seccheck" hidden></button>
+    </div>
+    <div class="grp"><div class="grp-h">Improve and ship</div>
+      <a class="polish btn" target="_blank" hidden></a>
+      <button class="deploy" hidden></button>
+      <button class="kit" hidden></button>
+    </div>
+  </div>
+  <div class="saidtext" hidden></div>
+  <div class="repbox" hidden><iframe class="repframe" title="report"></iframe></div>`;
+
+const CLOCK = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+  stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+  <circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>`;
+
+/* "CLAUDE" -> "Claude". The ledgers key vendors in capitals; people do not. */
+function vendorName(v) {
+  return v ? v.charAt(0) + v.slice(1).toLowerCase() : "";
+}
+
+function capital(s) {
+  s = String(s || "");
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+function short(s, n) {
+  s = String(s || "");
+  return s.length > n ? s.slice(0, n - 1) + "…" : s;
+}
+
+/* Whether the last gate failed on clips rather than on the code. */
+function onRecordings(j) {
+  return (j.lastFailingCommand || "").startsWith("recordings:");
+}
+
+/* Held after a blocking finding survived its attempts: a review to sit, not a stuck run. */
+function heldForYou(j) {
+  return j.phase === "REVIEW_REPAIR" && !j.running
+    && (j.blockedReason || "").startsWith("waiting for you");
+}
+
+/* DONE is work sitting in front of you, PARKED gave up honestly, and a held project is waiting on a
+   ruling. ACCEPTED is not here: that is you having said yes, and counting it would report your own
+   unread queue back to you as finished work. */
+function needsYou(j) {
+  return !j.running && (j.phase === "DONE" || j.phase === "PARKED" || heldForYou(j));
+}
+
+/*
+ * The table's grouping: what each project is waiting for. Five projects all stuck behind one
+ * vendor's quota read as one heading, rather than as the same sentence on five rows.
+ */
+function groupOf(j) {
+  if (j.running) return {key: "working", title: "Working", tone: "pass"};
+  if (needsYou(j)) return {key: "you", title: "Needs you", tone: "fail"};
+  if (j.phase === "ACCEPTED") return {key: "accepted", title: "Accepted", tone: "todo"};
+  // Before anything about suspension: a suspended project the queue could start now has nothing
+  // left to wait for, whatever its stored retry time says.
+  if (j.queuePosition > 0 && !j.blockedReason) return {key: "queued", title: "Queued", tone: "todo"};
+  if (j.phase === "SUSPENDED" || j.blockedReason) {
+    const review = (j.lastError || "").startsWith("waiting to be reviewed");
+    const what = review ? "Waiting for review" : j.blockedReason ? "Waiting" : "Waiting for quota";
+    const title = j.blockedReason ? what + " · " + j.blockedReason : what;
+    return {key: "wait:" + title, title, tone: "wait"};
+  }
+  if (j.phase === "NEW") return {key: "new", title: "Not started", tone: "todo"};
+  return {key: "paused", title: "Paused", tone: "todo"};
+}
+
+function groupOrder(key) {
+  return key === "you" ? 0 : key === "working" ? 1 : key.startsWith("wait:") ? 2
+    : key === "queued" ? 3 : key === "paused" ? 4 : key === "new" ? 5 : 6;
+}
+
+/* Which phone filter a group answers to. */
+function kindOf(key) {
+  return key.startsWith("wait:") ? "waiting"
+    : ["you", "working", "accepted"].includes(key) ? key : "other";
+}
+
+/* The short word on a project's line, and its colour. */
+function stageOf(j) {
+  if (j.running) return {text: "Working", tone: "pass"};
+  if (heldForYou(j)) return {text: "Held for you", tone: "fail"};
+  switch (j.phase) {
+    case "DONE": return {text: "Finished", tone: "accent"};
+    case "PARKED": return {text: "Parked", tone: "fail"};
+    case "ACCEPTED": return {text: "Accepted", tone: "pass"};
+    case "SUSPENDED": return j.queuePosition > 0 ? {text: "Queued", tone: "todo"} : {text: "Waiting", tone: "wait"};
+    case "NEW": return {text: j.queuePosition > 0 ? "Queued" : "Not started", tone: "todo"};
+    default: return j.blockedReason ? {text: "Waiting", tone: "wait"} : {text: "Paused", tone: "todo"};
+  }
+}
+
+/* At most three things still open on a project, most serious first. */
+function flags(j) {
+  const out = [];
+  if (j.blockingFindings) out.push({text: `${j.blockingFindings} blocking`, tone: "fail"});
+  if (j.securityState === "decide") {
+    out.push({text: `${j.securityForRuling} to decide`, tone: "accent"});
+  } else if (j.securityState === "notes" && j.securitySummary) {
+    const worst = j.securitySummary.split(",")[0].trim();
+    out.push({text: worst, tone: /critical|high/.test(worst) ? "wait" : "todo"});
+  } else if (j.securityState === "clean") {
+    out.push({text: "security clean", tone: "pass"});
+  }
+  if (j.remainingSteps) out.push({text: `${j.remainingSteps} steps left`, tone: "todo"});
+  return out.slice(0, 3);
+}
+
+/*
+ * What the open project needs from you, in a sentence, with the label above it. Said once, at the
+ * top of the details, so the one thing being asked is not one button among fifteen.
+ */
+function ask(j) {
+  const reviewed = j.reviewState === "clean" || j.reviewState === "findings";
+  if (j.running) {
+    return {label: "Working now", tone: "pass", head: j.activity || capital(j.phaseLabel) + ".",
+            sub: j.nextStep ? "Next: " + j.nextStep : ""};
+  }
+  // How a polish's review went, and a design kept until it finished: both said once it has.
+  const designNotes = [j.polishCheck,
+    j.designKept ? `You kept the design "${j.designKept}" for when it finished: build it from Suggest Updated Design.` : ""]
+    .filter(Boolean).join(" ");
+  if (j.phase === "DONE" && reviewed) {
+    return {label: "Your move", tone: "accent", sub: designNotes,
+            head: j.blockingFindings
+              ? `Finished, with ${j.blockingFindings} blocking finding(s) on it.`
+              : "Finished and reviewed. It is your call."};
+  }
+  if (j.phase === "DONE") {
+    return {label: "Your move", tone: "accent", head: "Finished. No other model has read it yet.",
+            sub: [j.reviewBlockedReason ? `The review has to wait: ${j.reviewBlockedReason}.` : "", designNotes]
+              .filter(Boolean).join(" ")};
+  }
+  if (heldForYou(j)) {
+    return {label: "Your move", tone: "accent", head: capital(j.blockedReason) + ".",
+            sub: "Rule on each finding, or send them back for another try."};
+  }
+  if (j.phase === "PARKED") {
+    const owed = (j.unfilmed || []).length;
+    return {label: "Your move", tone: "accent",
+            head: "Parked: " + (j.lastError || "it ran out of attempts") + ".",
+            sub: owed ? `The last gate found ${owed} approved feature(s) without a clip. Settle each `
+                        + "below, then Check Again runs the gate without spending a session."
+              : onRecordings(j) ? "Every clip it was missing has been ruled on since. Check Again runs "
+                        + "the gate without spending a session."
+              : j.lastFailingCommand ? `The last gate failed on ${j.lastFailingCommand}.` : ""};
+  }
+  if (j.phase === "ACCEPTED") {
+    return {label: "Accepted", tone: "pass", head: "You accepted it.",
+            sub: j.deployCommand && !j.deployedCommit ? "It has a deploy command and has not been deployed." : ""};
+  }
+  if (j.queuePosition > 0 && !j.blockedReason) {
+    const press = j.phase === "NEW" ? "Start" : "Resume Now";
+    return {label: "Queued", tone: "muted",
+            head: j.queuePosition === 1 ? "Next up." : `Number ${j.queuePosition} in the queue.`,
+            sub: $("autoRun").checked ? ""
+              : `Keep the queue moving is off, so it waits for you to press ${press}.`};
+  }
+  if (j.phase === "SUSPENDED" || j.blockedReason) {
+    return {label: "Nothing needs you", tone: "muted", sub: "",
+            head: capital(j.blockedReason || "waiting for quota") + "."};
+  }
+  if (j.phase === "NEW") {
+    return {label: "Not started", tone: "muted", head: "Not started yet.",
+            sub: "Press Start, or turn on Keep the queue moving."};
+  }
+  return {label: "Paused", tone: "muted", head: capital(j.phaseLabel) + ".",
+          sub: "Nothing is running it. Resume Now carries on from here."};
+}
+
+/*
+ * The five stops a project makes, and how far this one has got.
+ *
+ * Position comes from the phase's percentage, which for a suspended project is the phase it will
+ * resume into. What a stage found comes from what the security check and the review recorded, so a
+ * stage that ran says what it found even while the pipeline is somewhere else.
+ */
+function steps(j) {
+  const p = j.percent || 0;
+  const parked = j.phase === "PARKED";
+  let at = j.phase === "ACCEPTED" ? 5 : p >= 100 ? 4 : p >= 80 ? 3 : p >= 62 ? 2 : p === 45 ? 1 : 0;
+  if (parked) at = j.lastFailingCommand ? 1 : 0;
+  const now = j.running ? "accent" : parked ? "fail"
+    : (j.phase === "SUSPENDED" || j.blockedReason) ? "wait"
+    : j.phase === "NEW" ? "todo" : "accent";
+  const tone = i => i < at ? "pass" : i === at ? now : "todo";
+  const reviewed = j.reviewState === "clean" || j.reviewState === "findings";
+  const sec = j.securityState && j.securityState !== "none" ? j.securityState : "";
+  const secTone = sec === "clean" ? "pass" : sec === "decide" ? "wait"
+    : sec === "notes" ? (/critical|high/.test(j.securitySummary || "") ? "wait" : "pass") : tone(2);
+  return [
+    {name: "Build", tone: tone(0), sub: j.sessions ? `${j.sessions} session(s)` : "not started"},
+    {name: "Gate", tone: tone(1),
+     sub: at > 1 ? "passed" : parked && j.lastFailingCommand ? short(j.lastFailingCommand, 40)
+        : j.repairRounds ? `repair ${j.repairRounds} of ${j.maxRepairRounds}` : "not yet"},
+    {name: "Security", tone: secTone, sub: sec ? securityText(j) : "not checked"},
+    {name: "Review", tone: reviewed ? (j.blockingFindings ? "wait" : "pass") : tone(3),
+     sub: reviewed ? (j.blockingFindings ? `${j.blockingFindings} blocking` : "clean")
+        : at === 3 ? "waiting" : "not yet"},
+    {name: "Accepted", tone: j.phase === "ACCEPTED" ? "pass" : at === 4 ? "accent" : "todo",
+     sub: j.phase === "ACCEPTED" ? "yes" : at === 4 ? "your call" : "not yet"},
+  ];
+}
+
+function upsert(j) {
+  let card = document.getElementById("job-" + j.id);
+  if (!card) {
+    card = document.createElement("div");
+    card.className = "job";
+    card.id = "job-" + j.id;
+    card.dataset.id = j.id;
+    const row = document.createElement("button");
+    row.type = "button";
+    row.className = "lrow";
+    row.id = "row-" + j.id;
+    row.setAttribute("aria-controls", "detail-" + j.id);
+    row.innerHTML = ROW;
+    row.onclick = () => pick(j.id);
+    const detail = document.createElement("div");
+    detail.className = "detail";
+    detail.id = "detail-" + j.id;
+    detail.innerHTML = DETAIL;
+    card.append(row, detail);
+    $("jobs").append(card);
+    if (sizer) sizer.observe(detail);
+  }
+  card.classList.toggle("running", !!j.running);
+  card.classList.toggle("child", !!j.parentId);
+  fillRow(card.querySelector(".lrow"), j);
+  fillDetail(card, card.querySelector(".detail"), j);
+}
+
+function fillRow(row, j) {
+  const q = sel => row.querySelector(sel);
+  const stage = stageOf(j);
+  q(".rank").textContent = j.priority;
+  q(".ttl").textContent = j.title;
+  q(".sub").textContent = [j.id, vendorName(j.assignedTo), j.parentId ? "improves " + j.parentId : ""]
+    .filter(Boolean).join(" · ");
+  for (const pill of row.querySelectorAll(".pill")) {
+    pill.textContent = stage.text;
+    pill.className = "pill t-" + stage.tone;
+  }
+  q(".reason").textContent = [vendorName(j.assignedTo),
+    j.running ? (j.activity || j.phaseLabel) : (j.blockedReason || j.phaseLabel)].filter(Boolean).join(" · ");
+  const bar = q(".mini span");
+  bar.style.width = j.percent + "%";
+  bar.className = "b-" + stage.tone;
+  q(".worked").textContent = duration(j.workedSeconds);
+  q(".tokens").textContent = j.tokensSpent ? count(j.tokensSpent) : "—";
+  q(".flags").innerHTML = flags(j)
+    .map(f => `<span class="chip t-${f.tone}">${esc(f.text)}</span>`).join("");
+}
+
+function fillDetail(card, d, j) {
+  const q = sel => d.querySelector(sel);
+  // Must match Phase.terminal() on the Java side, which is what freezes the clock. ACCEPTED was
+  // missing here, so a project you had signed off still had its timings labelled as in-progress.
+  const terminal = j.phase === "DONE" || j.phase === "PARKED" || j.phase === "ACCEPTED";
+
+  // Whether a decision is on offer. Computed once, here, because two controls depend on it: the
+  // Review & Decide button appears, and the act button stops being the primary one.
+  const reviewed = j.reviewState === "clean" || j.reviewState === "findings";
+  const deciding = j.phase === "DONE" && reviewed;
+  const held = heldForYou(j);
+
+  q(".dot").className = "dot" + (j.running ? " pulse" : "");
+  q(".dot").style.display = j.running ? "inline-block" : "none";
+  q(".t").textContent = j.title;
+  q(".id").textContent = "rank " + j.priority + " · " + j.id
+    + (j.assignedTo ? " · " + j.assignedTo : "")
+    + (j.parentId ? " · improves " + j.parentId : "");
+  q(".tag").textContent = j.phase.replace(/_/g, " ");
+  q(".tag").className = "tag t-" + stageOf(j).tone;
+
+  const wanted = ask(j);
+  q(".move-label").textContent = wanted.label;
+  q(".move-label").className = "move-label " + wanted.tone;
+  q(".move-head").textContent = wanted.head;
+  q(".move-sub").textContent = wanted.sub;
+  q(".move-sub").hidden = !wanted.sub;
+
+  q(".steps").innerHTML = steps(j).map(s =>
+    `<div class="step s-${s.tone}"><b>${esc(s.name)}</b><span>${esc(s.sub)}</span></div>`).join("");
+
+  q(".lbl").textContent = j.phaseLabel;
+  // For a suspended job the headline is when it comes back -- the thing you actually
+  // want to know glancing at this in the morning. Not once the queue could start it: a stored
+  // retry time can belong to another vendor, and "resumes Tuesday" beside "next up" is a lie.
+  q(".resume").textContent =
+    j.phase === "SUSPENDED" && j.retryAfter && !(j.queuePosition > 0)
+      // Once the window has passed the countdown is meaningless, and "(in —)" reads like the
+      // job is stuck. What you want then is that it is free to go, and why it is still sitting.
+      ? j.retryInSeconds > 0
+        ? `resumes ${whenLocal(j.retryAfter)} (in ${duration(j.retryInSeconds)})`
+        : `quota window passed at ${whenLocal(j.retryAfter)} — ready to resume`
+      : j.blockedReason ? j.blockedReason
+      : j.queuePosition === 1 ? "next up"
+      : j.queuePosition > 1 ? `#${j.queuePosition} in queue`
+      : "";
+  // A finished or parked project's state is already the headline of what it needs from you.
+  q(".phaseline").hidden = terminal;
+
+  const act = q(".act");
+  act.hidden = !(j.running && j.activity);
+  if (!act.hidden) act.innerHTML = `<span class="pulse"></span> ${esc(j.activity)}`;
+
+  // A parked project's error is already the headline of what it needs from you.
+  const prob = q(".prob");
+  prob.hidden = !j.lastError || j.phase === "PARKED";
+  if (!prob.hidden) prob.textContent = j.lastError;
+
+  q(".stats").innerHTML =
+    // Two clocks, because they answer different questions and conflating them was a lie: "worked"
+    // is time Forge actually spent on the project, and it stops when nothing is running. The
+    // second is wall clock -- the whole elapsed span once a project is finished, and otherwise how
+    // long it has been sitting, which for a job blocked at 9pm is the only honest reading.
+    stat("worked", duration(j.workedSeconds)) +
+    stat(terminal ? "total time" : j.running ? "in this step" : "idle for",
+         duration(terminal ? j.totalSeconds : j.idleSeconds)) +
+    stat("repair rounds", `${j.repairRounds}/${j.maxRepairRounds}`) +
+    stat("commits", j.commits || "—") +
+    stat("on disk", bytes(j.diskBytes)) +
+    (j.sessions ? stat("sessions", j.sessions) : "") +
+    (j.tokensSpent ? stat("tokens", count(j.tokensSpent)) : "") +
+    (j.gateSeconds ? stat("last gate", duration(j.gateSeconds)) : "") +
+    (j.securityState && j.securityState !== "none" ? stat("security", securityText(j)) : "") +
+    (j.compactions ? stat("fresh starts", j.compactions) : "") +
+    (j.blockingFindings ? stat("blocking findings", j.blockingFindings) : "");
+
+  // A suite that has crept from forty seconds to three minutes. The report always said so; the
+  // card is where it gets seen.
+  const slow = q(".slow");
+  const slower = j.slowerThanUsual || [];
+  slow.hidden = slower.length === 0;
+  if (!slow.hidden) slow.textContent = "Slower than usual: " + slower.join("; ");
+
+  // The agent's own handoff: how far it thinks it got and what it planned to do next.
+  const plan = q(".plan");
+  plan.hidden = !(j.planSummary || j.remainingSteps);
+  if (!plan.hidden) {
+    const more = j.sessionsNeeded
+      ? `${j.sessionsNeeded} more session(s) expected` : "expects to be finished";
+    const mins = j.remainingMinutes ? ` · ~${j.remainingMinutes}m of work left` : "";
+    q(".plan-head").textContent =
+      `${j.remainingSteps} step(s) remaining · ${more}${mins}`;
+    q(".plan-next").textContent = j.nextStep ? "next: " + j.nextStep : "";
+    q(".plan-sum").textContent = j.planSummary || "";
+  }
+
+  // Enhancements hang off a project, so only a project offers to add one.
+  const add = q(".add");
+  add.hidden = !!j.parentId;
+  add.onclick = () => newEnhancement(j.id);
+
+  q(".up").onclick = () => reorder(j.id, -1);
+  q(".down").onclick = () => reorder(j.id, 1);
+
+  // A finished project can still be worth another session: the gate only checks what the spec
+  // thought to check, so an agent can hand back "complete" with work still on its own list.
+  // Disabling the button here left no way to act on that short of editing state.json.
+  const btn = q(".act-btn");
+  btn.textContent = j.running ? "Stop"
+    : terminal ? "Run Another Session"
+    : j.phase === "NEW" ? "Start" : "Resume Now";
+  // One primary control per card. Once a project is finished and reviewed, the thing being asked
+  // of you is the decision — so Run Another Session steps back rather than competing with it.
+  // Once nothing it was missing a clip for still needs a ruling, running the gate is the next step,
+  // and another session would only brief the agent with the old complaint.
+  const settled = j.phase === "PARKED" && onRecordings(j) && !(j.unfilmed || []).length;
+  btn.className = "act-btn " + (j.running ? "danger" : deciding || settled ? "" : "primary");
+  btn.disabled = false;
+  btn.onclick = () => jobAction(j.id,
+    j.running ? "/api/jobs/stop" : terminal ? "/api/jobs/reopen" : "/api/jobs/start");
+
+  // The gate on its own, for a project parked on it: no agent, and no session spent or needed.
+  const recheck = q(".recheck");
+  recheck.hidden = j.running || j.phase !== "PARKED" || !j.lastFailingCommand;
+  recheck.className = "recheck" + (settled ? " primary" : "");
+  recheck.title = "Runs the acceptance commands and the checks after them, and nothing else. "
+    + "If they pass, the project carries on to the security check and the review.";
+  recheck.onclick = () => jobAction(j.id, "/api/jobs/recheck");
+
+  clipQuestions(q(".clips"), j);
+
+  // Your judgement is a separate step from the pipeline's. DONE means every check Forge
+  // knows how to run passed; only you can say it is the thing you wanted.
+  // Shown only when approval is actually on offer. The point is not to discourage accepting --
+  // an honest project always has caveats -- but to make sure the decision is taken knowing what
+  // was left unchecked, rather than because a button happened to be enabled.
+  const caveat = q(".caveat");
+  caveat.hidden = j.phase !== "DONE";
+  if (!caveat.hidden) {
+    const parts = [];
+    // First, because it is the one a project should not be accepted over. This line used to leave
+    // them out, and with nothing else to say it read "the cross-review found nothing blocking"
+    // beside a count of the blocking findings it had found.
+    if (j.blockingFindings) {
+      parts.push(`${j.blockingFindings} blocking finding(s) the reviewer raised`);
+    }
+    if (j.notVerifiedCount) {
+      parts.push(`${j.notVerifiedCount} thing(s) a passing gate does not prove`);
+    }
+    if (j.reviewState === "none" || j.reviewState === "unavailable") {
+      parts.push(j.reviewBlockedReason
+        ? `no other model has read it, and ${j.reviewBlockedReason}`
+        : "no other model has read it");
+    }
+    caveat.innerHTML = parts.length
+      ? `Before accepting: ${esc(parts.join(" · "))}. `
+        + `<a href="/runs/${j.id}/report.html" target="_blank">Read the report</a>`
+      : "The gate passed and the cross-review found nothing blocking.";
+  }
+
+  // Approval lives in the report, beside the claims it is a judgement about. There is
+  // deliberately no Accept here: a yes given from a card, without the list of what was not
+  // proven in front of you, is not a yes about anything in particular.
+  const decide = q(".decide");
+  decide.hidden = !deciding;
+  // Still an anchor underneath, because it navigates -- so middle-click and open-in-new-window
+  // work, and no popup blocker can turn it into a button that does nothing.
+  decide.textContent = "Review & Decide";
+  decide.title = "Rule on each outstanding item, then accept or send it back";
+  decide.href = `/runs/${j.id}/report.html#decide`;
+
+  // The same review as cards, one decision at a time: the items that must be answered first, each
+  // with nothing chosen in advance, then the features by their clips, then the rest as a list to
+  // skim. It rules on the same items under the same ids and submits to the same place, so either
+  // page can be used for any sitting. Offered wherever the form is, and on a project held for you
+  // on blocking findings, which is exactly a review to sit: each finding, answered on its own.
+  const quick = q(".quick");
+  quick.hidden = !(deciding || held);
+  quick.href = `/review?id=${encodeURIComponent(j.id)}`;
+  quick.title = "The same review, one card at a time";
+
+  // Opens the page where the models are asked for looks and one is picked to build. A link, not an
+  // action: nothing is asked of a vendor and nothing about the project changes until a button on
+  // that page is pressed. Shown while the designs are being drawn too, which counts as running,
+  // because that is exactly when someone wants to go and watch them arrive.
+  // On every project that has run and is not being worked on: asking changes nothing in the project.
+  // What building the pick does depends on where it is, and the page says which.
+  const polish = q(".polish");
+  polish.hidden = j.phase === "NEW" || !!j.running;
+  polish.textContent = "✨ Suggest Updated Design";
+  polish.href = `/polish?id=${encodeURIComponent(j.id)}`;
+  polish.title = "Each model drafts a new look for it; pick one to have it built";
+
+  // Opens the project's run.bat in a console window of its own -- exactly what double-clicking the
+  // file does, from here. Shown once the project has one; refused while an agent is working on it,
+  // because a build running under a gate holds the files the gate is about to delete. The window
+  // opens on the machine Forge runs on, which a phone is not, so a narrow screen says so.
+  const play = q(".play");
+  play.hidden = !j.playable;
+  play.disabled = !!j.running;
+  play.title = j.running
+    ? "Being worked on. Playing it now would get in the agent's way."
+    : "Opens this project's run.bat in its own window, as double-clicking it would. "
+      + "Close that window to stop it.";
+  play.onclick = () => jobAction(j.id, "/api/jobs/play");
+
+  // The direct route for a finished project that still has blocking findings on it: straight back
+  // to the agent that built it, with no review bought first and no form to fill in. Each finding
+  // gets two attempts and the reviewer rules on every one afterwards, as in any review loop.
+  // Offered where the gate has passed: DONE, or held after the findings' attempts ran out. Not on
+  // a parked project, which is parked on something else.
+  const fix = q(".fixblocking");
+  const fixable = !j.running && j.blockingFindings > 0 && (j.phase === "DONE" || held);
+  fix.hidden = !fixable;
+  fix.textContent = held
+    ? `Try Blocking Findings Again (${j.blockingFindings})`
+    : `Fix Blocking Findings (${j.blockingFindings})`;
+  fix.title = "Send them back to the agent that built it. Each gets two attempts, with a test, "
+    + "and the reviewer checks every one afterwards.";
+  fix.onclick = () => jobAction(j.id, "/api/jobs/fix");
+  // One primary control per card. With blockers on it, fixing them is what the card is asking for,
+  // and deciding steps back the way Run Another Session does for it.
+  fix.classList.toggle("primary", fixable);
+  decide.classList.toggle("primary", !fixable);
+
+  // The reviewing model is the one that did NOT build the project, so it is routinely out of
+  // quota exactly when the builder finishes. Without this the project sits at DONE looking
+  // finished, having never been read by anything but its own author.
+  const review = q(".xreview");
+  const never = j.reviewState === "none" || j.reviewState === "unavailable";
+  const waiting = j.reviewBlockedReason || "";
+  review.hidden = !(j.phase === "DONE" || j.phase === "PARKED");
+  // Offering a button that is certain to come back with a quota refusal is worse than saying
+  // so: the reviewing vendor is the one that did not build this, and its window is its own.
+  review.disabled = !!waiting;
+  review.textContent = waiting
+    ? "Cross-Review Unavailable"
+    : never ? "Run Cross-Review" : "Review Again";
+  review.classList.toggle("primary", never && !waiting);
+  review.title = waiting
+    ? waiting
+    : never ? "No model other than the one that wrote this has looked at it"
+    : "Review the current code again";
+  review.onclick = () => jobAction(j.id, "/api/jobs/review");
+
+  // Read-only, so it never needs a confirmation: it looks at the project, runs the built app on
+  // this machine for a minute, and writes a report. It never moves the project anywhere.
+  const sec = q(".seccheck");
+  const unchecked = !j.securityState || j.securityState === "none";
+  sec.hidden = !(j.phase === "DONE" || j.phase === "PARKED" || j.phase === "ACCEPTED") || j.running;
+  sec.textContent = unchecked ? "Run Security Check" : "Check Security Again";
+  sec.title = unchecked
+    ? "Secrets, vulnerable dependencies, risky code, the running app, and another model's reading"
+    : `Last result: ${securityText(j)}`;
+  sec.onclick = () => jobAction(j.id, "/api/jobs/security");
+
+  // Writes copy, a landing page and campaign drafts for someone to review. It publishes nothing and
+  // spends nothing, but it is an agent call, so it waits for a click like everything outward.
+  const kit = q(".kit");
+  kit.hidden = j.phase !== "ACCEPTED" || j.running;
+  kit.textContent = !j.marketingState || j.marketingState === "none" ? "Create Marketing Kit" : "Rewrite Marketing Kit";
+  kit.title = j.marketingState === "problems"
+    ? `The last kit has ${j.marketingProblems} problem(s) listed on the report`
+    : j.marketingState === "ready" ? "The last kit passed its checks; see the report" : "Launch copy, a landing page and ad campaign drafts — nothing is published";
+  kit.onclick = () => jobAction(j.id, "/api/jobs/marketing");
+
+  // Says what the project is, from its own files: the verdict, what it claims to do, what is not
+  // proven, and what the reviewer said. Costs no quota, so it needs no confirmation and no guard
+  // beyond having run at all. The words come back from the server; the voice is the browser's.
+  const read = q(".readaloud");
+  read.hidden = j.phase === "NEW";
+  read.textContent = speaking() ? "Stop reading" : "Read it to me";
+  read.title = "Reads this project aloud and saves the words and a recording beside the run";
+  read.onclick = () => readAloud(j.id);
+
+  const heard = q(".saidtext");
+  heard.hidden = !spokenText[j.id];
+  heard.textContent = spokenText[j.id] || "";
+
+  const recording = q(".recording");
+  recording.hidden = !said[j.id];
+  if (said[j.id]) {
+    recording.href = said[j.id];
+    recording.title = "The same walkthrough as a .wav, for listening to away from the machine";
+  }
+
+  // Deploying publishes the project with an account that is not Forge's. So the button is only live
+  // on an accepted, security-checked project, says why when it is not, and asks before every deploy
+  // with the exact command and commit that will run.
+  const deploy = q(".deploy");
+  const line = q(".deployline");
+  const hasDeploy = !!j.deployCommand;
+  deploy.hidden = !hasDeploy;
+  line.hidden = !hasDeploy || j.deployState === "never";
+  if (hasDeploy) {
+    const deployed = !!j.deployedCommit;
+    deploy.textContent = !deployed ? "Deploy" : j.deployStale ? "Redeploy" : "Deploy Again";
+    deploy.disabled = !!j.deployBlockedReason;
+    deploy.title = j.deployBlockedReason || `Runs: ${j.deployCommand}`;
+    deploy.classList.toggle("primary", !j.deployBlockedReason && (!deployed || j.deployStale));
+    deploy.onclick = () => {
+      const ok = confirm(`Deploy ${j.title}?\n\nThis runs, from the project folder:\n\n    ${j.deployCommand}\n\n`
+        + "It publishes the project using whatever account that CLI is logged into.");
+      if (ok) jobAction(j.id, "/api/jobs/deploy");
+    };
+    const link = j.deployUrl ? `<a href="${esc(j.deployUrl)}" target="_blank" rel="noopener">${esc(j.deployUrl)}</a>` : "";
+    line.innerHTML = deployed
+      ? `Deployed ${esc(j.deployedCommit.slice(0, 7))} ${esc(ago(j.deployedAt))} ${link}`
+        + (j.deployStale ? ` <b style="color:var(--wait)">· newer commits not deployed</b>` : "")
+        + (j.deployState !== "deployed" && j.deployDetail ? `<br>Last attempt: ${esc(j.deployDetail)}` : "")
+      : `Last deploy attempt: ${esc(j.deployDetail || j.deployState)}`;
+  }
+
+  // The report opens inside the details. Rendered in an iframe because it is a whole document
+  // with its own stylesheet -- inlining it would let the two sets of CSS collide.
+  const rep = q(".rep");
+  const box = q(".repbox");
+  const frame = q(".repframe");
+  rep.hidden = !j.commits;
+  rep.textContent = box.hidden ? "Report" : "Hide Report";
+  rep.onclick = () => toggleReport(j.id, rep, box, frame);
+
+  // The agent's standing description of the project, in its own words. Worth reading on its
+  // own, and the thing to check if a fresh start ever seems to have lost something: it is
+  // literally all the next session gets once the conversation is dropped.
+  const notes = q(".notes");
+  notes.hidden = !j.hasDigest;
+  notes.href = `/runs/${j.id}/digest.md`;
+  notes.title = j.compactions
+    ? `Restarted from these notes ${j.compactions} time(s)`
+    : "What the agent would hand to a successor";
+
+  // A heading over nothing is noise: each group shows only while it has something to press.
+  d.querySelectorAll(".grp").forEach(group => {
+    group.hidden = [...group.querySelectorAll("button, a")].every(control => control.hidden);
+  });
+
+  // Reload an open report only when the run has actually moved on. Reloading it on every
+  // four-second poll would throw away the reader's scroll position while they read.
+  const signature = `${j.phase}/${j.sessions}/${j.commits}/${j.repairRounds}`;
+  if (!box.hidden && card.dataset.reportSig !== signature) {
+    card.dataset.reportSig = signature;
+    frame.contentWindow.location.reload();
+  }
+}
+
+/*
+ * One question per approved feature the last gate found without a clip.
+ *
+ * Built only when the questions themselves change, so a select someone has opened is not replaced
+ * under them by the next poll. Each answer is one press: it is the same feature as one that was
+ * filmed, it is not worth a clip, or it is still wanted.
+ */
+/* Questions answered "still want it" that were opened again on this page, by project and item. */
+const reopenedClips = new Set();
+
+function clipQuestions(box, j) {
+  const owed = (j.running ? [] : (j.unfilmed || []))
+    .map(clip => reopenedClips.has(j.id + "/" + clip.id) ? {...clip, kept: false} : clip);
+  box.hidden = owed.length === 0;
+  const signature = JSON.stringify(owed);
+  if (box.dataset.sig === signature) return;
+  box.dataset.sig = signature;
+  box.innerHTML = owed.map(clip => clip.kept ? `
+    <div class="clipq kept" data-item="${esc(clip.id)}">
+      <div><b>${esc(clip.name)}</b>: still wanted. Run Another Session builds it and films it.</div>
+      <div class="clipacts"><button class="reopen-q">Change My Answer</button></div>
+    </div>` : `
+    <div class="clipq" data-item="${esc(clip.id)}">
+      <div><b>${esc(clip.name)}</b> has no clip: ${esc(clip.problem)}.</div>
+      ${clip.listed ? "" : `<div class="clipwhy">The agent no longer lists it: it was renamed or removed.</div>`}
+      <label class="clipnote">What should change about it? (optional, goes to the agent with Still Want It)
+        <input class="note" type="text" data-attach="${esc(j.id)}" placeholder="e.g. it should use real Google ads, not a placeholder"></label>
+      <div class="clipacts">
+        ${clip.sameAs.length ? `<label class="twinlabel">Same feature as
+          <select class="twin">${clip.sameAs.map(name =>
+            `<option value="${esc(name)}">${esc(name)}</option>`).join("")}</select></label>
+          <button class="same">Same Feature</button>` : ""}
+        <button class="drop">Not Worth a Clip</button>
+        <button class="keep">Still Want It</button>
+      </div>
+    </div>`).join("");
+  box.querySelectorAll(".clipq").forEach(question => {
+    const itemId = question.dataset.item;
+    const note = () => (question.querySelector(".note") || {value: ""}).value.trim();
+    const again = question.querySelector(".reopen-q");
+    if (again) {
+      // Only on this page: the answer on record is unchanged until another button is pressed.
+      again.onclick = () => {
+        reopenedClips.add(j.id + "/" + itemId);
+        clipQuestions(box, j);
+      };
+      return;
+    }
+    const same = question.querySelector(".same");
+    if (same) {
+      same.onclick = () => ruleFeature(j.id, itemId, "declined", question.querySelector(".twin").value, "");
+    }
+    question.querySelector(".drop").onclick = () => ruleFeature(j.id, itemId, "declined", "", note());
+    question.querySelector(".keep").onclick = () => ruleFeature(j.id, itemId, "approved", "", note());
+  });
+}
+
+async function ruleFeature(id, itemId, verdict, sameAs, note) {
+  reopenedClips.delete(id + "/" + itemId);
+  const r = await post("/api/jobs/feature", {id, itemId, verdict, sameAs, note: note || ""})
+    .catch(e => ({result: String(e)}));
+  const el = jobMessage(id);
+  if (el) el.textContent = r.result || r.error || "";
+  loadJobs();
+}
+
+/* ------------------------------------------------------- which project is open */
+
+/* The project whose details are showing, remembered so a reload comes back to it. */
+let selected = null;
+/* On a narrow screen nothing is open until a line is tapped, and tapping it again closes it. */
+let expanded = false;
+const narrow = window.matchMedia("(max-width: 1199px)");
+
+function remembered() {
+  try { return localStorage.getItem("forge.selected"); } catch (e) { return null; }
+}
+
+function remember(id) {
+  try { localStorage.setItem("forge.selected", id); } catch (e) { /* a private window */ }
+}
+
+function pick(id) {
+  if (narrow.matches) expanded = !(selected === id && expanded);
+  selected = id;
+  remember(id);
+  arrange();
+  if (narrow.matches && expanded) {
+    document.getElementById("row-" + id).scrollIntoView({block: "nearest"});
+  }
+}
+
+/* Shows the chosen project's details, and marks its line, without touching anything else. */
+function arrange() {
+  const showing = !narrow.matches || expanded;
+  document.querySelectorAll("#jobs > .job").forEach(card => {
+    const mine = card.dataset.id === selected;
+    card.classList.toggle("open", mine && showing);
+    const row = card.querySelector(".lrow");
+    row.setAttribute("aria-current", mine && !narrow.matches ? "true" : "false");
+    row.setAttribute("aria-expanded", mine && showing ? "true" : "false");
+  });
+  fit();
+}
+
+/* The details are positioned beside the table rather than in it, so the box is told how tall they
+   are; otherwise a short table lets whatever follows it slide up underneath them. */
+function fit() {
+  const open = document.querySelector("#jobs > .job.open .detail");
+  $("jobs").style.minHeight = open && !narrow.matches ? open.offsetHeight + "px" : "";
+}
+
+const sizer = typeof ResizeObserver === "function" ? new ResizeObserver(fit) : null;
+narrow.addEventListener("change", () => { expanded = false; arrange(); });
+
+/* Group headings, by group key. Kept rather than rebuilt, like everything else on the page. */
+const heads = new Map();
+
+/*
+ * Places every line, heading and panel for this poll.
+ *
+ * A wide screen groups the lines by what each project waits for, in that order; a narrow one lists
+ * them by rank, each project's details straight after its own line. Both orders are set on every
+ * element and the stylesheet picks one, so changing the window's width changes nothing in the DOM.
+ */
+function layout(jobs) {
+  const box = $("jobs");
+  const groups = [];
+  jobs.forEach(j => {
+    const g = groupOf(j);
+    let found = groups.find(x => x.key === g.key);
+    if (!found) groups.push(found = {...g, jobs: []});
+    found.jobs.push(j);
+  });
+  groups.sort((a, b) => groupOrder(a.key) - groupOrder(b.key));
+
+  let at = 0;
+  const live = new Set();
+  groups.forEach(g => {
+    let head = heads.get(g.key);
+    if (!head) {
+      head = document.createElement("div");
+      head.innerHTML = `<span class="gt"></span><span class="gn"></span>`;
+      heads.set(g.key, head);
+      box.append(head);
+    }
+    head.className = "grouphead g-" + g.tone;
+    head.style.setProperty("--od", at++);
+    head.querySelector(".gt").textContent = g.title;
+    head.querySelector(".gn").textContent = "· " + g.jobs.length;
+    live.add(g.key);
+    g.jobs.forEach(j => {
+      const card = document.getElementById("job-" + j.id);
+      card.querySelector(".lrow").style.setProperty("--od", at++);
+      card.dataset.kinds = kindOf(g.key);
+    });
+  });
+  heads.forEach((head, key) => {
+    if (!live.has(key)) { head.remove(); heads.delete(key); }
+  });
+
+  jobs.forEach((j, i) => {
+    const card = document.getElementById("job-" + j.id);
+    card.querySelector(".lrow").style.setProperty("--om", 2 * i);
+    card.querySelector(".detail").style.setProperty("--om", 2 * i + 1);
+  });
+
+  // First choice: what was open last time. Otherwise whatever heads the table, which is a project
+  // that needs you whenever there is one.
+  if (!jobs.some(j => j.id === selected)) {
+    const before = remembered();
+    selected = jobs.some(j => j.id === before) ? before : (groups[0] ? groups[0].jobs[0].id : null);
+  }
+  tiles(groups, jobs.length);
+  arrange();
+}
+
+const TILES = [["all", "all"], ["you", "needs you"], ["waiting", "waiting"],
+               ["working", "working"], ["accepted", "accepted"]];
+
+/* The phone's filters, with a count on each. The stylesheet applies them only on a narrow screen. */
+function tiles(groups, total) {
+  const box = $("tiles");
+  const jobsBox = $("jobs");
+  const counts = {all: total};
+  groups.forEach(g => {
+    const kind = kindOf(g.key);
+    counts[kind] = (counts[kind] || 0) + g.jobs.length;
+  });
+  // A filter whose last project has moved on would show an empty list with no way to tell why.
+  if (!counts[jobsBox.dataset.filter]) jobsBox.dataset.filter = "all";
+  TILES.forEach(([key, label]) => {
+    let tile = box.querySelector(`[data-key="${key}"]`);
+    if (!tile) {
+      tile = document.createElement("button");
+      tile.type = "button";
+      tile.className = "tile " + key;
+      tile.dataset.key = key;
+      tile.innerHTML = `<span class="n"></span><span class="l"></span>`;
+      tile.querySelector(".l").textContent = label;
+      tile.onclick = () => { jobsBox.dataset.filter = key; pressTiles(); };
+      box.append(tile);
+    }
+    const n = counts[key] || 0;
+    tile.querySelector(".n").textContent = n;
+    tile.disabled = n === 0 && key !== "all";
+  });
+  pressTiles();
+}
+
+function pressTiles() {
+  const on = $("jobs").dataset.filter || "all";
+  document.querySelectorAll("#tiles .tile").forEach(tile =>
+    tile.setAttribute("aria-pressed", tile.dataset.key === on ? "true" : "false"));
+}
+
+/* The vendors closed right now, and every vendor anything is known about: the chips in the top bar. */
+let closedVendors = {};
+let knownVendors = [];
+
+/* A time today reads as a time; one days away needs its day, or "back 11:58 PM" means the wrong night. */
+function whenNear(date) {
+  const far = date.getTime() - Date.now() > 20 * 3600 * 1000;
+  return date.toLocaleString([], far ? {weekday: "short", hour: "numeric", minute: "2-digit"}
+                                     : {hour: "numeric", minute: "2-digit"});
+}
+
+/* A closed vendor stops every project assigned to it, so it is reported once at the top, with how
+   many projects are waiting on it, rather than repeated on each one. */
+async function loadQuota(jobs) {
+  const all = await fetch("/api/quota").then(r => r.json()).catch(() => ({}));
+  const now = Date.now();
+  const rows = Object.entries(all)
+    .map(([vendor, w]) => ({vendor,
+                            // No stated reset: the ledger holds the vendor for fifteen minutes from
+                            // when it was seen, and a hold nobody can see reads as a stuck queue.
+                            until: w.retryAfter ? new Date(w.retryAfter)
+                                 : w.observedAt ? new Date(Date.parse(w.observedAt) + 15 * 60 * 1000)
+                                 : null,
+                            // Logged out and broken-sandbox holds share the ledger; they are not quota.
+                            what: /^(NOT_AUTHENTICATED|TOOL_BROKEN)/.test(w.message || "")
+                                ? "is unavailable" : "is out of quota",
+                            message: w.message || ""}))
+    .filter(r => r.until && r.until.getTime() > now);
+
+  closedVendors = {};
+  rows.forEach(r => { closedVendors[r.vendor] = r; });
+
+  const said = quotaSaid && quotaSaid.until > now ? `<div class="quota">${esc(quotaSaid.text)}</div>` : "";
+  $("quotaBar").innerHTML = said + rows.map(r => {
+    const waiting = (jobs || []).filter(j => !j.running
+      && (j.blockedReason || "").toUpperCase().includes(r.vendor)).length;
+    return `<div class="quota">${CLOCK}<div><b>${esc(vendorName(r.vendor))} ${r.what}</b> until
+      ${whenNear(r.until)} (in ${duration((r.until - now) / 1000)}).
+      ${waiting ? `${waiting} project(s) are waiting on it.` : ""}
+      Nothing assigned to it will start until then.
+      <span class="why">${esc(r.message)}</span>
+      <button class="retry" data-vendor="${esc(r.vendor)}"
+        title="Reset or topped up its limit? Forge lets the hold go, and the next call finds out">Try
+        ${esc(vendorName(r.vendor))} Now</button></div></div>`;
+  }).join("");
+  $("quotaBar").querySelectorAll(".retry").forEach(b => { b.onclick = () => retryVendor(b); });
+  vendorChips();
+}
+
+/* What the last Try Now said, shown for a moment: the row it was pressed on goes as soon as it works. */
+let quotaSaid = null;
+
+/*
+ * A hold is let go only by a completed call, and nothing calls a vendor that is held, so a limit reset
+ * early at the vendor went unnoticed until the time it first gave. This is the person saying it is
+ * back; if it is not, the next call is refused without spending a session and the hold returns.
+ */
+async function retryVendor(button) {
+  button.disabled = true;
+  const r = await post("/api/quota/retry?vendor=" + encodeURIComponent(button.dataset.vendor), {})
+    .catch(e => ({error: String(e)}));
+  quotaSaid = {text: r.result || r.error || "", until: Date.now() + 20000};
+  await loadJobs();
+}
+
+function vendorChips() {
+  const names = [...new Set([...knownVendors, ...Object.keys(closedVendors)])];
+  $("vendors").innerHTML = names.map(v => {
+    const closed = closedVendors[v];
+    return closed
+      ? `<span class="vchip closed" title="${esc(closed.message)}">${CLOCK}<b>${esc(vendorName(v))}</b>`
+        + `<span class="vstate">back ${whenNear(closed.until)}</span></span>`
+      : `<span class="vchip" title="Not out of quota, as far as Forge has seen"><span class="vdot"></span>`
+        + `<b>${esc(vendorName(v))}</b><span class="vstate">open</span></span>`;
+  }).join("");
+}
+
+/* What each vendor's current window has spent, as measured. No "remaining" figure: the windows
+   seen here ran out anywhere between 15M and 135M tokens, and a gauge would hide that spread
+   behind a confident number. The spread itself is shown instead. */
+async function loadUsage() {
+  const all = await fetch("/api/usage").then(r => r.json()).catch(() => ({}));
+  knownVendors = Object.keys(all);
+  vendorChips();
+  $("usageBar").innerHTML = Object.entries(all)
+    .filter(([, w]) => w.turns > 0 || (w.pastCapacities || []).length > 0)
+    .map(([vendor, w]) => {
+      const spent = (w.inputTokens || 0) + (w.cachedTokens || 0) + (w.outputTokens || 0);
+      const since = w.startedAt
+        ? new Date(w.startedAt).toLocaleString([], {month:"short", day:"numeric",
+                                                    hour:"numeric", minute:"2-digit"})
+        : "";
+      const past = (w.pastCapacities || []);
+      const history = past.length === 0
+        ? "no window has run out yet"
+        : past.length === 1
+          ? `the last window ran out at ${count(past[0])}`
+          : `earlier windows ran out between ${count(Math.min(...past))} and ${count(Math.max(...past))}`;
+      const cost = w.costUsd ? ` · $${w.costUsd.toFixed(2)} at API prices` : "";
+      return `<div><b>${esc(vendor)}</b> since ${esc(since)}: ${w.turns} turn(s) · `
+        + `${count(spent)} tokens${cost} · ${history}</div>`;
+    }).join("");
+}
+
+/*
+ * The vendors, ranked by what the runs on disk say each one did.
+ *
+ * For looking at, and nothing else: the table chooses no vendor and no agent is ever shown it.
+ * The counts are printed beside the points because the points are only an ordering -- with a
+ * handful of projects on the board, one parked project moves a vendor two places, and the row
+ * should let that be seen for what it is.
+ */
+let leagueLoadedAt = 0;
+async function loadLeague() {
+  // The runs change at the pace of agent turns, not of this page's four-second poll.
+  if (Date.now() - leagueLoadedAt < 30000) return;
+  leagueLoadedAt = Date.now();
+  const table = await fetch("/api/league").then(r => r.json()).catch(() => []);
+  $("league").hidden = !table.length;
+  if (!table.length) return;
+
+  const medals = ["\u{1F947}", "\u{1F948}", "\u{1F949}"];
+  $("leagueSummary").innerHTML = "League: " + table
+    .map((s, i) => `${medals[i] || ""} <b>${esc(s.vendor)}</b> ${s.points}`).join(" · ");
+
+  const each = (total, n) => n ? Math.round(total / n) : 0;
+  const rows = table.map((s, i) => {
+    const built = !s.built ? "none yet"
+      : `${s.built} built: ${s.finished} finished`
+        + (s.accepted ? `, ${s.accepted} accepted` : "")
+        + (s.parked ? `, ${s.parked} parked` : "")
+        + (s.built - s.finished - s.parked > 0 ? `, ${s.built - s.finished - s.parked} under way` : "");
+    const effort = !s.finished ? ""
+      : `${s.cleanGates} with no repair round · ${each(s.finishedSessions, s.finished)} sessions and `
+        + `${count(each(s.finishedTokens, s.finished))} tokens a finished project`;
+    const reviews = !s.reviewed ? "none yet"
+      : `${s.reviewed} reviewed: ${s.findingsFixed} finding(s) fixed, ${s.findingsWithdrawn} withdrawn`
+        + (s.findingsOpen ? `, ${s.findingsOpen} still open` : "");
+    const split = `${s.buildPoints} for building, ${s.reviewPoints} for reviewing`;
+    return `<tr><td>${i + 1}</td><td><b>${esc(s.vendor)}</b></td><td class="pts" title="${split}">${s.points}</td>`
+      + `<td>${esc(built)}${effort ? `<br><span class="muted">${esc(effort)}</span>` : ""}</td>`
+      + `<td>${esc(reviews)}</td></tr>`;
+  }).join("");
+  $("leagueTable").innerHTML =
+    `<table><tr><th></th><th>Vendor</th><th>Points</th><th>Building</th><th>Reviewing</th></tr>${rows}</table>`
+    + `<div class="legend">Building: 3 for a project that passed the gate, 2 more once you accept it, `
+    + `1 more if it needed no repair round, minus 2 for one that parked. Reviewing: 1 for each finding `
+    + `that then got fixed, minus 1 for each one withdrawn; open findings score nothing until they are `
+    + `settled. Reviewing is counted from each project's latest review. Nothing reads this table but you: `
+    + `it picks no vendor and no agent sees it.</div>`;
+}
+
+async function loadJobs() {
+  const jobs = await fetch("/api/jobs").then(r => r.json()).catch(() => null);
+  if (!jobs) {
+    // Forge answering nothing, right after being asked to stop, is Forge having stopped.
+    if (stopping) stopped();
+    return;
+  }
+
+  const active = jobs.filter(j => j.running).length;
+  // DONE means the gate passed and the work is sitting in front of you; ACCEPTED means you
+  // looked at it and said yes. Counting DONE as accepted would report your own unread queue
+  // back to you as finished work, which is the one number here worth getting right.
+  const accepted = jobs.filter(j => j.phase === "ACCEPTED").length;
+  const yours = jobs.filter(needsYou).length;
+  const disk = jobs.reduce((t, j) => t + (j.diskBytes || 0), 0);
+  const waiting = jobs.filter(j => j.queuePosition > 0).length;
+  $("jobsSummary").textContent = `${jobs.length} project(s) · ${active} running · `
+    + `${waiting} queued · ${accepted} accepted · ${yours} needing you · ${bytes(disk)} on disk`;
+  $("jobsNote").textContent = active > 0
+    ? "At most one Claude and one Codex call run at a time, so two projects can be talking to a "
+      + "model at once however many are in flight."
+    : "";
+
+  loadQuota(jobs);
+  loadUsage();
+  loadLeague();
+  jobs.forEach(upsert);
+
+  // Kept in rank order in the markup too, though the stylesheet places them. Moved only when the
+  // order actually changed: appending a node that is already in the DOM moves it, so re-appending
+  // every project on every poll silently re-inserted all of them four times a minute -- enough to
+  // swallow a click that happened to land on a tick.
+  const box = $("jobs");
+  const cards = () => [...box.querySelectorAll(":scope > .job")];
+  const wanted = jobs.map(j => "job-" + j.id).join(",");
+  if (wanted !== cards().map(c => c.id).join(",")) {
+    jobs.forEach(j => {
+      const card = document.getElementById("job-" + j.id);
+      if (card) box.append(card);
+    });
+  }
+
+  const ids = new Set(jobs.map(j => "job-" + j.id));
+  cards().forEach(c => { if (!ids.has(c.id)) c.remove(); });
+
+  layout(jobs);
+}
+
+/* Moves a spec one place within its group, then renumbers the whole list. */
+async function reorder(id, delta) {
+  await post("/api/rank", {id, delta});
+  loadJobs();
+}
+
+async function setAuto() {
+  const on = $("autoRun").checked;
+  const r = await post("/api/auto", {enabled: on});
+  $("autoRun").checked = !!r.autoRun;
+  $("jobsNote").textContent = r.autoRun
+    ? "Starting the best-ranked project whenever a slot frees, until the vendors run out of quota."
+    : "Queued work now waits for you to press Start.";
+  loadJobs();
+}
+
+async function loadAuto() {
+  const r = await fetch("/api/auto").then(r => r.json()).catch(() => ({}));
+  $("autoRun").checked = !!r.autoRun;
+  $("autoRun").disabled = !r.available;
+}
+
+async function renumber() {
+  const r = await post("/api/rank", {id: "", delta: 0});
+  $("jobsNote").textContent = `Renumbered ${r.renumbered} spec file(s).`;
+  loadJobs();
+}
+
+function toggleReport(id, rep, box, frame) {
+  const opening = box.hidden;
+  box.hidden = !opening;
+  rep.textContent = opening ? "hide report" : "report";
+  if (opening) {
+    frame.src = `/runs/${id}/report.html`;
+    frame.onload = () => sizeReport(frame);
+  }
+}
+
+/* Grow to the report's own height, up to a cap, so short reports do not leave dead space
+   and long ones do not push every other project off the screen. */
+function sizeReport(frame) {
+  try {
+    const height = frame.contentDocument.body.scrollHeight + 24;
+    frame.style.height = Math.min(height, Math.round(window.innerHeight * 0.7)) + "px";
+  } catch (e) {
+    frame.style.height = "60vh";
+  }
+}
+
+/* Prefills the editor rather than inventing a second place to write a spec: an enhancement
+   still needs acceptance commands and prose, which is the editor's whole job. */
+function newEnhancement(parentId) {
+  if (!discardOk("Start an enhancement to " + parentId + "?")) return;
+  showView("wishlist");
+  newSpec();
+  $("id").value = nextChildId(parentId);
+  setParentOptions(parentId).then(() => $("title").focus());
+  setSections(TEMPLATE);
+  status(`New enhancement to ${parentId}. It runs in that project's repository and must keep `
+    + `its acceptance commands passing.`, "");
+}
+
+/* First free NNN.n under the parent, so a series of enhancements reads in order. */
+function nextChildId(parentId) {
+  const taken = new Set([...document.querySelectorAll(".job .id")]
+    .map(e => (e.textContent.match(/·\s*([\d.]+)/) || [])[1]).filter(Boolean));
+  for (let n = 1; n < 100; n++) {
+    if (!taken.has(`${parentId}.${n}`)) return `${parentId}.${n}`;
+  }
+  return `${parentId}.1`;
+}
+
+async function startJob(id) {
+  await jobAction(id, "/api/jobs/start");
+}
+
+async function stopJob(id) {
+  await jobAction(id, "/api/jobs/stop");
+}
+
+/*
+ * Where a card says what a button press came to.
+ *
+ * Found through the card rather than by an id of its own. It used to be looked up as
+ * "jobmsg-<id>", an id nothing ever gave it, so the lookup found nothing and every answer the
+ * server gave to a button -- "already running", "CLAUDE is out of quota until 4:00 PM", "at
+ * capacity", why a project cannot be reopened -- was dropped without a trace. A button that does
+ * nothing visible and says nothing is indistinguishable from a broken one.
+ */
+function jobMessage(id) {
+  const card = document.getElementById("job-" + id);
+  return card ? card.querySelector(".msg") : null;
+}
+
+async function jobAction(id, url) {
+  const r = await post(url, {id}).catch(e => ({result: String(e)}));
+  const el = jobMessage(id);
+  const answer = r.result || r.error || "";
+  if (el) {
+    el.textContent = answer;
+    // An answer is about the press that got it. Left up, "started" sits beside a project that
+    // finished an hour ago; cleared only if nothing newer has replaced it in the meantime.
+    setTimeout(() => { if (el.textContent === answer) el.textContent = ""; }, 60000);
+  }
+  loadJobs();
+}
+
+/* ------------------------------------------------------- reading a project aloud */
+
+/* Where each project's recording is, once one has been written, and what was said. */
+const said = {};
+const spokenText = {};
+
+function speaking() {
+  return !!(window.speechSynthesis && speechSynthesis.speaking);
+}
+
+/*
+ * Reads the project out, and leaves the words on the card.
+ *
+ * The text is shown as well as spoken: a browser with no speech synthesis, a muted machine and a
+ * listener who missed a sentence all end up in the same place, which is wanting to read it.
+ */
+async function readAloud(id) {
+  if (speaking()) {
+    speechSynthesis.cancel();
+    loadJobs();
+    return;
+  }
+  const el = jobMessage(id);
+  if (el) el.textContent = "reading...";
+  const r = await post("/api/jobs/walkthrough", {id}).catch(e => ({text: String(e), audio: ""}));
+  if (el) el.textContent = "";
+  spokenText[id] = r.text || "";
+  if (r.audio) said[id] = r.audio;
+  say(r.text || "");
+  loadJobs();
+}
+
+/*
+ * The best voice this browser has, rather than whichever one it defaults to.
+ *
+ * The default is usually the oldest voice installed. Edge supplies natural voices that Chrome does
+ * not, so the same page sounds markedly better in one than the other, and neither needs anything
+ * installed. Everything here is defensive: a browser with no speech synthesis at all still shows
+ * every word, which is the point of writing them on the card.
+ */
+function bestVoice() {
+  if (typeof speechSynthesis.getVoices !== "function") return null;
+  const voices = speechSynthesis.getVoices().filter(v => (v.lang || "").startsWith("en"));
+  const wanted = ["Natural", "Online", "(HD)", "Aria", "Ava", "Jenny", "Guy", "Emma", "Mark"];
+  for (const name of wanted) {
+    const found = voices.find(v => v.name && v.name.includes(name));
+    if (found) return found;
+  }
+  return null;
+}
+
+function say(text) {
+  if (!window.speechSynthesis || !text) return;
+  speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance(text);
+  const voice = bestVoice();
+  if (voice) utterance.voice = voice;
+  // A shade slower than the default, which races through a paragraph of findings.
+  utterance.rate = 0.95;
+  utterance.onend = loadJobs;     // so the button stops saying "Stop reading"
+  speechSynthesis.speak(utterance);
+}
+
+/* ------------------------------------------------------------------ init */
+
+async function init() {
+  await loadTiers();
+  const caps = await fetch("/api/capabilities").then(r => r.json()).catch(() => ({}));
+  if (!caps.suggest) {
+    $("draftBox").hidden = true;   // no CLI installed; writing specs by hand still works
+  }
+  await loadIdeas();
+  await loadAuto();
+  newSpec();
+  showView("jobs");
+}
+
+function status(message, kind) {
+  const el = $("status");
+  el.textContent = message;
+  el.className = "status " + (kind || "");
+}
+
+async function validate() {
+  const result = await post("/api/validate", draft());
+  if (result.error && result.valid === undefined) { status(result.error, "err"); return false; }
+  if (result.valid) { status("Valid → " + result.file, "ok"); return true; }
+  status(result.error, "err");
+  return false;
+}
+
+async function save() {
+  const result = await post("/api/save", draft());
+  if (result.valid) {
+    current = result.file;
+    status("Saved " + result.file, "ok");
+    markClean();
+    refresh();
+  } else {
+    status(result.error || "could not save", "err");
+  }
+}
+
+async function del() {
+  if (!current) { status("nothing to delete", "err"); return; }
+  if (!confirm("Delete " + current + "?")) return;
+  await post("/api/delete", {originalFile: current});
+  newSpec();
+  refresh();
+}
+
+// Named openSpec rather than open. A top-level `function open` becomes a property of window and
+// replaces window.open, so the browser's own "open a URL in a tab" silently becomes "load a spec
+// into the editor". That cost an afternoon: the Review & Decide button did nothing at all, and the
+// only trace was a 400 from /api/open?file=undefined in a console nobody had open.
+async function openSpec(file) {
+  const d = await fetch("/api/open?file=" + encodeURIComponent(file)).then(r => r.json());
+  if (d.error) { status(d.error, "err"); return; }
+  load(d.front, d.body, file);
+}
+
+async function suggest() {
+  const idea = $("idea").value.trim();
+  if (!idea) { suggestStatus("describe the idea first", "err"); return; }
+
+  const button = $("suggestBtn");
+  button.disabled = true;
+  button.textContent = "Thinking…";
+  suggestStatus("asking " + $("suggestAgent").value + " — this takes a minute", "");
+
+  try {
+    const r = await post("/api/suggest",
+      {description: idea, agent: $("suggestAgent").value});
+
+    if (!r.draft) { suggestStatus(r.error || "no suggestion", "err"); return; }
+
+    // Populate the form only. The author edits and decides; nothing is on disk yet.
+    load(r.draft.front, r.draft.body, current);
+    suggestStatus("Drafted by " + r.agent + ". Review the acceptance commands — "
+      + "they are what decides whether the finished project is accepted.", "ok");
+
+    // Why the sliders landed where they did, so the judgement can be argued with.
+    const why = $("modelWhy");
+    why.hidden = !r.complexity;
+    if (!why.hidden) {
+      why.textContent = `Sized as ${r.complexity} by ${r.agent}`
+        + (r.complexityReason ? ` — ${r.complexityReason}` : "")
+        + ". It judged the work, not the models; your models.json ordering picked the tier.";
+    }
+  } catch (e) {
+    suggestStatus(String(e), "err");
+  } finally {
+    button.disabled = false;
+    button.textContent = "Suggest";
+  }
+}
+
+/*
+ * Ideas from the idea generator Forge built (idea-generator.json beside the wishlist), into the
+ * description box above Suggest. Each press runs it with a fresh seed, so a reroll is a new idea;
+ * nothing is saved until Suggest drafts a spec from it and Save is pressed.
+ */
+async function loadIdeas() {
+  const config = await fetch("/api/ideas").then(r => r.json()).catch(() => ({}));
+  if (!config.project) return;
+  $("ideaRow").hidden = false;
+  (config.categories || []).forEach(c => {
+    const option = document.createElement("option");
+    option.value = c;
+    option.textContent = c;
+    $("ideaCategory").appendChild(option);
+  });
+}
+
+async function newIdea() {
+  const button = $("ideaBtn");
+  button.disabled = true;
+  const filters = new URLSearchParams({category: $("ideaCategory").value, maxEffort: $("ideaEffort").value});
+  try {
+    const r = await post("/api/idea?" + filters, {});
+    if (!r.idea) { ideaStatus(r.error || "no idea came back", "err"); return; }
+    $("idea").value = ideaText(r.idea);
+    button.textContent = "🎲 Reroll";
+    ideaStatus(`From ${r.project}. Not good? Reroll. Like it? Press Suggest to turn it into a spec.`, "ok");
+  } catch (e) {
+    ideaStatus(String(e), "err");
+  } finally {
+    button.disabled = false;
+  }
+}
+
+/* The generator's fields, as the description a person would have typed. */
+function ideaText(idea) {
+  return `${idea.name}: ${idea.description}\n\nAudience: ${idea.audience}. Category: ${idea.category}. `
+    + `Makes money through ${idea.monetization}. Effort ${idea.effort}/5, about ${idea.buildTimeEstimate} to build.`;
+}
+
+function ideaStatus(message, kind) {
+  const el = $("ideaStatus");
+  el.textContent = message;
+  el.className = "status " + (kind || "");
+}
+
+function suggestStatus(message, kind) {
+  const el = $("suggestStatus");
+  el.textContent = message;
+  el.className = "status " + (kind || "");
+}
+
+/* Position 0 is "leave the CLI default alone", so the tiers start at 1. */
+let TIERS = {};
+
+function modelAt(vendor, index) {
+  const list = TIERS[vendor] || [];
+  return index <= 0 ? "" : (list[index - 1] || "");
+}
+
+// Derived rather than switched on: two hand-written ternaries meant every new vendor had to be
+// remembered in both, and a missed one silently drove the wrong slider.
+const MODEL_FIELD = vendor => vendor.toLowerCase() + "Model";
+
+function setModelSlider(vendor, selected) {
+  const key = MODEL_FIELD(vendor);
+  if (!$(key)) return;
+  const list = TIERS[vendor] || [];
+  const slider = $(key);
+  slider.max = list.length;
+  const at = selected ? list.indexOf(selected) + 1 : 0;
+  slider.value = at < 0 ? 0 : at;
+  showModelName(vendor);
+  slider.oninput = () => showModelName(vendor);
+}
+
+function showModelName(vendor) {
+  const key = MODEL_FIELD(vendor);
+  if (!$(key)) return;
+  const name = modelAt(vendor, +$(key).value);
+  $(key + "Name").textContent = name || "default";
+}
+
+async function loadTiers() {
+  TIERS = await fetch("/api/models").then(r => r.json()).catch(() => ({}));
+}
+
+/* The parent choices are the other specs; a spec cannot improve itself. */
+async function setParentOptions(selected) {  // returns once the options exist
+  const specs = await fetch("/api/list").then(r => r.json()).catch(() => []);
+  const select = $("parent");
+  const mine = $("id").value.trim();
+  select.innerHTML = '<option value="">nothing - a new project</option>';
+  specs.filter(sp => sp.valid && sp.id && sp.id !== mine).forEach(sp => {
+    const opt = document.createElement("option");
+    opt.value = sp.id;
+    opt.textContent = `${sp.id} - ${sp.title}`;
+    select.append(opt);
+  });
+  select.value = selected || "";
+  $("parentHint").hidden = !select.value;
+  select.onchange = () => { $("parentHint").hidden = !select.value; };
+}
+
+async function refresh() {
+  const specs = await fetch("/api/list").then(r => r.json());
+  const list = $("list");
+  list.innerHTML = "";
+  specs.forEach(s => {
+    const el = document.createElement("div");
+    el.className = "item" + (s.file === current ? " active" : "") + (s.valid ? "" : " bad");
+    el.innerHTML = `<div class="t"></div><div class="m"></div>`;
+    el.children[0].textContent = s.valid ? s.title : s.file;
+    el.children[1].textContent = s.valid ? `${s.id} · ${s.assign}` : "invalid — click to inspect";
+    el.onclick = () => openSpecGuarded(s);
+    list.append(el);
+  });
+}
+
+async function showRaw(spec) {
+  const d = await fetch("/api/raw?file=" + encodeURIComponent(spec.file)).then(r => r.json());
+  current = spec.file;
+  setSections(d.text || "");
+  status(spec.error || "invalid spec", "err");
+  refresh();
+}
+
+init();
+</script>
+</body>
+</html>

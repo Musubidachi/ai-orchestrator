@@ -1,0 +1,428 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Forge — quick review</title>
+<style>
+  :root {
+    --bg:#fbfbfa; --fg:#1a1a19; --muted:#6b6b68; --line:#e4e4e1; --card:#fff;
+    --accent:#2563eb; --pass:#1a7f4b; --fail:#b3261e; --wait:#9a6700;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg:#161615; --fg:#ededeb; --muted:#9a9a96; --line:#2e2e2c; --card:#1e1e1d;
+      --accent:#7aa2f7; --pass:#4ade80; --fail:#f87171; --wait:#e3b341;
+    }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;display:flex;flex-direction:column;background:var(--bg);color:var(--fg);
+       font:16px/1.55 ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+  a{color:var(--accent)}
+  .muted{color:var(--muted)}
+  header{display:flex;align-items:center;gap:1rem;padding:.8rem 1.25rem;border-bottom:1px solid var(--line)}
+  header .proj{flex:1;font-weight:600}
+  header .proj .muted{font-weight:400;margin-left:.5rem;font-size:.85rem}
+  .progress{height:5px;background:var(--line)}
+  .progress .bar{height:100%;width:0;background:var(--accent);transition:width .25s ease}
+  main{flex:1;display:flex;justify-content:center;padding:2rem 1.25rem}
+  .card{width:100%;max-width:44rem;background:var(--card);border:1px solid var(--line);border-radius:.9rem;
+        padding:1.75rem 2rem;align-self:flex-start;animation:deal .22s ease-out}
+  @keyframes deal{from{opacity:0;transform:translateY(10px) scale(.985)}to{opacity:1;transform:none}}
+  @media (prefers-reduced-motion: reduce){.card{animation:none}.progress .bar{transition:none}}
+  .meta{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;font-size:.8rem;color:var(--muted);margin-bottom:.7rem}
+  .tag{border-radius:1rem;padding:.1rem .65rem;font-weight:600;font-size:.75rem;text-transform:uppercase;
+       letter-spacing:.04em;border:1px solid currentColor}
+  .tag.high{color:var(--fail)} .tag.mid{color:var(--wait)} .tag.low{color:var(--muted)}
+  h1{font-size:1.45rem;line-height:1.3;margin:0 0 .8rem;font-weight:650}
+  .back{color:var(--wait);font-size:.9rem;margin:.2rem 0 .6rem}
+  .still{font-size:.9rem;margin:.2rem 0 .6rem}
+  details{margin:.6rem 0 1rem;font-size:.9rem}
+  details summary{cursor:pointer;color:var(--muted)}
+  details pre{white-space:pre-wrap;font:inherit;font-size:.88rem;margin:.5rem 0 0;color:var(--fg)}
+  .said{border-left:3px solid var(--line);padding-left:.7rem;margin:.5rem 0;font-size:.88rem;color:var(--muted)}
+  input[type=text]{width:100%;padding:.6rem .75rem;border:1px solid var(--line);border-radius:.45rem;
+                   background:var(--bg);color:var(--fg);font:inherit;font-size:.95rem}
+  input.wanted{border-color:var(--fail)}
+  .choices{display:flex;gap:.8rem;margin-top:1.1rem}
+  .choices button{flex:1;padding:1rem .8rem;font:inherit;font-size:1.05rem;font-weight:650;border-radius:.6rem;
+                  border:2px solid var(--line);background:var(--card);color:var(--fg);cursor:pointer}
+  .choices button:hover{border-color:var(--fg)}
+  .choices .fix,.choices .change{color:var(--wait)} .choices .fix.on,.choices .change.on{border-color:var(--wait);background:color-mix(in srgb,var(--wait) 12%,var(--card))}
+  .choices .fine,.choices .keep{color:var(--pass)} .choices .fine.on,.choices .keep.on{border-color:var(--pass);background:color-mix(in srgb,var(--pass) 12%,var(--card))}
+  .choices .drop{color:var(--muted)} .choices .drop.on{border-color:var(--muted)}
+  .later{margin-top:.7rem;background:none;border:none;color:var(--muted);font:inherit;font-size:.85rem;cursor:pointer;
+         text-decoration:underline;padding:0}
+  .clip{margin:.4rem 0 .5rem;border-radius:.5rem;overflow:hidden;background:#000;display:flex;justify-content:center}
+  .clip video,.clip img{max-width:100%;max-height:22rem;display:block}
+  .noclip{padding:1.6rem;text-align:center;border:1px dashed var(--line);border-radius:.5rem;color:var(--muted);margin:.4rem 0 .5rem}
+  ul.rows{list-style:none;margin:.8rem 0 0;padding:0}
+  ul.rows li{display:grid;grid-template-columns:1fr auto;gap:.3rem .8rem;padding:.7rem 0;border-top:1px solid var(--line)}
+  ul.rows li .src{grid-column:1/-1;font-size:.75rem;color:var(--muted)}
+  ul.rows li .txt{font-size:.93rem}
+  ul.rows li input{grid-column:1/-1}
+  ul.rows li.sendback .txt{color:var(--wait)}
+  .toggle{align-self:start;padding:.3rem .8rem;border-radius:1rem;border:1px solid var(--line);background:var(--card);
+          color:var(--fg);font:inherit;font-size:.82rem;cursor:pointer;white-space:nowrap}
+  .toggle[aria-pressed=true]{border-color:var(--wait);color:var(--wait);font-weight:650}
+  ul.summary{margin:.4rem 0 1rem;padding-left:1.1rem;font-size:.95rem}
+  ul.summary li{margin:.25rem 0}
+  .warn{border-left:3px solid var(--wait);padding:.5rem .8rem;margin:.8rem 0;font-size:.9rem;background:var(--bg)}
+  button.big{width:100%;padding:1rem;font:inherit;font-size:1.1rem;font-weight:700;border-radius:.6rem;border:none;
+             background:var(--accent);color:#fff;cursor:pointer;margin-top:.6rem}
+  button.big:disabled{opacity:.5;cursor:default}
+  #result{margin-top:1rem;font-size:1rem}
+  .done{text-align:center}
+  .done .mark{font-size:3.2rem;line-height:1;margin:.3rem 0 .6rem}
+  footer{display:flex;align-items:center;gap:1rem;padding:.8rem 1.25rem;border-top:1px solid var(--line);font-size:.82rem;color:var(--muted)}
+  footer button{font:inherit;padding:.35rem .9rem;border-radius:.4rem;border:1px solid var(--line);background:var(--card);
+                color:var(--fg);cursor:pointer}
+  footer button:disabled{opacity:.4;cursor:default}
+  kbd{border:1px solid var(--line);border-radius:.3rem;padding:0 .35rem;font:inherit;font-size:.8rem;background:var(--card)}
+</style>
+</head>
+<body>
+<header>
+  <a href="/">&larr; Dashboard</a>
+  <div class="proj"><span id="title">Quick review</span><span class="muted" id="where"></span></div>
+  <a id="full" target="_blank" hidden>Full report</a>
+</header>
+<div class="progress"><div class="bar" id="bar"></div></div>
+<main id="stage" aria-live="polite"><div class="card"><p class="muted">Dealing the cards…</p></div></main>
+<footer>
+  <button id="prev" disabled>Back</button>
+  <span id="keys"></span>
+</footer>
+
+<script src="/attach.js"></script>
+<script>
+"use strict";
+
+/*
+ * A project's review, one decision at a time.
+ *
+ * The same items as the form in the report, under the same ids, sent to the same endpoint: this
+ * page only changes the order and the size of the question. Three rules it keeps from the form,
+ * because each was learnt the hard way there:
+ *
+ *   - nothing that must be decided has an answer chosen in advance, and there is no way past one
+ *     except by answering it;
+ *   - everything is sent in one request, because the outcome depends on the whole set;
+ *   - nothing here rewards being quick. There is no timer and no score for the reader.
+ */
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g,
+  c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]));
+const projectId = new URLSearchParams(location.search).get("id") || "";
+
+let deck = null;
+let steps = [];
+let at = 0;
+let sent = false;
+/* Card id -> {verdict, comment}. A must-decide card is absent until it has been answered. */
+const rulings = {};
+/* Feature id -> {verdict, comment}. Absent, or a blank verdict, means not answered this sitting. */
+const featureRulings = {};
+
+async function load() {
+  const r = await fetch("/api/review?id=" + encodeURIComponent(projectId))
+    .then(async res => ({ok: res.ok, body: await res.json()}))
+    .catch(e => ({ok: false, body: {error: String(e)}}));
+  if (!r.ok) {
+    $("stage").innerHTML = `<div class="card"><h1>Nothing to review</h1>`
+      + `<p class="muted">${esc(r.body.error || "The editor did not answer.")}</p></div>`;
+    return;
+  }
+  deck = r.body;
+  document.title = "Review — " + deck.title;
+  $("title").textContent = deck.title;
+  $("full").href = deck.report;
+  $("full").hidden = false;
+
+  steps = [
+    ...deck.mustDecide.map(card => ({kind: "must", card})),
+    ...deck.features.map(feature => ({kind: "feature", feature})),
+    ...(deck.skim.length ? [{kind: "skim"}] : []),
+    {kind: "final"},
+  ];
+  // What can be skimmed starts as fine, exactly as it does on the form.
+  deck.skim.forEach(card => { rulings[card.id] = {verdict: "ok", comment: ""}; });
+  show(0);
+}
+
+function show(index) {
+  at = Math.max(0, Math.min(index, steps.length - 1));
+  const step = steps[at];
+  $("bar").style.width = (steps.length > 1 ? Math.round(100 * at / (steps.length - 1)) : 100) + "%";
+  $("where").textContent = step.kind === "final" ? "" : `${at + 1} of ${steps.length - 1}`;
+  $("prev").disabled = at === 0 || sent;
+  ({must: showMust, feature: showFeature, skim: showSkim, final: showFinal})[step.kind](step);
+}
+
+function hint(html) { $("keys").innerHTML = html; }
+
+/* ------------------------------------------------------------------ one card that must be answered */
+
+const STAKES = {
+  "security": "high", "data loss": "high", "wrong result": "mid", "cosmetic": "low", "upkeep": "low",
+};
+
+function earlier(notes) {
+  return (notes || []).map(n => `<div class="said">You said earlier: ${esc(n)}</div>`).join("");
+}
+
+function showMust(step) {
+  const c = step.card;
+  const ruled = rulings[c.id] || {};
+  const tag = c.stakes ? `<span class="tag ${STAKES[c.stakes] || "low"}">${esc(c.stakes)}</span>` : "";
+  const tries = c.attempts > 0
+    ? `<span>· sent back ${c.attempts} time${c.attempts === 1 ? "" : "s"} already</span>` : "";
+  const more = c.detail || (c.notes || []).length
+    ? `<details><summary>Details</summary>${c.detail ? `<pre>${esc(c.detail)}</pre>` : ""}${earlier(c.notes)}</details>`
+    : "";
+  $("stage").innerHTML = `
+    <section class="card must" data-item="${esc(c.id)}">
+      <div class="meta">${tag}<span>${esc(c.source)}</span>${tries}</div>
+      <h1>${esc(c.headline)}</h1>
+      ${c.cameBack ? `<p class="back">${esc(c.cameBack)}</p>` : ""}
+      ${c.stillPresent ? `<p class="still"><b>Why the last fix fell short:</b> ${esc(c.stillPresent)}</p>` : ""}
+      ${more}
+      <input type="text" id="note" value="${esc(ruled.comment || "")}" data-attach="${esc(projectId)}"
+             placeholder="Anything to add — what is wrong, or why it is fine (optional)">
+      <div class="choices">
+        <button class="fix${ruled.verdict === "changes" ? " on" : ""}" data-v="changes">&larr; Fix it</button>
+        <button class="fine${ruled.verdict === "ok" ? " on" : ""}" data-v="ok">Fine as it is &rarr;</button>
+      </div>
+    </section>`;
+  $("stage").querySelectorAll(".choices button").forEach(b => {
+    b.onclick = () => {
+      rulings[c.id] = {verdict: b.dataset.v, comment: $("note").value.trim()};
+      show(at + 1);
+    };
+  });
+  hint("<kbd>&larr;</kbd> fix it &nbsp; <kbd>&rarr;</kbd> fine as it is &nbsp; <kbd>&uarr;</kbd> back");
+}
+
+/* ------------------------------------------------------------------ one feature, judged by its clip */
+
+function clipOf(f) {
+  if (!f.clip) return `<div class="noclip">Nothing to watch yet</div>`;
+  return f.clipKind === "image"
+    ? `<div class="clip"><img src="${esc(f.clip)}" alt="${esc(f.name)}"></div>`
+    : `<div class="clip"><video src="${esc(f.clip)}" controls autoplay muted loop playsinline></video></div>`;
+}
+
+function showFeature(step) {
+  const f = step.feature;
+  const ruled = featureRulings[f.id] || {};
+  const on = v => ruled.verdict === v ? " on" : "";
+  $("stage").innerHTML = `
+    <section class="card feature" data-item="${esc(f.id)}">
+      <div class="meta"><span>Feature — is it worth keeping?</span></div>
+      <h1>${esc(f.name)}</h1>
+      ${f.demo ? `<p class="muted">${esc(f.demo)}</p>` : ""}
+      ${clipOf(f)}
+      <p class="muted" style="font-size:.82rem;margin:.2rem 0 .7rem">${esc(f.clipNote)}</p>
+      ${earlier(f.notes)}
+      <input type="text" id="note" value="${esc(ruled.comment || "")}" data-attach="${esc(projectId)}"
+             placeholder="How it should change, or why not (needed for Change it)">
+      <div class="choices">
+        <button class="drop${on("declined")}" data-v="declined">&darr; Drop it</button>
+        <button class="change${on("changes")}" data-v="changes">&larr; Change it</button>
+        <button class="keep${on("approved")}" data-v="approved">Keep it &rarr;</button>
+      </div>
+      <button class="later" data-v="">Decide later</button>
+    </section>`;
+  $("stage").querySelectorAll("[data-v]").forEach(b => {
+    b.onclick = () => {
+      const note = $("note").value.trim();
+      // "Change it" with nothing said is not an instruction anyone could carry out.
+      if (b.dataset.v === "changes" && !note) {
+        $("note").classList.add("wanted");
+        $("note").placeholder = "Say what should change, then press Change it";
+        $("note").focus();
+        return;
+      }
+      featureRulings[f.id] = {verdict: b.dataset.v, comment: note, text: f.name};
+      show(at + 1);
+    };
+  });
+  hint("<kbd>&rarr;</kbd> keep &nbsp; <kbd>&larr;</kbd> change &nbsp; <kbd>&darr;</kbd> drop &nbsp; <kbd>&uarr;</kbd> back");
+}
+
+/* ------------------------------------------------------------------ everything that can be skimmed */
+
+function showSkim() {
+  const rows = deck.skim.map(c => {
+    const back = rulings[c.id].verdict === "changes";
+    return `
+      <li data-item="${esc(c.id)}" class="${back ? "sendback" : ""}">
+        <div class="src">${esc(c.source)}</div>
+        <div class="txt">${esc(c.headline)}${earlier(c.notes)}</div>
+        <button class="toggle" aria-pressed="${back}">${back ? "Fixing this" : "Fix it"}</button>
+        <input type="text" class="rownote" value="${esc(rulings[c.id].comment || "")}" data-attach="${esc(projectId)}"
+               placeholder="What should change (optional)" ${back ? "" : "hidden"}>
+      </li>`;
+  }).join("");
+  const n = deck.skim.length;
+  $("stage").innerHTML = `
+    <section class="card skim">
+      <div class="meta"><span>Worth a skim</span></div>
+      <h1>${n} thing${n === 1 ? "" : "s"} that ${n === 1 ? "has" : "have"} not been proven or finished</h1>
+      <p class="muted">These start as fine. Press <b>Fix it</b> on any that matter to you; leave the rest.</p>
+      <ul class="rows">${rows}</ul>
+      <div class="choices"><button class="fine" id="skimDone">Continue &rarr;</button></div>
+    </section>`;
+  $("stage").querySelectorAll("li").forEach(li => {
+    const id = li.dataset.item;
+    const note = li.querySelector(".rownote");
+    const toggle = li.querySelector(".toggle");
+    toggle.onclick = () => {
+      const back = rulings[id].verdict !== "changes";
+      rulings[id].verdict = back ? "changes" : "ok";
+      toggle.setAttribute("aria-pressed", String(back));
+      toggle.textContent = back ? "Fixing this" : "Fix it";
+      li.classList.toggle("sendback", back);
+      note.hidden = !back;
+      if (back) note.focus();
+    };
+    note.oninput = () => { rulings[id].comment = note.value.trim(); };
+  });
+  $("skimDone").onclick = () => show(at + 1);
+  hint("<kbd>&rarr;</kbd> continue &nbsp; <kbd>&uarr;</kbd> back");
+}
+
+/* ------------------------------------------------------------------ the whole sitting, and sending it */
+
+function cards() { return [...deck.mustDecide, ...deck.skim]; }
+
+function showFinal() {
+  // There is no way here past an unanswered card, but a way that should not exist is cheap to close.
+  const missing = steps.findIndex(s => s.kind === "must" && !rulings[s.card.id]);
+  if (missing >= 0) { show(missing); return; }
+
+  const all = cards();
+  const fixing = all.filter(c => rulings[c.id].verdict === "changes");
+  const fine = all.length - fixing.length;
+  const feats = Object.entries(featureRulings).filter(([, r]) => r.verdict);
+  const changing = feats.filter(([, r]) => r.verdict === "changes");
+  const kept = feats.filter(([, r]) => r.verdict === "approved");
+  const unfilmed = kept.filter(([fid]) => !(deck.features.find(f => f.id === fid) || {}).clip);
+  const sending = fixing.length + changing.length;
+
+  const lines = [];
+  if (fine) lines.push(`<li>${fine} left as fine</li>`);
+  fixing.forEach(c => lines.push(`<li><b>Fix:</b> ${esc(c.headline)}`
+    + (rulings[c.id].comment ? ` <span class="muted">— “${esc(rulings[c.id].comment)}”</span>` : "") + `</li>`));
+  feats.forEach(([, r]) => lines.push(`<li><b>${
+      {approved: "Keep", changes: "Change", declined: "Drop"}[r.verdict]}:</b> ${esc(r.text)}`
+    + (r.comment ? ` <span class="muted">— “${esc(r.comment)}”</span>` : "") + `</li>`));
+  if (!lines.length) lines.push(`<li>Nothing is outstanding on this project.</li>`);
+
+  const cautions = [];
+  if (deck.notice) cautions.push(esc(deck.notice));
+  if (unfilmed.length) {
+    cautions.push(`Keeping ${unfilmed.length} feature${unfilmed.length === 1 ? "" : "s"} with no recording `
+      + `sends the project back for a session to film ${unfilmed.length === 1 ? "it" : "them"}.`);
+  }
+  // Not a caution: something the reader may wonder about, said quietly below the rest.
+  const asides = [];
+  if (deck.featuresAlreadyRuled) {
+    asides.push(`${deck.featuresAlreadyRuled} feature${deck.featuresAlreadyRuled === 1 ? " you have" : "s you have"} `
+      + `already ruled on ${deck.featuresAlreadyRuled === 1 ? "was" : "were"} not asked about again. To change `
+      + `an answer, use the <a href="${esc(deck.report)}#decide" target="_blank">full report</a>.`);
+  }
+  if (deck.ideasWaiting) {
+    cautions.push(`The agent also suggested ${deck.ideasWaiting} idea${deck.ideasWaiting === 1 ? "" : "s"} `
+      + `it has not built. They are in the <a href="${esc(deck.report)}#decide" target="_blank">full report</a>.`);
+  }
+
+  const label = sending
+    ? `Send back ${sending} thing${sending === 1 ? "" : "s"}`
+    : deck.notice || unfilmed.length ? "Submit my answers" : `Accept ${deck.title}`;
+  $("stage").innerHTML = `
+    <section class="card final">
+      <div class="meta"><span>Your review of ${esc(deck.title)}</span></div>
+      <h1>${sending ? "Sending it back" : deck.notice || unfilmed.length ? "Ready to submit" : "Everything stands"}</h1>
+      <ul class="summary">${lines.join("")}</ul>
+      ${cautions.map(c => `<div class="warn">${c}</div>`).join("")}
+      ${asides.map(a => `<p class="muted" style="font-size:.85rem">${a}</p>`).join("")}
+      <button class="big" id="submit">${esc(label)}</button>
+      <div id="result" class="muted"></div>
+    </section>`;
+  $("submit").onclick = submit;
+  hint("<kbd>&uarr;</kbd> back &nbsp; nothing is sent until you press the button");
+}
+
+function payload() {
+  const decisions = cards().map(c => ({
+    itemId: c.id, text: c.text, verdict: rulings[c.id].verdict, comment: rulings[c.id].comment || "",
+  }));
+  const features = Object.entries(featureRulings)
+    .filter(([, r]) => r.verdict || r.comment)
+    .map(([fid, r]) => ({itemId: fid, text: r.text, verdict: r.verdict || "undecided", comment: r.comment || ""}));
+  return {
+    id: deck.id,
+    decisions: decisions.length ? decisions : [{itemId: "none", text: "nothing outstanding", verdict: "ok"}],
+    features,
+  };
+}
+
+async function submit() {
+  const button = $("submit");
+  button.disabled = true;
+  $("result").textContent = "Submitting…";
+  const r = await fetch("/api/jobs/decide", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify(payload()),
+  }).then(res => res.json()).catch(e => ({error: String(e)}));
+
+  if (r.error) {
+    // Nothing was recorded, so the answers are still here to send again.
+    $("result").textContent = "Could not submit: " + r.error;
+    button.disabled = false;
+    return;
+  }
+  sent = true;
+  $("prev").disabled = true;
+  const said = r.result || "done";
+  const accepted = /^(\d+ notes? saved — )?accepted/i.test(said);
+  $("stage").innerHTML = `
+    <section class="card done">
+      <div class="mark">${accepted ? "\u{1F389}" : "✓"}</div>
+      <h1>${accepted ? esc(deck.title) + " is accepted" : "Sent"}</h1>
+      <p id="result">${esc(said)}</p>
+      <p><a href="/">Back to the dashboard</a> · <a href="${esc(deck.report)}" target="_blank">Open the report</a></p>
+    </section>`;
+  hint("");
+}
+
+/* ------------------------------------------------------------------ keys */
+
+$("prev").onclick = () => show(at - 1);
+
+document.addEventListener("keydown", event => {
+  if (!deck || sent || event.ctrlKey || event.metaKey || event.altKey) return;
+  // Typing a note is not answering the card.
+  if (event.target instanceof HTMLInputElement) return;
+  const kind = steps[at].kind;
+  const press = sel => { const b = $("stage").querySelector(sel); if (b) { event.preventDefault(); b.click(); } };
+  if (event.key === "ArrowUp") { if (at > 0) { event.preventDefault(); show(at - 1); } return; }
+  if (kind === "must") {
+    if (event.key === "ArrowLeft") press(".fix");
+    if (event.key === "ArrowRight") press(".fine");
+  } else if (kind === "feature") {
+    if (event.key === "ArrowLeft") press(".change");
+    if (event.key === "ArrowRight") press(".keep");
+    if (event.key === "ArrowDown") press(".drop");
+  } else if (kind === "skim") {
+    if (event.key === "ArrowRight") press("#skimDone");
+  }
+});
+
+load();
+</script>
+</body>
+</html>

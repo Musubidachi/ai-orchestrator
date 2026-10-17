@@ -1,0 +1,419 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Forge — updated design</title>
+<style>
+  :root {
+    --bg:#fbfbfa; --fg:#1a1a19; --muted:#6b6b68; --line:#e4e4e1; --card:#fff;
+    --accent:#2563eb; --pass:#1a7f4b; --fail:#b3261e; --wait:#9a6700;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg:#161615; --fg:#ededeb; --muted:#9a9a96; --line:#2e2e2c; --card:#1e1e1d;
+      --accent:#7aa2f7; --pass:#4ade80; --fail:#f87171; --wait:#e3b341;
+    }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);
+       font:15px/1.55 ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+  a{color:var(--accent)}
+  .muted{color:var(--muted)}
+  header{display:flex;align-items:center;gap:1rem;padding:.8rem 1.25rem;border-bottom:1px solid var(--line)}
+  header .proj{flex:1;font-weight:600}
+  main{max-width:78rem;margin:0 auto;padding:1.5rem 1.25rem 3rem}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:.8rem;padding:1.25rem 1.5rem;margin-bottom:1.25rem}
+  h1{font-size:1.3rem;margin:0 0 .4rem}
+  h2{font-size:1.05rem;margin:.7rem 0 .2rem}
+  input[type=text]{width:100%;padding:.6rem .75rem;border:1px solid var(--line);border-radius:.45rem;
+                   background:var(--bg);color:var(--fg);font:inherit;margin:.7rem 0}
+  button{font:inherit;padding:.55rem 1.1rem;border-radius:.45rem;border:1px solid var(--line);background:var(--card);
+         color:var(--fg);cursor:pointer}
+  button.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:650}
+  button:disabled{opacity:.5;cursor:default}
+  button.link{border:none;background:none;color:var(--muted);text-decoration:underline;padding:0;margin-left:1rem;font-size:.88rem}
+  .warn{border-left:3px solid var(--wait);padding:.5rem .8rem;margin:.8rem 0 0;font-size:.9rem;background:var(--bg)}
+  .working{display:flex;align-items:center;gap:.7rem}
+  .spin{width:1rem;height:1rem;border:2px solid var(--line);border-top-color:var(--accent);border-radius:50%;
+        animation:spin .9s linear infinite;flex:none}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  @media (prefers-reduced-motion: reduce){.spin{animation:none}}
+  #options{display:grid;grid-template-columns:repeat(auto-fill,minmax(24rem,1fr));gap:1.25rem}
+  .option{background:var(--card);border:1px solid var(--line);border-radius:.8rem;overflow:hidden;display:flex;flex-direction:column}
+  .option.picked{border-color:var(--pass);box-shadow:0 0 0 2px var(--pass)}
+  /* The mock-up is drawn for a whole screen, so it is given one twice the size of its frame and
+     scaled down to fit, rather than being squeezed into a viewport nobody designed it for. */
+  .frame{height:22rem;overflow:hidden;background:#fff;border-bottom:1px solid var(--line);position:relative}
+  .frame iframe{width:200%;height:200%;border:0;transform:scale(.5);transform-origin:0 0;pointer-events:none}
+  .option .body{padding:.2rem 1.1rem 1.1rem;display:flex;flex-direction:column;flex:1}
+  .option .pitch{margin:.1rem 0 .5rem;flex:1}
+  .option .by{font-size:.8rem;color:var(--muted);margin:0 0 .8rem}
+  .option .actions{display:flex;gap:.6rem;flex-wrap:wrap}
+  .option .actions .build{flex:1}
+  .mode{display:flex;flex-wrap:wrap;gap:.4rem 1.2rem;align-items:center;margin:.7rem 0 0;font-size:.92rem}
+  .mode label{display:flex;gap:.35rem;align-items:center;cursor:pointer}
+  .mode select{font:inherit;padding:.35rem .5rem;border:1px solid var(--line);border-radius:.4rem;
+               background:var(--bg);color:var(--fg);max-width:100%}
+  #extraNote{border-left:3px solid var(--accent);padding:.5rem .8rem;margin:.8rem 0 0;font-size:.9rem;background:var(--bg)}
+  .tag{display:inline-block;font-size:.75rem;font-weight:650;color:var(--pass);border:1px solid var(--pass);
+       border-radius:999px;padding:0 .55rem;margin-left:.4rem;vertical-align:middle}
+  ul.refused{margin:.4rem 0 0;padding-left:1.1rem;font-size:.85rem;color:var(--muted)}
+  #result{margin-top:.8rem}
+</style>
+</head>
+<body>
+<header>
+  <a href="/">&larr; Dashboard</a>
+  <div class="proj">Updated design — <span id="title"></span></div>
+  <a id="report" target="_blank" hidden>Report</a>
+</header>
+<main>
+  <section class="card" id="ask">
+    <h1 id="askHead">How should it look?</h1>
+    <p class="muted" id="askWhy">Every model that can be reached draws two looks for this project. Nothing about
+      the project changes until you pick one.</p>
+    <p class="muted" id="buildNote"></p>
+    <div class="mode" role="radiogroup" aria-label="What the designs are for">
+      <label><input type="radio" name="mode" value="" checked> Replace the look</label>
+      <label><input type="radio" name="mode" value="extra"> Add an extra, keeping the look it has</label>
+      <select id="extraKind" hidden aria-label="Kind of extra">
+        <option value="theme">Theme — a whole alternative look, such as a holiday version</option>
+        <option value="variants">Variants — other versions of one thing, such as upgraded cars</option>
+        <option value="animation">Animation — new motion, such as a burnout</option>
+      </select>
+    </div>
+    <div id="extraNote" hidden></div>
+    <input type="text" id="note" placeholder="Anything you particularly want? (optional) — a mood, a colour, a reference">
+    <button class="primary" id="askBtn">Ask the models for designs</button>
+    <button class="link" id="plainBtn">Skip the designs and let the agent decide the look</button>
+    <div class="warn" id="blocked" hidden></div>
+    <div class="warn" id="interrupted" hidden></div>
+    <div id="result" class="muted"></div>
+  </section>
+
+  <section class="card" id="asking" hidden>
+    <div class="working"><span class="spin"></span><span id="askingText"></span></div>
+  </section>
+
+  <section id="picked" class="card" hidden></section>
+  <section id="options"></section>
+  <section class="card" id="refusedBox" hidden>
+    <b>Not on the board</b>
+    <ul class="refused" id="refused"></ul>
+  </section>
+</main>
+
+<script src="/attach.js"></script>
+<script>
+"use strict";
+
+/*
+ * Choosing a look before anything is built.
+ *
+ * Two presses, and the page keeps them apart. Asking for designs spends a call to each vendor and
+ * changes nothing in the project. Building one is the decision: it sends the project back to an
+ * agent with the chosen picture in its repository. Nothing here builds a design nobody chose.
+ *
+ * The mock-ups were written by models, so each is shown in a frame with scripts off, and the
+ * server sends them sandboxed as it does every file an agent wrote.
+ */
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g,
+  c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]));
+const projectId = new URLSearchParams(location.search).get("id") || "";
+// A reference picture says more about a look than a sentence: see attach.js.
+document.getElementById("note").dataset.attach = projectId;
+
+let state = null;
+let timer = null;
+/* What is drawn, so the frames are not reloaded by every poll while someone is looking at them. */
+let drawn = "";
+let sent = false;
+/* Set when this page asked: the board on disk may still be the last one for a moment afterwards. */
+let askedHere = false;
+let prefilled = false;
+
+/*
+ * Whether designs are being drawn right now.
+ *
+ * Only while something is running. A board saying "asking" with nothing running is one whose request
+ * was cut off -- the editor was stopped mid-request -- and the server reports it as interrupted. The
+ * page used to believe the board alone, and with such a board it showed a spinner for ever and would
+ * not let another request be made.
+ */
+function isDrawing() {
+  return !!state && state.running && (askedHere || (!!state.board && state.board.state === "asking"));
+}
+
+async function load() {
+  const r = await fetch("/api/polish?id=" + encodeURIComponent(projectId))
+    .then(async res => ({ok: res.ok, body: await res.json()}))
+    .catch(e => ({ok: false, body: {error: String(e)}}));
+  if (!r.ok) {
+    $("ask").innerHTML = `<h1>Nothing to polish</h1><p class="muted">${esc(r.body.error || "The editor did not answer.")}</p>`;
+    stop();
+    return;
+  }
+  state = r.body;
+  if (!state.running) askedHere = false;
+  prefillKeptNote();
+  render();
+  // Watched for as long as anything runs on the project, which is cheap: one project's files.
+  if (state.running && !timer) timer = setInterval(load, 4000);
+  if (!state.running) stop();
+}
+
+function stop() {
+  if (timer) { clearInterval(timer); timer = null; }
+}
+
+/*
+ * A design kept for later brings back what was typed beside it, so building it sends the same words.
+ * Once, and only into an empty box nobody is typing in: what is in the box is what is sent, so it can
+ * still be changed or cleared before pressing Build.
+ */
+function prefillKeptNote() {
+  const note = state.kept && state.board ? (state.board.chosenNote || "") : "";
+  if (prefilled || !note || $("note").value || document.activeElement === $("note")) return;
+  $("note").value = note;
+  prefilled = true;
+}
+
+/*
+ * What pressing Build does here, which depends on where the project is. A finished project is sent
+ * back to be built that way; an accepted one gets an enhancement, so the acceptance stands; anything
+ * else keeps the pick until it finishes. A page made before the server said, says "session".
+ */
+const BUILD = {
+  session: {label: "Build This One",
+            note: "Building your pick sends the project back for a session, and it comes back to you afterwards.",
+            ask: "Build this design? An agent session starts, and the project comes back to you for review afterwards."},
+  enhancement: {label: "Build as an Enhancement",
+                note: "This project is accepted, so your pick is built as an enhancement: a new sub-project with "
+                  + "the design as its brief, which must keep everything you accepted working. Your acceptance stands.",
+                ask: "Build this design as an enhancement? A new sub-project is added with it as its brief, and it "
+                  + "starts. The project you accepted stays accepted."},
+  later: {label: "Keep This One for Later",
+          note: "It is not finished yet, so the design you pick is kept, with anything you type below. "
+            + "Build it here once the project finishes.",
+          ask: ""},
+};
+
+function buildMode() {
+  return BUILD[state.buildAs] || BUILD.session;
+}
+
+/*
+ * Replace the look, or add an extra beside it. Designs already drawn as extras are built as extras
+ * whatever the choice above says: the board knows what they were drawn for, and building a theme as
+ * a replacement would throw away the look it was drawn to sit beside.
+ */
+const EXTRAS = {theme: "theme", variants: "set of variants", animation: "animation"};
+let extraSynced = false;
+
+function chosenExtra() {
+  const picked = document.querySelector('input[name="mode"]:checked');
+  return picked && picked.value === "extra" ? $("extraKind").value : "";
+}
+
+function boardExtra() {
+  return state && state.board && EXTRAS[state.board.extra] ? state.board.extra : "";
+}
+
+function buildExtra() {
+  return boardExtra() || chosenExtra();
+}
+
+/* What the build button says and asks, for an extra: added beside the look, never instead of it. */
+function extraButton(kind) {
+  if (state.buildAs === "later") return {label: "Keep This One for Later", ask: ""};
+  const what = EXTRAS[kind];
+  return state.buildAs === "enhancement"
+    ? {label: "Add as an Enhancement",
+       ask: `Add this ${what} as an enhancement, beside the look the project has? A new sub-project is added `
+         + "and starts. The project you accepted, and its look, stay as they are."}
+    : {label: "Add This Extra",
+       ask: `Add this ${what} beside the look the project has? An agent session starts, and the project `
+         + "comes back to you afterwards. Its current look stays, and Forge checks that it does not change."};
+}
+
+function render() {
+  const board = state.board;
+  const drawing = isDrawing();
+  const options = board ? board.options || [] : [];
+  const mode = buildMode();
+  document.title = "Updated design — " + state.title;
+  $("buildNote").textContent = mode.note;
+  if (boardExtra() && !extraSynced) {
+    // Show the choice the designs on the board were drawn for, once; after that it is the person's.
+    extraSynced = true;
+    document.querySelector('input[name="mode"][value="extra"]').checked = true;
+    $("extraKind").value = boardExtra();
+  }
+  const extra = buildExtra();
+  $("extraKind").hidden = !chosenExtra();
+  $("extraNote").hidden = !boardExtra();
+  $("extraNote").textContent = boardExtra()
+    ? `These are ${EXTRAS[boardExtra()]} designs. Building one adds it beside the look ${state.title} has `
+      + "now: the current look stays, and Forge checks at every gate that it does not change."
+    : "";
+  // Leaving the look to the agent is a build; with nothing to build yet there is nothing to leave.
+  // An extra has to be one of the designs: its name is the new pack's name.
+  $("plainBtn").hidden = state.buildAs === "later" || !!extra;
+  $("title").textContent = state.title;
+  $("report").href = `/runs/${encodeURIComponent(state.id)}/report.html`;
+  $("report").hidden = false;
+
+  $("askHead").textContent = options.length ? "Want different ones?" : `How should ${state.title} look?`;
+  $("askWhy").textContent = options.length
+    ? "Like one but not all of it? Type what to change below and press More Like This under it: that design "
+      + "is kept, and only what you typed changes. Asking again from scratch replaces every design here."
+    : "Every model that can be reached draws two looks for this project. Nothing about the project changes "
+      + "until you pick one.";
+  $("askBtn").textContent = options.length ? "Ask again" : "Ask the models for designs";
+  const cannot = !!state.blocked && !drawing;
+  $("blocked").hidden = !cannot;
+  $("blocked").textContent = cannot ? "Designs cannot be suggested for it right now: " + state.blocked + "." : "";
+  const cutShort = !drawing && !!board && board.state === "interrupted";
+  $("interrupted").hidden = !cutShort;
+  $("interrupted").textContent = cutShort
+    ? "The last request was stopped before every model had answered. The designs that arrived are below; "
+      + "ask again for a full set."
+    : "";
+  $("askBtn").disabled = drawing || cannot || sent;
+  $("plainBtn").disabled = drawing || cannot || sent;
+
+  $("asking").hidden = !drawing;
+  $("askingText").textContent = options.length
+    ? `Still asking. ${options.length} design${options.length === 1 ? "" : "s"} so far; each model takes a few minutes.`
+    : "Asking the models. Each one takes a few minutes, and the designs appear here as they arrive.";
+
+  const picked = board && board.chosen ? options.find(o => o.id === board.chosen) : null;
+  $("picked").hidden = !picked;
+  if (picked) {
+    const when = board.chosenAt ? ` on ${esc(new Date(board.chosenAt).toLocaleString())}` : "";
+    const keptNote = state.kept && board.chosenNote ? `, with your note “${esc(board.chosenNote)}”` : "";
+    $("picked").innerHTML = state.kept
+      ? `<b>You kept “${esc(picked.name)}”</b> by ${esc(picked.vendor)}${when}${keptNote}. `
+        + (state.buildAs === "later" ? "Build it here once the project finishes."
+                                     : "The project has finished: build it below when you are ready.")
+      : `<b>You picked “${esc(picked.name)}”</b> by ${esc(picked.vendor)}${when}`
+        + `. It was sent to be built that way; the before and after pictures appear in the `
+        + `<a href="/runs/${encodeURIComponent(state.id)}/report.html#polish" target="_blank">report</a>.`;
+  }
+
+  const refused = board ? board.refused || [] : [];
+  $("refusedBox").hidden = !refused.length;
+  $("refused").innerHTML = refused.map(r => `<li>${esc(r)}</li>`).join("");
+
+  const key = JSON.stringify([options.map(o => o.id + o.file), board && board.chosen, drawing, cannot, sent,
+                              state.buildAs, extra]);
+  if (key === drawn) return;
+  drawn = key;
+  const off = drawing || cannot || sent ? "disabled" : "";
+  // Nobody drew anything this time; a design this request started from is still worth showing.
+  const none = board && board.state === "none" && !drawing
+    ? `<div class="card">No model offered a design that could be shown. `
+      + `The reasons are below; you can ask again, or let the agent decide the look.</div>`
+    : "";
+  $("options").innerHTML = none + options.map(o => {
+    const src = `/runs/${encodeURIComponent(state.id)}/${o.file.split("/").map(encodeURIComponent).join("/")}`;
+    const liked = o.id === "LIKED" ? ` <span class="tag">the one you started from</span>` : "";
+    return `
+      <article class="option${board.chosen === o.id ? " picked" : ""}" data-option="${esc(o.id)}">
+        <div class="frame"><iframe sandbox="" loading="lazy" title="${esc(o.name)}" src="${esc(src)}"></iframe></div>
+        <div class="body">
+          <h2>${esc(o.name)}${liked}</h2>
+          <p class="pitch">${esc(o.pitch)}</p>
+          <p class="by">Drawn by ${esc(o.vendor)} · <a href="${esc(src)}" target="_blank">open full size</a></p>
+          <div class="actions">
+            <button class="primary build" ${off}>${esc(extra ? extraButton(extra).label : mode.label)}</button>
+            <button class="more" ${off}>More Like This</button>
+          </div>
+        </div>
+      </article>`;
+  }).join("");
+  $("options").querySelectorAll(".build").forEach(b => {
+    b.onclick = () => build(b.closest(".option").dataset.option);
+  });
+  $("options").querySelectorAll(".more").forEach(b => {
+    b.onclick = () => more(b.closest(".option").dataset.option);
+  });
+}
+
+async function post(url, body) {
+  return fetch(url, {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)})
+    .then(res => res.json()).catch(e => ({error: String(e)}));
+}
+
+/*
+ * More like one design: that page kept, and only what the box says changed. What to change is the whole
+ * of the request, so with nothing typed nothing is spent; the box is pointed at instead.
+ */
+function more(option) {
+  const o = ((state.board || {}).options || []).find(x => x.id === option);
+  if (!$("note").value.trim()) {
+    $("result").textContent = `Say what to change in “${o ? o.name : option}” in the box above, then press `
+      + "More Like This again. Everything else about it is kept.";
+    $("note").focus();
+    return;
+  }
+  return ask(option);
+}
+
+async function ask(base) {
+  $("askBtn").disabled = true;
+  $("result").textContent = "";
+  const body = {id: projectId, note: $("note").value.trim()};
+  const more = typeof base === "string" && base;
+  if (more) body.base = base;
+  // More like an extra is another of the same kind; a fresh request is whatever was chosen above.
+  const extra = more ? buildExtra() : chosenExtra();
+  if (extra) body.extra = extra;
+  const r = await post("/api/polish/ask", body);
+  const said = r.result || r.error || "";
+  $("result").textContent = said;
+  askedHere = /^asking/.test(said);
+  drawn = "";
+  await load();
+}
+
+async function build(option) {
+  const mode = buildMode();
+  const extra = buildExtra();
+  const what = !option
+    ? "Polish it without choosing a design? An agent session starts, and the look is left to the agent."
+    : extra ? extraButton(extra).ask : mode.ask;
+  // Keeping a pick spends nothing and starts nothing, so it is not asked about.
+  if (what && !confirm(what)) return;
+  sent = true;
+  drawn = "";
+  render();
+  const body = {id: projectId, option: option || "", note: $("note").value.trim()};
+  if (extra) body.extra = extra;
+  const r = await post("/api/polish/build", body);
+  const said = r.result || r.error || "";
+  // Only these answers mean it went -- started, queued, kept, or an enhancement added (whatever its
+  // start said) -- and anything else is a reason it did not.
+  const went = /^(started|queued|kept)/i.test(said) || /: added /.test(said);
+  sent = went && state.buildAs !== "later";
+  $("result").innerHTML = esc(said) + (went ? ` · <a href="/">Back to the dashboard</a>` : "");
+  drawn = "";
+  await load();
+}
+
+$("askBtn").onclick = ask;
+function redraw() {
+  if (!state) return;
+  drawn = "";
+  render();
+}
+document.querySelectorAll('input[name="mode"]').forEach(r => { r.onchange = redraw; });
+$("extraKind").onchange = redraw;
+$("plainBtn").onclick = () => build("");
+load();
+</script>
+</body>
+</html>

@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>dev.fmangoni</groupId>
+  <artifactId>forge-parent</artifactId>
+  <version>0.1.0-SNAPSHOT</version>
+  <packaging>pom</packaging>
+
+  <name>forge</name>
+  <description>Unattended build pipeline driving Claude Code and Codex CLIs</description>
+
+  <!--
+    One module per layer, in dependency order; see ARCHITECTURE.md. A module can only use the
+    modules below it, so a change in one cannot quietly reach into another: Maven refuses to compile
+    an upward import. Inside a module, LayersTest holds the package direction.
+  -->
+  <modules>
+    <module>forge-core</module>
+    <module>forge-security</module>
+    <module>forge-review</module>
+    <module>forge-deploy</module>
+    <module>forge-marketing</module>
+    <module>forge-report</module>
+    <module>forge-pipeline</module>
+    <module>forge-app</module>
+  </modules>
+
+  <properties>
+    <maven.compiler.release>24</maven.compiler.release>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <jackson.version>2.18.2</jackson.version>
+    <junit.version>5.11.4</junit.version>
+    <lombok.version>1.18.38</lombok.version>
+
+    <!--
+      Tests tagged "live" actually invoke the agent CLIs: they cost real subscription quota and
+      fail when a quota window is exhausted, so they are excluded from the default build.
+      Run them with: mvn test -Dexcluded.groups=
+    -->
+    <excluded.groups>live</excluded.groups>
+  </properties>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>dev.fmangoni</groupId>
+        <artifactId>forge-core</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <!-- Test helpers: LockHolder, a second JVM holding a repository's lock. -->
+      <dependency>
+        <groupId>dev.fmangoni</groupId>
+        <artifactId>forge-core</artifactId>
+        <version>${project.version}</version>
+        <type>test-jar</type>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>dev.fmangoni</groupId>
+        <artifactId>forge-security</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>dev.fmangoni</groupId>
+        <artifactId>forge-review</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <!-- Test helpers shared by the modules above it: Clips, which writes real video files. -->
+      <dependency>
+        <groupId>dev.fmangoni</groupId>
+        <artifactId>forge-review</artifactId>
+        <version>${project.version}</version>
+        <type>test-jar</type>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>dev.fmangoni</groupId>
+        <artifactId>forge-deploy</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>dev.fmangoni</groupId>
+        <artifactId>forge-marketing</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>dev.fmangoni</groupId>
+        <artifactId>forge-report</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>dev.fmangoni</groupId>
+        <artifactId>forge-pipeline</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <!-- Spec front matter, state files, agent JSON event streams. Apache 2.0. -->
+      <dependency>
+        <groupId>com.fasterxml.jackson.core</groupId>
+        <artifactId>jackson-databind</artifactId>
+        <version>${jackson.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.fasterxml.jackson.dataformat</groupId>
+        <artifactId>jackson-dataformat-yaml</artifactId>
+        <version>${jackson.version}</version>
+      </dependency>
+      <!-- Instant support for the persisted run state; same Jackson family, no new vendor. -->
+      <dependency>
+        <groupId>com.fasterxml.jackson.datatype</groupId>
+        <artifactId>jackson-datatype-jsr310</artifactId>
+        <version>${jackson.version}</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+  <!-- Every module gets these. -->
+  <dependencies>
+    <!--
+      Compile-time only (provided scope): the annotation processor runs during build and Lombok
+      never enters the shaded jar, so it adds no runtime supply-chain surface.
+    -->
+    <dependency>
+      <groupId>org.projectlombok</groupId>
+      <artifactId>lombok</artifactId>
+      <version>${lombok.version}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <version>${junit.version}</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <!-- Lombok is declared explicitly as a processor path; relying on it being picked up from
+           the compile classpath is the usual cause of "cannot find symbol" on generated methods. -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.13.0</version>
+        <configuration>
+          <annotationProcessorPaths>
+            <path>
+              <groupId>org.projectlombok</groupId>
+              <artifactId>lombok</artifactId>
+              <version>${lombok.version}</version>
+            </path>
+          </annotationProcessorPaths>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>3.5.2</version>
+        <configuration>
+          <excludedGroups>${excluded.groups}</excludedGroups>
+          <!-- So -Dtest=SomeTest from the root runs it wherever it is, instead of failing in the
+               modules that do not have it. -->
+          <failIfNoSpecifiedTests>false</failIfNoSpecifiedTests>
+        </configuration>
+      </plugin>
+
+      <!--
+        Coverage, reported but not enforced. Each module records its own; forge-app gathers them
+        into one report at forge/target/site/jacoco.
+
+        No <check> rule here on purpose. A threshold turns a measurement into a target, and the
+        cheapest way to hit a target is to test the classes that are easy to test, which are
+        rarely the ones where a wrong assumption costs anything. The number is here to be read
+        and argued with, not to gate the build.
+      -->
+      <plugin>
+        <groupId>org.jacoco</groupId>
+        <artifactId>jacoco-maven-plugin</artifactId>
+        <version>0.8.13</version>
+        <executions>
+          <execution>
+            <goals><goal>prepare-agent</goal></goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>

@@ -1,0 +1,63 @@
+# ---------------------------------------------------------------------------
+#  What belongs in this repository is Forge itself: the Java modules, the
+#  dashboard, the wishlist, the scripts and the docs. Everything below is
+#  either generated, downloaded, or specific to one machine.
+#
+#  Root-level entries are anchored with a leading slash on purpose. An
+#  unanchored rule matches at every depth, and several of these names also
+#  exist in the source tree -- "index.html" alone would have excluded
+#  forge/forge-app/src/main/resources/ui/index.html, which is the dashboard.
+# ---------------------------------------------------------------------------
+
+# --- Forge's working data --------------------------------------------------
+# Every project Forge has ever built. Measured 2026-10-17: 4.1 GB across
+# 191,774 files, including seven git repositories of its own, their
+# node_modules and their build output, plus agent transcripts that routinely
+# reach hundreds of megabytes each.
+/runs/
+
+# --- Build output ----------------------------------------------------------
+target/
+/forge/last-good/
+
+# --- Dependencies ----------------------------------------------------------
+node_modules/
+
+# --- Test output -----------------------------------------------------------
+/ui-tests/test-results/
+/ui-tests/playwright-report/
+/ui-tests/.fixture/
+
+# --- Your own input, not Forge's code --------------------------------------
+# The specs are project ideas, which belong to whoever wrote them rather than
+# in a public repository. Forge reads this directory; it is not part of it.
+/wishlist/
+
+# --- State Forge writes for itself -----------------------------------------
+# All of this is rebuilt on first use. Committing it would push one machine's
+# queue state, quota windows and subscription shape onto anyone who clones --
+# and models.json in particular is discovered per-account, so a stale copy is
+# worse than none.
+/logs/
+/.scratch/
+/spawn/
+/backups/
+/children.pids
+/dashboard.json
+/quota.json
+/usage.json
+/vendors.json
+/models.json
+/index.html
+/idea-generator.json
+
+# --- Editors and OS --------------------------------------------------------
+.idea/
+.vscode/
+*.iml
+.classpath
+.project
+.settings/
+.DS_Store
+Thumbs.db
+desktop.ini
