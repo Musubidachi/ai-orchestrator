@@ -35,7 +35,7 @@ class TourSummaryTest {
         Files.createDirectories(paths.repo());
         RunState state = new RunState();
         state.setId("003");
-        state.setTitle("Pink Slip Drag Racing");
+        state.setTitle("Invoice Batch Importer");
         state.setPhase(phase);
         state.setAssignedTo(AgentKind.CLAUDE);
         state.setSessions(4);
@@ -66,7 +66,7 @@ class TourSummaryTest {
     void theWalkthroughIsTheSummary() throws IOException {
         Chapter last = CodeTour.of(project(Phase.DONE)).chapters().getLast();
         String said = last.scenes().getFirst().said();
-        assertTrue(said.contains("Pink Slip Drag Racing"), said);
+        assertTrue(said.contains("Invoice Batch Importer"), said);
         assertTrue(said.contains("Every check passed"), said);
     }
 

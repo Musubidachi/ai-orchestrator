@@ -186,7 +186,7 @@ public final class Workspace {
      *
      * <p>It used to be written once, when the project started, so that "done" could not shift under
      * a build in progress. That protected the project from the one person entitled to change it:
-     * 003's spec was edited to allow a rewarded ad that gave a car, and six sessions in a row read
+     * 003's spec was edited to allow a rewarded ad that granted an item, and six sessions in a row read
      * the old copy, refused to build it, and asked the person to decline the feature they had just
      * made room for. A change the person makes is a change to the contract, so it is made here, in
      * its own commit, and the agent is told about it rather than left to notice.

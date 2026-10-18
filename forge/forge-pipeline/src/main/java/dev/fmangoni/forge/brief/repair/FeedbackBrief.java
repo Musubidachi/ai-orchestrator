@@ -44,7 +44,7 @@ public class FeedbackBrief {
      * The whole of one sitting: the review items, and what was said about the features.
      *
      * <p>Features used to be left out entirely. A request typed beside one — "if the user loses
-     * every car, offer an ad to buy one from a dealer" — was saved, shown on the report, and never
+     * a batch fails, offer an ad to buy more credit" — was saved, shown on the report, and never
      * put in front of an agent: the session it started was told to film the feature and nothing
      * else. Everything a person writes on the page reaches the next turn now, labelled by what it
      * is attached to.

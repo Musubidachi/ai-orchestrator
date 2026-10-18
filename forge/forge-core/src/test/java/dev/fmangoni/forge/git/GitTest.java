@@ -32,9 +32,9 @@ class GitTest {
         Path repo = Files.createDirectories(root.resolve("repo"));
         Git git = new Git(repo, root.resolve("git.log"));
         git.init();
-        Path clip = Files.createDirectories(repo.resolve("artifacts")).resolve("feature-race.webm");
+        Path clip = Files.createDirectories(repo.resolve("artifacts")).resolve("feature-export.webm");
         Files.writeString(clip, "first take");
-        Files.writeString(repo.resolve("artifacts/race.webm"), "spec evidence");
+        Files.writeString(repo.resolve("artifacts/export.webm"), "spec evidence");
         git.commitAll("a turn that committed its recording, as agents here did");
 
         git.keepOutOfHistory(RECORDINGS);
@@ -46,7 +46,7 @@ class GitTest {
         git.commitAll("the turn after the next gate");
 
         assertTrue(Files.exists(clip), "the recording itself is left alone");
-        assertEquals(List.of("artifacts/race.webm"),
+        assertEquals(List.of("artifacts/export.webm"),
                 git(repo, "ls-files", "artifacts").lines().toList(),
                 "only the spec's own evidence is still tracked");
         assertFalse(git.changedSince(afterUntracking), "re-recording changed nothing git tracks");

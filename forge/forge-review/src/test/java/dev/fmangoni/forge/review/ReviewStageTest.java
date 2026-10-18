@@ -121,14 +121,14 @@ class ReviewStageTest {
         AtomicReference<AgentTask> seen = new AtomicReference<>();
         new ReviewStage(new Spy(seen, "{\"findings\":[]}"), repo, logs, reviewFile, "best")
                 .review(spec(), "diff --git a/x b/x", List.of(
-                        new FeatureCheck("Pink slip wager", FeatureCheck.UNPROVEN, "Race.java only logs a TODO"),
-                        new FeatureCheck("Garage tuning", FeatureCheck.HOLDS, "Garage.java"),
+                        new FeatureCheck("Monthly summary", FeatureCheck.UNPROVEN, "Export.java only logs a TODO"),
+                        new FeatureCheck("Report export", FeatureCheck.HOLDS, "Report.java"),
                         FeatureCheck.unchecked("Leaderboard", "out of quota")));
 
         String brief = seen.get().brief();
-        assertTrue(brief.contains("Pink slip wager"), brief);
-        assertTrue(brief.contains("Race.java only logs a TODO"));
-        assertFalse(brief.contains("Garage tuning"), "a claim that held up is not a lead");
+        assertTrue(brief.contains("Monthly summary"), brief);
+        assertTrue(brief.contains("Export.java only logs a TODO"));
+        assertFalse(brief.contains("Report export"), "a claim that held up is not a lead");
         assertFalse(brief.contains("Leaderboard"), "an unchecked claim is not evidence of anything");
         assertTrue(brief.contains("It may simply have missed them"),
                 "a weak model's miss must not be handed over as fact");
@@ -138,14 +138,14 @@ class ReviewStageTest {
     @DisplayName("every check is kept on the review, so the report can say what was looked at")
     void checksArePersisted() throws IOException {
         List<FeatureCheck> checks = List.of(
-                new FeatureCheck("Pink slip wager", FeatureCheck.UNPROVEN, "not found"),
-                new FeatureCheck("Garage tuning", FeatureCheck.HOLDS, "Garage.java"));
+                new FeatureCheck("Monthly summary", FeatureCheck.UNPROVEN, "not found"),
+                new FeatureCheck("Report export", FeatureCheck.HOLDS, "Report.java"));
 
         Review review = new ReviewStage(new Spy(new AtomicReference<>(), "{\"findings\":[]}"),
                 repo, logs, reviewFile, "best").review(spec(), "diff", checks);
 
         assertEquals(2, review.getFeatureChecks().size());
-        assertEquals(List.of("Pink slip wager"),
+        assertEquals(List.of("Monthly summary"),
                 review.unprovenFeatures().stream().map(FeatureCheck::getFeature).toList());
         assertEquals(2, ReviewStore.load(reviewFile).getFeatureChecks().size(),
                 "and survives the round trip through review.json");

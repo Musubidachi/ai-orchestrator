@@ -86,16 +86,16 @@ class FeatureReviewTest {
     @Test
     @DisplayName("each claim is asked about once, read-only, on the model it was given")
     void oneReadOnlyCallPerClaim() {
-        List<FeatureCheck> checks = review(task -> says("{\"verdict\":\"holds\",\"why\":\"Garage.java\"}"))
-                .run("Racer", List.of(feature("Garage tuning"), feature("Pink slip wager")));
+        List<FeatureCheck> checks = review(task -> says("{\"verdict\":\"holds\",\"why\":\"Report.java\"}"))
+                .run("Racer", List.of(feature("Report export"), feature("Monthly summary")));
 
         assertEquals(2, seen.size());
         assertTrue(seen.stream().allMatch(AgentTask::readOnly),
                 "a reviewer must never be able to change the code it is judging");
         assertTrue(seen.stream().allMatch(task -> "cheapest".equals(task.model())));
-        assertTrue(seen.get(0).brief().contains("Garage tuning"));
-        assertFalse(seen.get(0).brief().contains("Pink slip wager"), "one claim per call, kept small");
-        assertEquals(List.of("Garage tuning", "Pink slip wager"),
+        assertTrue(seen.get(0).brief().contains("Report export"));
+        assertFalse(seen.get(0).brief().contains("Monthly summary"), "one claim per call, kept small");
+        assertEquals(List.of("Report export", "Monthly summary"),
                 checks.stream().map(FeatureCheck::getFeature).toList());
         assertTrue(checks.stream().allMatch(check -> FeatureCheck.HOLDS.equals(check.getVerdict())));
     }
@@ -104,11 +104,11 @@ class FeatureReviewTest {
     @DisplayName("a claim the reviewer cannot find comes back unproven, with where it looked")
     void unprovenIsReported() {
         List<FeatureCheck> checks = review(task ->
-                says("Here you go:\n```json\n{\"verdict\":\"unproven\",\"why\":\"Garage.java only has a stub\"}\n```"))
-                .run("Racer", List.of(feature("Garage tuning")));
+                says("Here you go:\n```json\n{\"verdict\":\"unproven\",\"why\":\"Report.java only has a stub\"}\n```"))
+                .run("Racer", List.of(feature("Report export")));
 
         assertTrue(checks.get(0).unproven());
-        assertEquals("Garage.java only has a stub", checks.get(0).getWhy());
+        assertEquals("Report.java only has a stub", checks.get(0).getWhy());
     }
 
     @Test
@@ -155,9 +155,9 @@ class FeatureReviewTest {
     void claimsComeFromTheHandoff() {
         Plan plan = new Plan();
         plan.setSummary("built the racer");
-        plan.setFeatures(List.of(feature("Garage tuning"), new PlanFeature("", "unnamed")));
+        plan.setFeatures(List.of(feature("Report export"), new PlanFeature("", "unnamed")));
 
-        assertEquals(List.of("Garage tuning"),
+        assertEquals(List.of("Report export"),
                 FeatureReview.claimedBy(plan).stream().map(PlanFeature::getName).toList());
         assertEquals(List.of(), FeatureReview.claimedBy(null));
         assertEquals(List.of(), FeatureReview.claimedBy(new Plan()), "an unusable handoff claims nothing");

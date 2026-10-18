@@ -67,7 +67,7 @@ class WorkspaceTest {
     @Test
     @DisplayName("a spec changed after the project started is brought up to date, committed, and the change returned")
     void aChangedSpecIsRefreshed() throws Exception {
-        // 003: the spec was edited to allow a rewarded ad that gave a car, and six sessions read the
+        // 003: the spec was edited to allow a rewarded ad that granted an item, and six sessions read the
         // copy made when the project began, which still forbade it.
         RunPaths paths = new RunPaths(root.resolve("runs/001"));
         Workspace workspace = new Workspace(paths, "# House rules\n");
@@ -77,14 +77,14 @@ class WorkspaceTest {
 
         Spec edited = SpecLoader.load(Files.writeString(root.resolve("001.md"),
                 Files.readString(root.resolve("001.md")).replace("Build it.",
-                        "Build it, with a dealer who gives one car for watching an ad.")));
+                        "Build it, with an offer of one extra credit for watching an ad.")));
         Optional<SpecChange> change = workspace.refreshSpec(edited, edited.acceptance());
 
         assertTrue(change.isPresent());
         assertEquals("SPEC.md", change.get().file());
-        assertTrue(change.get().diff().contains("+Build it, with a dealer"), change.get().diff());
+        assertTrue(change.get().diff().contains("+Build it, with an offer"), change.get().diff());
         assertTrue(change.get().diff().contains("-Build it."), change.get().diff());
-        assertTrue(Files.readString(paths.repo().resolve("SPEC.md")).contains("a dealer who gives one car"));
+        assertTrue(Files.readString(paths.repo().resolve("SPEC.md")).contains("an offer of one extra credit"));
         assertFalse(workspace.git().isDirty(), "committed in its own right, before the agent touches anything");
         assertTrue(workspace.refreshSpec(edited, edited.acceptance()).isEmpty(), "told once, not every turn");
     }

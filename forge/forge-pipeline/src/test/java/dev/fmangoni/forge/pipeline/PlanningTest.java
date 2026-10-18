@@ -121,8 +121,8 @@ class PlanningTest {
             Done.
             {"status":"complete","summary":"built","completed":["all of it"],"remaining":[],
              "sessions_needed":0,"overview":"Pipeline.java",
-             "features":[{"name":"Garage tuning","demo":"open the garage"},
-                         {"name":"Pink slip wager","demo":"win a title"}]}
+             "features":[{"name":"Report export","demo":"open the report"},
+                         {"name":"Monthly summary","demo":"win a title"}]}
             """;
 
     private Spec spec() throws IOException {
@@ -208,8 +208,8 @@ class PlanningTest {
         assertEquals(3, codex.size(), "two claims checked, then one review");
         assertEquals(List.of("codex-cheap", "codex-cheap", "codex-best"),
                 codex.stream().map(AgentTask::model).toList());
-        assertTrue(codex.get(0).brief().contains("Garage tuning"));
-        assertTrue(codex.get(1).brief().contains("Pink slip wager"));
+        assertTrue(codex.get(0).brief().contains("Report export"));
+        assertTrue(codex.get(1).brief().contains("Monthly summary"));
 
         AgentTask bigReview = codex.get(2);
         assertTrue(bigReview.brief().contains("Race.java is a stub"),

@@ -35,8 +35,8 @@ public class Features {
     /**
      * Keep it, but change it — and the note beside it says how.
      *
-     * <p>Added after a request typed beside an approved feature ("if the user loses every car,
-     * offer an ad to buy one from a dealer") went nowhere. Approval meant "film this", so the
+     * <p>Added after a request typed beside an approved feature ("if a batch fails, offer an ad
+     * to buy more credit") went nowhere. Approval meant "film this", so the
      * session that followed filmed it, and the one sentence that was actually an instruction was
      * never put in front of an agent. A note is not an instruction until somebody says it is;
      * this verdict is how.

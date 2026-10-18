@@ -44,7 +44,7 @@ public class ShellScript {
      * The script, with {@code CI} set — which is what an acceptance run is: headless, unattended,
      * judged on its exit code.
      *
-     * <p>Mostly for the servers test suites start. Pink Slip's Playwright config has
+     * <p>Mostly for the servers test suites start. One project's Playwright config has
      * {@code reuseExistingServer: !process.env.CI}, the generated default, so without it a gate
      * would run its tests and film its features against whatever already answers on port 4173 — a
      * preview server an agent left running with last session's build, or another Vite project

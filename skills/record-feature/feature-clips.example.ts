@@ -20,7 +20,7 @@ test.afterEach(async ({ page }, testInfo) => {
 });
 
 // Example. Drive the real feature, slowly enough to be watched: a clip of a few seconds.
-test("feature: Pink slip wager", async ({ page }) => {
+test("feature: Monthly summary", async ({ page }) => {
   await page.goto("/");
-  // ... start a race, win it, and end on the opponent's car arriving in the garage ...
+  // ... run the import, and end on the new rows appearing in the table ...
 });

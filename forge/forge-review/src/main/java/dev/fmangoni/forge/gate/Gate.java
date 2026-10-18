@@ -138,7 +138,7 @@ public final class Gate {
      * Every clip the gate wanted, filmed or not, each under the exact name it is owed by.
      *
      * <p>Listing only the missing ones let an agent fix one by breaking another. 003 had one feature
-     * approved under two names and one test filming it; told only "Garage tuning is missing", the
+     * approved under two names and one test filming it; told only "Report export is missing", the
      * agent renamed the clip from the other name, and the next gate found that one missing instead.
      * It went back and forth until the sessions ran out. Seen whole, the list says that every name
      * needs its own clip, and that two names for one thing is a question for the person.

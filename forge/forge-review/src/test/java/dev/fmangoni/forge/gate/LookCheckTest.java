@@ -33,7 +33,7 @@ class LookCheckTest {
         return root.resolve("look-reference.png");
     }
 
-    /** A 200x100 screen: a background, and a block where the cars would be. */
+    /** A 200x100 screen: a background, and a block where the artwork would be. */
     private void save(Color background, Color block, int width) throws IOException {
         BufferedImage image = new BufferedImage(width, 100, BufferedImage.TYPE_INT_RGB);
         Graphics2D g = image.createGraphics();

@@ -72,7 +72,7 @@ public class Decision {
      * When these notes were last handed to a session, or null if they never have been.
      *
      * <p>A note is only worth acting on once. Without this, one written beside a feature would
-     * either be dropped — what happened to 003's "offer an ad to buy a car from a dealer", saved
+     * either be dropped — what happened to 003's "offer an ad to buy more credit", saved
      * under <em>Worth seeing</em> and never read by an agent — or, delivered, go back with every
      * later session as though it were new.
      */

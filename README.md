@@ -259,8 +259,8 @@ The gate's message lists every approved feature with the exact name its clip is 
 or missing, and tells the agent not to rename one clip to satisfy another. A gate that finds a clip
 that was missing now present, and one that was present now missing, parks the project for you rather
 than spending another session: that is one feature approved under two names, and only you can say
-which name stays. 003 spent twenty-three sessions moving one clip between "Garage customization" and
-"Garage tuning" before this existed.
+which name stays. 003 spent twenty-three sessions moving one clip between "Report customization" and
+"Report export" before this existed.
 
 A project with a `run.bat` carries **▶ Play**, which opens that file in a console window of its
 own, exactly as double-clicking it would. Forge does not watch or stop what it starts: closing the
@@ -359,12 +359,12 @@ Above the box on the same page is a choice: **Replace the look**, which is every
 **Add an extra, keeping the look it has**. An extra is one of:
 
 - **Theme**: a whole alternative look the program can switch to, such as a holiday version.
-- **Variants**: other versions of one thing, such as upgraded cars, each one addressable so the
+- **Variants**: other versions of one thing, such as upgraded tiers of one item, each addressable so the
   program can show whichever the player has.
 - **Animation**: new motion, such as a burnout. These designs are allowed to move (CSS only), so
   you watch the animation before you pick it.
 
-Say in the box what you want ("Halloween", "three upgraded versions of each car"). The designers
+Say in the box what you want ("Halloween", "three upgraded versions of each item"). The designers
 draw the extras on top of the current look, and the page marks them as extras. Building one adds
 it as a pack, named after the design, through the same three routes: a session for a finished
 project, an enhancement (`NNN.n "<title> — <name> theme"`) for an accepted one, kept for later
@@ -377,7 +377,7 @@ first gate that passes keeps that screenshot as a reference (beside the reposito
 enhancement is held to the same one), and every gate after that fails if the default look has
 changed by more than render noise. Replacing the look on purpose clears the reference, and the
 next gate adopts the new one. How a player gets a pack (a menu, a date, a purchase) is up to the
-spec; if it says nothing, the builder adds a simple picker. A shop that sells upgraded cars is a
+spec; if it says nothing, the builder adds a simple picker. A shop that sells the upgraded tiers is a
 feature like any other, so write it into the spec. An extra built to a design is reviewed against
 that design, like any polish with a picked design.
 
@@ -693,9 +693,9 @@ than a project of its own:
 ---
 id: "001.1"
 parent: "001"
-title: Handle REDEFINES clauses
+title: Handle overlapping field definitions
 acceptance:
-  - mvn -q test -Dtest=RedefinesTest
+  - mvn -q test -Dtest=OverlappingFieldsTest
 ---
 ```
 
@@ -724,11 +724,11 @@ Every agent turn is told how long it has, and is required to end with a handoff:
 ```json
 {"status":"partial",
  "summary":"Parser and model done; codegen not started.",
- "completed":["Copybook lexer","Field tree model"],
- "remaining":[{"step":"Generate JAX-RS resources","detail":"Reuse FieldTree; one per 01 level",
+ "completed":["Record lexer","Field tree model"],
+ "remaining":[{"step":"Generate the resource classes","detail":"Reuse FieldTree; one per record",
                "estimate_minutes":45}],
  "sessions_needed":2,
- "risks":["REDEFINES clauses are not handled yet"]}
+ "risks":["Overlapping field definitions are not handled yet"]}
 ```
 
 The stated budget is deliberately **less than the hard cap** — 25 minutes of a 30-minute turn. A

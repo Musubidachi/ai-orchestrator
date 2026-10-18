@@ -98,13 +98,13 @@ class ProjectReportTest {
     void videoEvidenceIsPlayable() throws IOException {
         // The point of asking for a recording is that someone can watch the program work without
         // building it. A link to a .webm is enough friction that nobody ever does.
-        evidence("race.webm");
+        evidence("export.webm");
 
         String html = report(null);
 
         assertTrue(html.contains("<video"), "expected an inline player:\n" + html);
         assertTrue(html.contains("controls"), "a player nobody can start is not a player");
-        assertFalse(html.contains("<a href=\"evidence/race.webm\""),
+        assertFalse(html.contains("<a href=\"evidence/export.webm\""),
                 "the recording should play, not download");
     }
 
@@ -406,12 +406,12 @@ class ProjectReportTest {
     @Test
     @DisplayName("proposed features are offered for approval, with what each would show")
     void proposedFeaturesAreOfferedForApproval() throws IOException {
-        state.setPlan(planProposing("Garage tuning", "Pink slip wager"));
+        state.setPlan(planProposing("Report export", "Monthly summary"));
 
         String html = report(new Review());
 
-        assertTrue(html.contains("feature-garage-tuning"), html);
-        assertTrue(html.contains("Pink slip wager"), html);
+        assertTrue(html.contains("feature-report-export"), html);
+        assertTrue(html.contains("Monthly summary"), html);
         assertTrue(html.contains("click the thing"), "the demo note is what says what to film");
         assertTrue(html.contains("value=\"approved\""), "no way to say yes:\n" + html);
     }
@@ -461,7 +461,7 @@ class ProjectReportTest {
     void marketingKitSection() throws IOException {
         Files.createDirectories(paths.marketingDir());
         Files.writeString(paths.marketingDir().resolve("kit.json"),
-                "{\"tagline\":\"Race for pink slips\",\"posts\":{\"x\":\"Bet your car <on a race>\"}}");
+                "{\"tagline\":\"Import a batch of invoices\",\"posts\":{\"x\":\"Invoice in seconds <today>\"}}");
         JsonFile.write(paths.marketingStatusFile(), Json.mapper()
                 .writeValueAsString(new KitStatus(Instant.now(), "abc",
                         "CODEX", "problems", "1 problem(s)", List.of(
@@ -472,17 +472,17 @@ class ProjectReportTest {
         assertTrue(html.contains("<h2 id=\"marketing\">Marketing kit</h2>"), html);
         assertTrue(html.contains("Forge never posts, publishes, uploads a campaign or spends money"));
         assertTrue(html.contains("invented social proof"));
-        assertTrue(html.contains("Bet your car &lt;on a race&gt;"), "kit text is escaped: a model wrote it");
+        assertTrue(html.contains("Invoice in seconds &lt;today&gt;"), "kit text is escaped: a model wrote it");
         assertTrue(html.contains(">Copy</button>"));
     }
 
     @Test
     @DisplayName("a feature note no agent has seen says so, and stops saying so once one has")
     void unsentFeatureNotesAreMarked() throws IOException {
-        state.setPlan(planProposing("Empty garage reset"));
+        state.setPlan(planProposing("Empty report reset"));
         List<Decision> rulings = Decisions.merge(List.of(), List.of(
-                Decision.of("feature-empty-garage-reset", "Empty garage reset",
-                        Features.APPROVED, "offer a dealer ad")));
+                Decision.of("feature-empty-report-reset", "Empty report reset",
+                        Features.APPROVED, "offer a credit ad")));
         DecisionStore.save(paths.featuresFile(), rulings);
 
         assertTrue(report(new Review()).contains("Not yet sent to an agent"),
@@ -497,26 +497,26 @@ class ProjectReportTest {
     @Test
     @DisplayName("a recording is played in the page, which is the entire point of asking for one")
     void recordingsArePlayedInline() throws IOException {
-        state.setPlan(planProposing("Garage tuning"));
+        state.setPlan(planProposing("Report export"));
         DecisionStore.save(paths.featuresFile(), List.of(Decision.of(
-                "feature-garage-tuning", "Garage tuning",
+                "feature-report-export", "Report export",
                 Features.APPROVED, "")));
-        film("Garage tuning");
+        film("Report export");
 
         String html = report(new Review());
 
         assertTrue(html.contains("<video"), "a link to a .webm is enough friction that nobody "
                 + "ever clicks it:\n" + html);
-        assertTrue(html.contains("feature-garage-tuning.webm"), html);
+        assertTrue(html.contains("feature-report-export.webm"), html);
         assertFalse(html.contains("No recording yet"), "it has one");
     }
 
     @Test
     @DisplayName("an approved feature that has not been filmed says so")
     void owedRecordingsAreVisible() throws IOException {
-        state.setPlan(planProposing("Garage tuning"));
+        state.setPlan(planProposing("Report export"));
         DecisionStore.save(paths.featuresFile(), List.of(Decision.of(
-                "feature-garage-tuning", "Garage tuning",
+                "feature-report-export", "Report export",
                 Features.APPROVED, "")));
 
         String html = report(new Review());
@@ -528,9 +528,9 @@ class ProjectReportTest {
     @Test
     @DisplayName("a ruling already given comes back checked, so the page is not a form filled twice")
     void previousRulingsAreShown() throws IOException {
-        state.setPlan(planProposing("Garage tuning"));
+        state.setPlan(planProposing("Report export"));
         DecisionStore.save(paths.featuresFile(), Decisions.merge(List.of(), List.of(Decision.of(
-                "feature-garage-tuning", "Garage tuning",
+                "feature-report-export", "Report export",
                 Features.DECLINED, "it is just a form"))));
 
         String html = report(new Review());
@@ -542,11 +542,11 @@ class ProjectReportTest {
     @Test
     @DisplayName("ideas for what next are offered, and one taken up is not offered twice")
     void ideasAreOfferedOnce() throws IOException {
-        state.setPlan(planProposing("Garage tuning"));
+        state.setPlan(planProposing("Report export"));
         state.getPlan().getIdeas().add(new PlanFeature(
                 "Rival leaderboard", "a table of the bots you have beaten"));
         state.getPlan().getIdeas().add(new PlanFeature(
-                "Night races", "the same race with headlights"));
+                "Night mode", "the same report in dark colours"));
         DecisionStore.save(paths.featuresFile(), List.of(Decision.of(
                 "feature-rival-leaderboard", "Rival leaderboard",
                 Features.APPROVED, "")));
@@ -554,7 +554,7 @@ class ProjectReportTest {
         String html = report(new Review());
 
         assertTrue(html.contains("ideas-fold"), html);
-        assertTrue(html.contains("Night races"), "an unanswered idea is missing:\n" + html);
+        assertTrue(html.contains("Night mode"), "an unanswered idea is missing:\n" + html);
         assertTrue(html.contains("Build it"), html);
         // Taken up, so it is a feature now: owed, shown in the gallery, ruled on there — and not
         // offered as an idea as well, which would be two sets of buttons for one decision.
@@ -568,7 +568,7 @@ class ProjectReportTest {
     @Test
     @DisplayName("a feature can be sent back for changes, not only approved or declined")
     void featuresOfferNeedsChanges() throws IOException {
-        state.setPlan(planProposing("Empty garage reset"));
+        state.setPlan(planProposing("Empty report reset"));
 
         assertTrue(report(new Review()).contains("value=\"changes\"> Needs changes"));
     }
@@ -592,17 +592,17 @@ class ProjectReportTest {
         // the report something to show when a later session fails to film one — and the evidence
         // section renders every .webm it finds inline. So every clip appeared twice on the page,
         // once under its feature and once again a few sections down, playing the same thing.
-        state.setPlan(planProposing("Garage tuning"));
+        state.setPlan(planProposing("Report export"));
         DecisionStore.save(paths.featuresFile(), List.of(Decision.of(
-                "feature-garage-tuning", "Garage tuning",
+                "feature-report-export", "Report export",
                 Features.APPROVED, "")));
-        film("Garage tuning");
-        collected("session-3/artifacts/feature-garage-tuning.webm");
+        film("Report export");
+        collected("session-3/artifacts/feature-report-export.webm");
         collected("session-3/artifacts/gameplay.png");
 
         String html = report(new Review());
 
-        assertEquals(1, html.split("feature-garage-tuning\\.webm", -1).length - 1,
+        assertEquals(1, html.split("feature-report-export\\.webm", -1).length - 1,
                 "the clip is on the page more than once:\n" + html);
         assertTrue(html.contains("gameplay.png"), "the rest of the evidence must still be shown");
         assertTrue(html.contains("played above rather than twice"),
@@ -622,7 +622,7 @@ class ProjectReportTest {
         // Two forms meant two buttons, and pressing the first one reopened the project — so the
         // second was refused with "still running" and a review typed at the same sitting went
         // nowhere. Reported exactly that way.
-        state.setPlan(planProposing("Garage tuning"));
+        state.setPlan(planProposing("Report export"));
         state.getPlan().setNotVerified(new ArrayList<>(
                 List.of("the draw branch has never been rendered")));
 
@@ -700,15 +700,15 @@ class ProjectReportTest {
     void featureClaimsAreShown() throws IOException {
         Review review = new Review();
         review.setFeatureChecks(new ArrayList<>(List.of(
-                new FeatureCheck("Garage tuning", FeatureCheck.HOLDS, "Garage.java"),
-                new FeatureCheck("Pink slip wager", FeatureCheck.UNPROVEN, "Race.java only logs a TODO"),
+                new FeatureCheck("Report export", FeatureCheck.HOLDS, "Report.java"),
+                new FeatureCheck("Monthly summary", FeatureCheck.UNPROVEN, "Export.java only logs a TODO"),
                 FeatureCheck.unchecked("Leaderboard", "CODEX was unavailable: RATE_LIMITED"))));
 
         String html = report(review);
 
-        assertTrue(html.contains("Pink slip wager"), html);
+        assertTrue(html.contains("Monthly summary"), html);
         assertTrue(html.contains("could not be found"));
-        assertTrue(html.contains("Race.java only logs a TODO"));
+        assertTrue(html.contains("Export.java only logs a TODO"));
         assertTrue(html.contains("found in the code"), "a claim that held up is worth saying too");
         assertTrue(html.contains("not checked"),
                 "a claim nobody looked at must not read the same as one that held");

@@ -20,8 +20,8 @@ import lombok.experimental.UtilityClass;
  * The clips a project still owes, put as questions a person can answer, and the sign that an agent
  * is chasing one feature under two names.
  *
- * <p>Both exist because of one project. 003 had "Garage customization" approved, the agent renamed
- * the feature "Garage tuning", and that was approved too: one feature, two approvals, two clips
+ * <p>Both exist because of one project. 003 had "Report customization" approved, the agent renamed
+ * the feature "Report export", and that was approved too: one feature, two approvals, two clips
  * owed. The agent had one test for it and renamed its clip from one name to the other each session,
  * so every gate found exactly one of the two missing — a different one each time — until the
  * session budget ran out. Nothing the agent can do settles that; only a person can say which name

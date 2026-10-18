@@ -15,7 +15,7 @@ import lombok.NoArgsConstructor;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class PlanStep {
 
-    /** Short imperative description, e.g. "Parse COBOL copybooks into a field tree". */
+    /** Short imperative description, e.g. "Parse the record definitions into a field tree". */
     private String step = "";
 
     /** How to do it: the approach, the files, the decisions already made. */

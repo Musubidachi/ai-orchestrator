@@ -51,7 +51,7 @@ public record Feature(String name, String demo) {
      *
      * <p>Readable on purpose, unlike the hashed ids on review items. This one is a filename the
      * agent has to produce and a person has to recognise in a directory listing —
-     * {@code feature-pink-slip-wager.webm} says what it is and {@code feature-a3f91c2b.webm} does
+     * {@code feature-monthly-summary.webm} says what it is and {@code feature-a3f91c2b.webm} does
      * not. It shares the property that matters: rename the feature and it is a different feature,
      * which is right, because an approval of the old wording should not carry over to new wording.
      */

@@ -709,7 +709,7 @@ class JobRunnerTest {
         finished("001", Phase.DONE);
         designsOffered("001");
 
-        assertTrue(jobs.askForDesigns("001", "different cars", "CODEX-9", "").startsWith("there is no design CODEX-9 to start from"));
+        assertTrue(jobs.askForDesigns("001", "vary the artwork", "CODEX-9", "").startsWith("there is no design CODEX-9 to start from"));
         assertTrue(jobs.askForDesigns("001", "  ", "CODEX-2", "").startsWith("say what to change in \"Paper cut\" first"),
                 "what to change is the whole of such a request");
         assertEquals(2, jobs.polishView("001").orElseThrow().board().options().size(), "neither touched the board");
@@ -888,10 +888,10 @@ class JobRunnerTest {
     void approvingAFeatureStartsASession() {
         // The point of the whole mechanism: a recording is not a nicety that might get done, it is
         // part of the contract, and saying yes to one is commissioning it.
-        withFeatures("001", "Garage tuning");
+        withFeatures("001", "Report export");
         quota.record(AgentKind.CLAUDE, Instant.now().plus(1, ChronoUnit.HOURS), "limit");
 
-        String message = jobs.decide("001", List.of(), List.of(approve("Garage tuning")));
+        String message = jobs.decide("001", List.of(), List.of(approve("Report export")));
 
         assertEquals(Phase.CONTINUING, stateOf("001").getPhase());
         assertTrue(message.contains("needs a recording"), message);
@@ -900,9 +900,9 @@ class JobRunnerTest {
     @Test
     @DisplayName("declining costs nothing and is remembered")
     void decliningOwesNothing() {
-        RunPaths paths = withFeatures("001", "Garage tuning");
+        RunPaths paths = withFeatures("001", "Report export");
 
-        String message = jobs.decide("001", List.of(), List.of(decline("Garage tuning", "it is just a form")));
+        String message = jobs.decide("001", List.of(), List.of(decline("Report export", "it is just a form")));
 
         assertEquals(Phase.DONE, stateOf("001").getPhase(), "a no must not start a session");
         assertTrue(message.contains("saved"), message);
@@ -915,11 +915,11 @@ class JobRunnerTest {
     @Test
     @DisplayName("approving something already filmed asks for nothing")
     void alreadyFilmedFeaturesOweNothing() throws IOException {
-        RunPaths paths = withFeatures("001", "Garage tuning");
+        RunPaths paths = withFeatures("001", "Report export");
         Clips.write(
-                paths.repo().resolve(new Feature("Garage tuning", "").recordingPath(".webm")));
+                paths.repo().resolve(new Feature("Report export", "").recordingPath(".webm")));
 
-        String message = jobs.decide("001", List.of(), List.of(approve("Garage tuning")));
+        String message = jobs.decide("001", List.of(), List.of(approve("Report export")));
 
         assertEquals(Phase.DONE, stateOf("001").getPhase());
         assertTrue(message.contains("saved"), message);
@@ -927,22 +927,22 @@ class JobRunnerTest {
 
     // ------------------------------------------------- one clip owed under two names, and Check again
 
-    private static final Feature CUSTOMIZATION = new Feature("Garage customization", "");
+    private static final Feature CUSTOMIZATION = new Feature("Report customization", "");
 
     /** 003 as it parked: one feature approved under two names, the clip made under only one. */
     private RunPaths parkedOnAClip(String id) throws IOException {
-        RunPaths paths = withFeatures(id, "Garage tuning", "Pink slip wager");
+        RunPaths paths = withFeatures(id, "Report export", "Monthly summary");
         RunState state = stateOf(id);
         state.setPhase(Phase.PARKED);
         state.setSessions(23);
         state.setLastError("still incomplete after 23 sessions");
         state.setLastFailure(new CommandResult("recordings: 1 feature(s) unfilmed", 1,
-                "Garage customization — no recording was produced", false, Duration.ZERO, ""));
+                "Report customization — no recording was produced", false, Duration.ZERO, ""));
         RunStore.save(paths.stateFile(), state);
-        DecisionStore.save(paths.featuresFile(), List.of(approve("Garage customization"),
-                approve("Garage tuning"), approve("Pink slip wager")));
-        Clips.write(paths.repo().resolve(new Feature("Garage tuning", "").recordingPath(".webm")));
-        Clips.write(paths.repo().resolve(new Feature("Pink slip wager", "").recordingPath(".webm")));
+        DecisionStore.save(paths.featuresFile(), List.of(approve("Report customization"),
+                approve("Report export"), approve("Monthly summary")));
+        Clips.write(paths.repo().resolve(new Feature("Report export", "").recordingPath(".webm")));
+        Clips.write(paths.repo().resolve(new Feature("Monthly summary", "").recordingPath(".webm")));
         return paths;
     }
 
@@ -954,9 +954,9 @@ class JobRunnerTest {
         List<MissingClip> asked = statusOf("001").review().getUnfilmed();
 
         assertEquals(1, asked.size(), asked.toString());
-        assertEquals("Garage customization", asked.get(0).name());
+        assertEquals("Report customization", asked.get(0).name());
         assertFalse(asked.get(0).listed(), "the agent stopped listing it, which is the clue");
-        assertEquals("Garage tuning", asked.get(0).sameAs().get(0));
+        assertEquals("Report export", asked.get(0).sameAs().get(0));
     }
 
     @Test
@@ -964,14 +964,14 @@ class JobRunnerTest {
     void sameFeatureDeclinesTheOldName() throws IOException {
         RunPaths paths = parkedOnAClip("001");
 
-        String message = jobs.ruleFeature("001", CUSTOMIZATION.id(), Features.DECLINED, "Garage tuning");
+        String message = jobs.ruleFeature("001", CUSTOMIZATION.id(), Features.DECLINED, "Report export");
 
         assertTrue(message.contains("no longer needs a clip") && message.contains("Check Again"), message);
         Decision ruled = Features.byId(DecisionStore.load(paths.featuresFile())).get(CUSTOMIZATION.id());
         assertEquals(Features.DECLINED, ruled.getVerdict());
-        assertTrue(ruled.latestComment().contains("Same feature as \"Garage tuning\""), ruled.latestComment());
+        assertTrue(ruled.latestComment().contains("Same feature as \"Report export\""), ruled.latestComment());
         assertEquals(Features.APPROVED, Features.byId(DecisionStore.load(paths.featuresFile()))
-                .get(new Feature("Garage tuning", "").id()).getVerdict(), "the name that stays is untouched");
+                .get(new Feature("Report export", "").id()).getVerdict(), "the name that stays is untouched");
         assertEquals(Phase.PARKED, stateOf("001").getPhase(), "a ruling starts nothing");
         assertTrue(statusOf("001").review().getUnfilmed().isEmpty(), "nothing is owed a clip now");
     }
@@ -1002,7 +1002,7 @@ class JobRunnerTest {
         RunState state = stateOf("001");
         assertEquals(Phase.PARKED, state.getPhase(), "a ruling starts nothing");
         assertTrue(state.getUserFeedback().contains("real Google ads"), state.getUserFeedback());
-        assertTrue(state.getUserFeedback().contains("artifacts/feature-garage-customization.webm"),
+        assertTrue(state.getUserFeedback().contains("artifacts/feature-report-customization.webm"),
                 "it is told the clip is still owed, under the name it is owed by");
         Decision ruled = Features.byId(DecisionStore.load(paths.featuresFile())).get(CUSTOMIZATION.id());
         assertEquals(Features.APPROVED, ruled.getVerdict());
@@ -1047,12 +1047,12 @@ class JobRunnerTest {
     void acceptedProjectsAreNotReopenedBehindYou() {
         // Acceptance is the one decision a person makes about a project. Withdrawing it as a side
         // effect of ticking a checkbox elsewhere on the page is not a thing a tool should do.
-        RunPaths paths = withFeatures("001", "Garage tuning");
+        RunPaths paths = withFeatures("001", "Report export");
         RunState state = stateOf("001");
         state.setPhase(Phase.ACCEPTED);
         RunStore.save(paths.stateFile(), state);
 
-        String message = jobs.decide("001", List.of(), List.of(approve("Garage tuning")));
+        String message = jobs.decide("001", List.of(), List.of(approve("Report export")));
 
         assertEquals(Phase.ACCEPTED, stateOf("001").getPhase());
         assertTrue(message.contains("Reopen"), message);
@@ -1085,12 +1085,12 @@ class JobRunnerTest {
     @Test
     @DisplayName("asking for something already filmed asks for nothing again")
     void askingForSomethingAlreadyFilmedIsIdempotent() throws IOException {
-        RunPaths paths = withFeatures("001", "Garage tuning");
+        RunPaths paths = withFeatures("001", "Report export");
         Clips.write(
-                paths.repo().resolve(new Feature("Garage tuning", "").recordingPath(".webm")));
+                paths.repo().resolve(new Feature("Report export", "").recordingPath(".webm")));
 
         // Different capitalisation, same feature: the slug is what identifies it.
-        String message = jobs.decide("001", List.of(), List.of(Decision.of("", "garage TUNING", Features.APPROVED, "")));
+        String message = jobs.decide("001", List.of(), List.of(Decision.of("", "report EXPORT", Features.APPROVED, "")));
 
         assertEquals(Phase.DONE, stateOf("001").getPhase());
         assertTrue(message.contains("saved"), message);
@@ -1101,23 +1101,23 @@ class JobRunnerTest {
     @Test
     @DisplayName("a change asked of a feature reaches the agent, even once it is filmed")
     void featureChangesReachTheBrief() throws IOException {
-        // Reported: "if the user loses every owned car, offer an ad to buy one from a dealer" was
-        // typed beside an approved feature, saved, shown — and the word "dealer" never appeared in
+        // Reported: "if a batch fails, offer an ad to buy more credit" was
+        // typed beside an approved feature, saved, shown — and the word "credit" never appeared in
         // any agent's log. The session was told to film the feature and nothing else.
-        RunPaths paths = withFeatures("001", "Empty garage reset");
+        RunPaths paths = withFeatures("001", "Empty report reset");
         Clips.write(
-                paths.repo().resolve(new Feature("Empty garage reset", "").recordingPath(".webm")));
+                paths.repo().resolve(new Feature("Empty report reset", "").recordingPath(".webm")));
         quota.record(AgentKind.CLAUDE, Instant.now().plus(1, ChronoUnit.HOURS), "limit");
 
-        Decision change = Decision.of(new Feature("Empty garage reset", "").id(),
-                "Empty garage reset", Features.CHANGES,
-                "offer an ad to buy one of the cars from a dealer");
+        Decision change = Decision.of(new Feature("Empty report reset", "").id(),
+                "Empty report reset", Features.CHANGES,
+                "offer an ad to buy more credit");
         jobs.decide("001", List.of(), List.of(change));
 
         RunState state = stateOf("001");
         assertEquals(Phase.CONTINUING, state.getPhase(), "a filmed feature owes nothing, but a "
                 + "change to it is still work");
-        assertTrue(state.getUserFeedback().contains("dealer"), "the request never reached the "
+        assertTrue(state.getUserFeedback().contains("credit"), "the request never reached the "
                 + "brief:\n" + state.getUserFeedback());
         assertTrue(state.getUserFeedback().contains("recording shows it working the new way"),
                 state.getUserFeedback());
@@ -1128,15 +1128,15 @@ class JobRunnerTest {
     void featureChangesSettleOnceDelivered() throws IOException {
         // Otherwise the verdict outlives the work: the change is built, the project finishes, and
         // the very submission meant to accept it finds "needs changes" still on record.
-        RunPaths paths = withFeatures("001", "Empty garage reset");
+        RunPaths paths = withFeatures("001", "Empty report reset");
         quota.record(AgentKind.CLAUDE, Instant.now().plus(1, ChronoUnit.HOURS), "limit");
         jobs.decide("001", List.of(), List.of(Decision.of(
-                new Feature("Empty garage reset", "").id(), "Empty garage reset",
-                Features.CHANGES, "offer a dealer")));
+                new Feature("Empty report reset", "").id(), "Empty report reset",
+                Features.CHANGES, "offer more credit")));
 
         Decision stored = DecisionStore.load(paths.featuresFile()).get(0);
         assertEquals(Features.APPROVED, stored.getVerdict());
-        assertEquals(List.of("offer a dealer"),
+        assertEquals(List.of("offer more credit"),
                 stored.getComments().stream().map(Comment::text).toList(),
                 "the note is kept; only the instruction has been carried out");
     }
@@ -1146,37 +1146,37 @@ class JobRunnerTest {
     void featureRemarksTravelWithRecordingWork() {
         // The recording-only branch set the brief to null, which is exactly how the reported note
         // was lost: the feature was unfilmed, so a session started — told nothing but "film it".
-        withFeatures("001", "Empty garage reset");
+        withFeatures("001", "Empty report reset");
         quota.record(AgentKind.CLAUDE, Instant.now().plus(1, ChronoUnit.HOURS), "limit");
 
         jobs.decide("001", List.of(), List.of(Decision.of(
-                new Feature("Empty garage reset", "").id(), "Empty garage reset",
-                Features.APPROVED, "slight modification: offer an ad from a dealer")));
+                new Feature("Empty report reset", "").id(), "Empty report reset",
+                Features.APPROVED, "slight modification: offer an ad for more credit")));
 
         String brief = stateOf("001").getUserFeedback();
         assertNotNull(brief, "the session was started with nothing from the person");
-        assertTrue(brief.contains("dealer"), brief);
+        assertTrue(brief.contains("credit"), brief);
     }
 
     @Test
     @DisplayName("a note beside a filmed feature is not accepted over, and is delivered once")
     void featureNotesAreNotAcceptedOver() throws IOException {
         // 003 as it stands: every feature filmed and approved, the review clean, and "Slight
-        // modification … offer an AD to purchase one of the cars from a dealer" under Worth seeing.
+        // modification … offer an AD to purchase more credit" under Worth seeing.
         // Submitting that accepted the project, and the request was never read by an agent.
-        RunPaths paths = withFeatures("001", "Empty garage reset");
+        RunPaths paths = withFeatures("001", "Empty report reset");
         Clips.write(
-                paths.repo().resolve(new Feature("Empty garage reset", "").recordingPath(".webm")));
+                paths.repo().resolve(new Feature("Empty report reset", "").recordingPath(".webm")));
         quota.record(AgentKind.CLAUDE, Instant.now().plus(1, ChronoUnit.HOURS), "limit");
-        String id = new Feature("Empty garage reset", "").id();
+        String id = new Feature("Empty report reset", "").id();
 
         String message = jobs.decide("001", List.of(ok("unproven-0", "the draw branch is untested")),
-                List.of(Decision.of(id, "Empty garage reset", Features.APPROVED,
-                        "slight modification: offer an ad to buy a car from a dealer")));
+                List.of(Decision.of(id, "Empty report reset", Features.APPROVED,
+                        "slight modification: offer an ad to buy more credit")));
 
         RunState state = stateOf("001");
         assertEquals(Phase.CONTINUING, state.getPhase(), message);
-        assertTrue(state.getUserFeedback().contains("dealer"), state.getUserFeedback());
+        assertTrue(state.getUserFeedback().contains("credit"), state.getUserFeedback());
         assertTrue(message.contains("note on a feature"), message);
 
         // The session runs and finishes; the same form submitted again, with nothing new typed.
@@ -1186,37 +1186,37 @@ class JobRunnerTest {
 
         assertEquals("accepted", jobs.decide("001",
                 List.of(ok("unproven-0", "the draw branch is untested")),
-                List.of(Decision.of(id, "Empty garage reset", Features.APPROVED, ""))));
+                List.of(Decision.of(id, "Empty report reset", Features.APPROVED, ""))));
     }
 
     @Test
     @DisplayName("a feature note already delivered is not sent with the next session")
     void deliveredFeatureNotesAreNotRepeated() throws IOException {
-        RunPaths paths = withFeatures("001", "Empty garage reset", "Garage tuning");
+        RunPaths paths = withFeatures("001", "Empty report reset", "Report export");
         Clips.write(
-                paths.repo().resolve(new Feature("Empty garage reset", "").recordingPath(".webm")));
+                paths.repo().resolve(new Feature("Empty report reset", "").recordingPath(".webm")));
         Clips.write(
-                paths.repo().resolve(new Feature("Garage tuning", "").recordingPath(".webm")));
+                paths.repo().resolve(new Feature("Report export", "").recordingPath(".webm")));
         quota.record(AgentKind.CLAUDE, Instant.now().plus(1, ChronoUnit.HOURS), "limit");
-        jobs.decide("001", List.of(), List.of(Decision.of(new Feature("Empty garage reset", "").id(),
-                "Empty garage reset", Features.APPROVED, "offer a dealer")));
+        jobs.decide("001", List.of(), List.of(Decision.of(new Feature("Empty report reset", "").id(),
+                "Empty report reset", Features.APPROVED, "offer more credit")));
         RunState state = stateOf("001");
         state.setPhase(Phase.DONE);
         RunStore.save(paths.stateFile(), state);
 
-        jobs.decide("001", List.of(), List.of(Decision.of(new Feature("Garage tuning", "").id(),
-                "Garage tuning", Features.APPROVED, "let paint be metallic")));
+        jobs.decide("001", List.of(), List.of(Decision.of(new Feature("Report export", "").id(),
+                "Report export", Features.APPROVED, "let paint be metallic")));
 
         String brief = stateOf("001").getUserFeedback();
         assertTrue(brief.contains("metallic"), brief);
-        assertFalse(brief.contains("dealer"), "an old remark went back as though it were new:\n" + brief);
+        assertFalse(brief.contains("credit"), "an old remark went back as though it were new:\n" + brief);
     }
 
     @Test
     @DisplayName("an idea taken up is asked for as something to build, not something to film")
     void approvedIdeasAreBuildRequests() {
         // An agent told to film a feature that does not exist will film whatever screen is nearest.
-        withFeatures("001", "Garage tuning");
+        withFeatures("001", "Report export");
         RunPaths paths = RunPaths.under(home.runs(), "001");
         RunState state = stateOf("001");
         state.getPlan().getIdeas().add(new PlanFeature(
@@ -1664,7 +1664,7 @@ class JobRunnerTest {
     @Test
     @DisplayName("nothing submitted is not an approval of everything")
     void emptySubmissionApprovesNothing() {
-        withFeatures("001", "Garage tuning");
+        withFeatures("001", "Report export");
 
         assertEquals("nothing was submitted", jobs.decide("001", List.of(), List.of()));
         assertEquals(Phase.DONE, stateOf("001").getPhase());

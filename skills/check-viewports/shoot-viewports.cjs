@@ -67,7 +67,7 @@ if (!url) {
         const name = (el.getAttribute("aria-label") || el.textContent || el.tagName).trim().slice(0, 40);
         if (b.right > doc.clientWidth + 1 || b.left < -1) found.push(`"${name}" is cut off at the side`);
         if (touch && (b.width < 44 || b.height < 44)) found.push(`"${name}" is ${Math.round(b.width)}x${Math.round(b.height)}, under the 44px a finger needs`);
-        // A button is wider than tall. Center Defense's broken desktop buttons were about 130x215.
+        // A button is wider than tall. Timesheet Report's broken desktop buttons were about 130x215.
         if (el.tagName !== "TEXTAREA" && el.tagName !== "SELECT" && b.height > 1.5 * Math.max(b.width, 1) && b.height > 100) {
           found.push(`"${name}" is stretched: ${Math.round(b.width)}x${Math.round(b.height)}, taller than it is wide`);
         }

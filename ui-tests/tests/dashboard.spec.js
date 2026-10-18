@@ -293,8 +293,8 @@ test("the clips play in the page, with no controls on them", async ({ page }) =>
   await expect(gallery).toHaveCount(2);
 
   const filmed = gallery.first();
-  await expect(filmed).toContainText("Garage tuning");
-  await expect(filmed).toContainText("change the gearing");
+  await expect(filmed).toContainText("Report export");
+  await expect(filmed).toContainText("export a report");
   await expect(filmed.locator("img, video")).toHaveCount(1);
   await expect(filmed).toContainText("recorded by the last gate run");
 
@@ -332,7 +332,7 @@ test("the quick review deals the same review one decision at a time", async ({ p
 
   // Then the feature nobody has ruled on. The one already approved is not asked about again.
   const feature = page.locator(".card.feature");
-  await expect(feature.locator("h1")).toHaveText("Pink slip wager");
+  await expect(feature.locator("h1")).toHaveText("Monthly summary");
   await expect(feature.locator(".noclip")).toBeVisible();
   // "Change it" with nothing said is not an instruction, so it does not move on.
   await feature.locator(".change").click();
@@ -354,7 +354,7 @@ test("the quick review deals the same review one decision at a time", async ({ p
   await expect(final.locator("#submit")).toHaveText("Send back 2 things");
   await expect(final.locator(".summary")).toContainText("AWS access key id committed");
   await expect(final.locator(".summary")).toContainText("tab through it once");
-  await expect(final.locator(".summary")).toContainText("Keep: Pink slip wager");
+  await expect(final.locator(".summary")).toContainText("Keep: Monthly summary");
   await expect(final).toContainText("Keeping 1 feature with no recording sends the project back");
   expect(posted).toBeNull();
 
@@ -373,7 +373,7 @@ test("the quick review deals the same review one decision at a time", async ({ p
   expect(posted.decisions[0].comment).toBe("revoke it first");
   expect(posted.decisions[2].text).toBe("keyboard controls are untested");
   expect(posted.features).toEqual([
-    { itemId: "feature-pink-slip-wager", text: "Pink slip wager", verdict: "approved", comment: "" }]);
+    { itemId: "feature-monthly-summary", text: "Monthly summary", verdict: "approved", comment: "" }]);
   await expect(page.locator(".card.done")).toContainText("sent back; started");
   await expect(page.locator("#prev")).toBeDisabled();
 });
@@ -603,12 +603,12 @@ test("one submission carries the review and the features together", async ({ pag
   // approving something unfilmed reopens the project and spends a session, so that path is
   // tested against stub agents in JobRunnerTest rather than against the real CLIs.
   await unruled.locator("input[value=declined]").check();
-  await unruled.locator(".decide-comment").fill("the race already shows it");
+  await unruled.locator(".decide-comment").fill("the summary already shows it");
 
   // Something the agent never proposed, typed in a different case on purpose: the id is derived
   // from the name on the server, so this has to resolve to the feature already filmed rather than
   // commissioning a second recording of the same thing.
-  await page.locator(".feature-add .feature-name").fill("garage TUNING");
+  await page.locator(".feature-add .feature-name").fill("report EXPORT");
 
   // And the review, in the same sitting and the same click.
   await page.locator("[data-kind=review]").first().locator(".decide-comment")
@@ -628,7 +628,7 @@ test("one submission carries the review and the features together", async ({ pag
   expect(read("decisions.json")).toContain("fine, but it wants a real test");
   expect(read("decisions.json")).toContain("worth remembering anyway");
   expect(read("features.json")).toContain("declined");
-  expect(read("features.json")).toContain("the race already shows it");
+  expect(read("features.json")).toContain("the summary already shows it");
 });
 
 test("the plus button opens the editor prefilled for an enhancement", async ({ page }) => {
@@ -1025,8 +1025,8 @@ test("a project parked on a clip asks about it, and can be checked again without
       j.phase = "PARKED";
       j.lastError = "still incomplete after 23 sessions";
       j.lastFailingCommand = "recordings: 1 feature(s) unfilmed";
-      j.unfilmed = [{ id: "feature-garage-customization", name: "Garage customization", listed: false,
-                      sameAs: ["Garage tuning", "Empty garage reset"], problem: "no recording was produced" }];
+      j.unfilmed = [{ id: "feature-report-customization", name: "Report customization", listed: false,
+                      sameAs: ["Report export", "Empty report reset"], problem: "no recording was produced" }];
     });
     await route.fulfill({ response, json: jobs });
   });
@@ -1035,7 +1035,7 @@ test("a project parked on a clip asks about it, and can be checked again without
   await page.route("**/api/jobs/feature", async (route) => {
     ruled = route.request().postDataJSON();
     await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({
-      result: "\"Garage customization\" no longer needs a clip: it is \"Garage tuning\". "
+      result: "\"Report customization\" no longer needs a clip: it is \"Report export\". "
         + "Check Again runs the gate without spending a session." }) });
   });
   let rechecked = null;
@@ -1049,15 +1049,15 @@ test("a project parked on a clip asks about it, and can be checked again without
   const gamma = await open(page, "003");
   const question = gamma.locator(".clipq");
   await expect(question).toHaveCount(1);
-  await expect(question).toContainText("Garage customization");
+  await expect(question).toContainText("Report customization");
   await expect(question.locator(".clipwhy")).toContainText("no longer lists it");
   // The likeliest twin is offered first, so the usual answer is one press.
-  await expect(question.locator(".twin")).toHaveValue("Garage tuning");
+  await expect(question.locator(".twin")).toHaveValue("Report export");
   await expect(gamma.locator(".move-sub")).toContainText("Check Again runs the gate without spending a session");
 
   await question.locator(".same").click();
-  await expect.poll(() => ruled).toEqual({ id: "003", itemId: "feature-garage-customization",
-                                           verdict: "declined", sameAs: "Garage tuning", note: "" });
+  await expect.poll(() => ruled).toEqual({ id: "003", itemId: "feature-report-customization",
+                                           verdict: "declined", sameAs: "Report export", note: "" });
   await expect(gamma.locator(".msg")).toContainText("no longer needs a clip");
 
   const recheck = gamma.locator(".recheck");
@@ -1077,7 +1077,7 @@ test("still wanted, with a note, is sent, said plainly, and then reads as answer
       j.phase = "PARKED";
       j.lastError = "still incomplete after 24 sessions";
       j.lastFailingCommand = "recordings: 1 feature(s) unfilmed";
-      j.unfilmed = [{ id: "feature-dealer-car-for-an-ad", name: "Dealer car for an ad", listed: false,
+      j.unfilmed = [{ id: "feature-credit-offer-for-an-ad", name: "Credit offer for an ad", listed: false,
                       sameAs: [], problem: "no recording was produced", kept }];
     });
     await route.fulfill({ response, json: jobs });
@@ -1087,7 +1087,7 @@ test("still wanted, with a note, is sent, said plainly, and then reads as answer
     ruled = route.request().postDataJSON();
     kept = true;
     await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({
-      result: "\"Dealer car for an ad\" is still wanted, with your note. Run Another Session sends the "
+      result: "\"Credit offer for an ad\" is still wanted, with your note. Run Another Session sends the "
         + "note to the agent, and the agent builds and films it." }) });
   });
   await page.reload();
@@ -1100,7 +1100,7 @@ test("still wanted, with a note, is sent, said plainly, and then reads as answer
   await question.locator(".note").fill("it should use real Google ads");
   await question.locator(".keep").click();
 
-  await expect.poll(() => ruled).toEqual({ id: "003", itemId: "feature-dealer-car-for-an-ad",
+  await expect.poll(() => ruled).toEqual({ id: "003", itemId: "feature-credit-offer-for-an-ad",
                                            verdict: "approved", sameAs: "", note: "it should use real Google ads" });
   await expect(gamma.locator(".msg")).toContainText("with your note");
   await expect(gamma.locator(".clipq.kept")).toContainText("still wanted");
@@ -1167,39 +1167,39 @@ test("a design kept with a note brings the note back when it is built", async ({
 });
 
 test("more like one design asks what to change first, then sends that design with it", async ({ page }) => {
-  // 003: asked again with "I like the Sticker Garage, try different cars", the designers never saw it
+  // 003: asked again with "I like the Bright Panel, vary the artwork", the designers never saw it
   // and redrew everything; the page that was liked went with the board.
   await page.route("**/api/polish?id=003", (route) => route.fulfill({
     status: 200, contentType: "application/json", body: JSON.stringify({
       id: "003", title: "Gamma Project", running: false, blocked: "", buildAs: "session", kept: false,
       board: { askedAt: "2026-10-06T20:00:00Z", note: "", state: "none", refused: ["CODEX is out of quota"],
         chosen: "", chosenAt: null, chosenNote: "",
-        options: [{ id: "LIKED", vendor: "CLAUDE", name: "Sticker Garage", pitch: "a bright cartoon pit-lane",
+        options: [{ id: "LIKED", vendor: "CLAUDE", name: "Bright Panel", pitch: "a bright cartoon pit-lane",
                     file: "design/liked.html" }] } }) }));
   let asked = null;
   await page.route("**/api/polish/ask", async (route) => {
     asked = route.request().postDataJSON();
     await route.fulfill({ status: 200, contentType: "application/json",
-      body: JSON.stringify({ result: "asking 2 models for designs like \"Sticker Garage\"" }) });
+      body: JSON.stringify({ result: "asking 2 models for designs like \"Bright Panel\"" }) });
   });
 
   await page.goto("/polish?id=003");
-  const garage = page.locator(".option", { hasText: "Sticker Garage" });
+  const liked = page.locator(".option", { hasText: "Bright Panel" });
   // Nobody drew anything last time, and the design it started from is still there to pick.
   await expect(page.locator("#options")).toContainText("No model offered a design");
-  await expect(garage.locator(".tag")).toHaveText("the one you started from");
-  await expect(garage.locator(".build")).toBeEnabled();
+  await expect(liked.locator(".tag")).toHaveText("the one you started from");
+  await expect(liked.locator(".build")).toBeEnabled();
 
   // With nothing typed, nothing is spent: the box is pointed at instead.
-  await garage.locator(".more").click();
-  await expect(page.locator("#result")).toContainText("Say what to change in “Sticker Garage”");
+  await liked.locator(".more").click();
+  await expect(page.locator("#result")).toContainText("Say what to change in “Bright Panel”");
   await expect(page.locator("#note")).toBeFocused();
   expect(asked).toBeNull();
 
-  await page.locator("#note").fill("different car looks");
-  await garage.locator(".more").click();
-  await expect.poll(() => asked).toEqual({ id: "003", note: "different car looks", base: "LIKED" });
-  await expect(page.locator("#result")).toContainText("like \"Sticker Garage\"");
+  await page.locator("#note").fill("vary the artwork");
+  await liked.locator(".more").click();
+  await expect.poll(() => asked).toEqual({ id: "003", note: "vary the artwork", base: "LIKED" });
+  await expect(page.locator("#result")).toContainText("like \"Bright Panel\"");
 });
 
 test("extras are asked for and built beside the current look, never instead of it", async ({ page }) => {

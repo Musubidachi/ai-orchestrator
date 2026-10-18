@@ -19,7 +19,7 @@ class SecurityReviewTest {
                 Here is my review.
                 {"findings":[
                   {"severity":"high","confirmed":true,"file":"src/ui/screens.ts","title":"player name rendered as HTML",
-                   "detail":"name from the URL reaches innerHTML in renderGarage","cwe":"CWE-79"},
+                   "detail":"name from the URL reaches innerHTML in renderReport","cwe":"CWE-79"},
                   {"severity":"critical","confirmed":false,"file":"src/save.ts","title":"save file might be tampered with",
                    "detail":"localStorage is trusted"},
                   {"severity":"weird","title":"odd severity"}],

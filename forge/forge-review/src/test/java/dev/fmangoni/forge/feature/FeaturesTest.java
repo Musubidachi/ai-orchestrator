@@ -54,25 +54,25 @@ class FeaturesTest {
     @Test
     @DisplayName("a feature is identified by a name a person can read in a directory listing")
     void slugIsReadable() {
-        assertEquals("feature-pink-slip-wager", new Feature("Pink slip wager", "").id());
-        assertEquals("artifacts/feature-pink-slip-wager.webm",
-                new Feature("Pink slip wager", "").recordingPath(".webm"));
+        assertEquals("feature-monthly-summary", new Feature("Monthly summary", "").id());
+        assertEquals("artifacts/feature-monthly-summary.webm",
+                new Feature("Monthly summary", "").recordingPath(".webm"));
     }
 
     @Test
     @DisplayName("punctuation and case do not change which feature it is")
     void slugIsStable() {
-        assertEquals(new Feature("Race start & shifting", "").id(),
-                new Feature("race start and shifting", "").id().replace("-and-", "-"));
+        assertEquals(new Feature("Export start & totals", "").id(),
+                new Feature("export start and totals", "").id().replace("-and-", "-"));
     }
 
     @Test
     @DisplayName("renaming a feature makes it a new one, so an old approval does not carry over")
     void renamingBreaksIdentity() {
-        // The same rule the review items follow, for the same reason: approving "Garage tuning"
+        // The same rule the review items follow, for the same reason: approving "Report export"
         // is not approving whatever the agent decides to call it next session.
-        assertFalse(new Feature("Garage tuning", "").id()
-                .equals(new Feature("Garage tuning and dyno", "").id()));
+        assertFalse(new Feature("Report export", "").id()
+                .equals(new Feature("Report export and totals", "").id()));
     }
 
     @Test
@@ -105,13 +105,13 @@ class FeaturesTest {
     @Test
     @DisplayName("only what was approved is owed")
     void onlyApprovedIsOwed() {
-        List<Feature> proposed = Feature.of(planWith("Garage tuning", "Pink slip wager"));
+        List<Feature> proposed = Feature.of(planWith("Report export", "Monthly summary"));
 
         List<Feature> approved = Features.owed(proposed, List.of(
                 ruling(proposed.get(0), Features.APPROVED),
                 ruling(proposed.get(1), Features.DECLINED)));
 
-        assertEquals(List.of("Garage tuning"), approved.stream().map(Feature::name).toList());
+        assertEquals(List.of("Report export"), approved.stream().map(Feature::name).toList());
     }
 
     @Test
@@ -120,7 +120,7 @@ class FeaturesTest {
         // The failure this prevents is the whole mechanism turning hostile: an agent that lists
         // nine features would otherwise saddle the project with nine recordings nobody asked for,
         // and the gate would park it until they all existed.
-        List<Feature> proposed = Feature.of(planWith("Garage tuning", "Pink slip wager"));
+        List<Feature> proposed = Feature.of(planWith("Report export", "Monthly summary"));
 
         assertTrue(Features.owed(proposed, List.of()).isEmpty());
     }
@@ -130,12 +130,12 @@ class FeaturesTest {
     @Test
     @DisplayName("an approved feature with no clip is what is still owed")
     void unrecordedIsWhatIsOwed() throws IOException {
-        List<Feature> proposed = Feature.of(planWith("Garage tuning", "Pink slip wager"));
+        List<Feature> proposed = Feature.of(planWith("Report export", "Monthly summary"));
         record(proposed.get(0), ".webm");
 
         List<RecordingTake> missing = Features.unrecorded(repo, proposed);
 
-        assertEquals(List.of("Pink slip wager"),
+        assertEquals(List.of("Monthly summary"),
                 missing.stream().map(take -> take.feature().name()).toList());
     }
 
@@ -155,7 +155,7 @@ class FeaturesTest {
     void unusableFilesDoNotCount() throws IOException {
         // A zero-byte .webm is what a failed encode leaves behind, and it plays as a broken box in
         // the report. Counting it would turn a failure into a pass in the one place nobody looks.
-        Feature feature = new Feature("Garage tuning", "");
+        Feature feature = new Feature("Report export", "");
         Path file = repo.resolve(feature.recordingPath(".webm"));
         Files.createDirectories(file.getParent());
         Files.createFile(file);
@@ -171,12 +171,12 @@ class FeaturesTest {
         // The opposite rule to review verdicts, deliberately. A verdict is a judgement about
         // something the agent claimed, so it expires with the claim; an approval is a request the
         // reader made, and a list the agent controls must not be able to cancel it.
-        List<Feature> proposed = Feature.of(planWith("Garage tuning"));
+        List<Feature> proposed = Feature.of(planWith("Report export"));
         Decision approved = ruling(proposed.get(0), Features.APPROVED);
 
         List<Feature> owed = Features.owed(List.of(), List.of(approved));
 
-        assertEquals(List.of("Garage tuning"), owed.stream().map(Feature::name).toList());
+        assertEquals(List.of("Report export"), owed.stream().map(Feature::name).toList());
     }
 
     @Test
@@ -199,12 +199,12 @@ class FeaturesTest {
     @Test
     @DisplayName("the page lists what was proposed and what was asked for, without duplicates")
     void listedCoversBothSources() {
-        List<Feature> proposed = Feature.of(planWith("Garage tuning"));
+        List<Feature> proposed = Feature.of(planWith("Report export"));
         List<Decision> rulings = List.of(
                 ruling(proposed.get(0), Features.APPROVED),
                 Decision.of("feature-offline-mode", "Offline mode", Features.APPROVED, ""));
 
-        assertEquals(List.of("Garage tuning", "Offline mode"),
+        assertEquals(List.of("Report export", "Offline mode"),
                 Features.listed(proposed, rulings).stream().map(Feature::name).toList());
     }
 

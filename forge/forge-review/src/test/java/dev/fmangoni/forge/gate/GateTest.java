@@ -134,7 +134,7 @@ class GateTest {
     @EnabledOnOs(OS.WINDOWS)
     @DisplayName("acceptance runs as CI, so a test suite starts its own server rather than reusing one")
     void acceptanceRunsAsCi() throws IOException {
-        // Pink Slip's playwright.config.ts: reuseExistingServer: !process.env.CI. Without CI set,
+        // Invoice Tool's playwright.config.ts: reuseExistingServer: !process.env.CI. Without CI set,
         // anything already on port 4173 — last session's preview build, another project's — was
         // what the gate tested and filmed.
         run(List.of("echo %CI%> ci.txt"), List.of());
@@ -255,7 +255,7 @@ class GateTest {
     void aRunFileInTheAnsiCodePageIsRead() throws IOException {
         // What PowerShell's Set-Content writes. The em dash is the single byte 0x97, which is not
         // UTF-8, and reading the file as UTF-8 threw: the gate then said every line was a comment.
-        Files.write(repo.resolve(RunFile.NAME), "@echo off\r\nrem Center Defense \u2014 starts the game\r\ncall npm run dev\r\n"
+        Files.write(repo.resolve(RunFile.NAME), "@echo off\r\nrem Timesheet Report \u2014 starts the game\r\ncall npm run dev\r\n"
                 .getBytes("windows-1252"));
 
         assertTrue(run(List.of("echo built"), List.of()).passed());
@@ -334,12 +334,12 @@ class GateTest {
         // Asking politely did not work. The house rules have requested recordings of interactive
         // work since the first line of them, and six projects produced one recording between them.
         GateResult result = gate.run(List.of("echo built"), List.of(), OVERVIEW,
-                List.of(feature("Pink slip wager")));
+                List.of(feature("Monthly summary")));
 
         assertFalse(result.passed());
         String output = result.firstFailure().orElseThrow().output();
-        assertTrue(output.contains("Pink slip wager"), output);
-        assertTrue(output.contains("artifacts/feature-pink-slip-wager.webm"),
+        assertTrue(output.contains("Monthly summary"), output);
+        assertTrue(output.contains("artifacts/feature-monthly-summary.webm"),
                 "a requirement whose filename must be guessed is one that fails on spelling:\n"
                         + output);
         assertTrue(output.contains("click the thing"), "the agent is not told what to film:\n"
@@ -351,24 +351,24 @@ class GateTest {
     void everyOwedClipIsListed() throws IOException {
         // 003: one feature approved under two names, and one test filming it. Told only which name
         // was missing, the agent renamed the clip from the other each session until they ran out.
-        var tuning = feature("Garage tuning");
-        var customization = feature("Garage customization");
+        var tuning = feature("Report export");
+        var customization = feature("Report customization");
 
         GateResult result = gate.run(List.of(recordsDuringTheRun(tuning)), List.of(), OVERVIEW,
                 List.of(customization, tuning));
 
         assertFalse(result.passed());
         String output = result.firstFailure().orElseThrow().output();
-        assertTrue(output.contains("Garage tuning: filmed, at artifacts/feature-garage-tuning.webm"), output);
-        assertTrue(output.contains("Garage customization: MISSING, expected at "
-                + "artifacts/feature-garage-customization.webm"), output);
+        assertTrue(output.contains("Report export: filmed, at artifacts/feature-report-export.webm"), output);
+        assertTrue(output.contains("Report customization: MISSING, expected at "
+                + "artifacts/feature-report-customization.webm"), output);
         assertTrue(output.contains("do not rename one clip to satisfy the other"), output);
     }
 
     @Test
     @DisplayName("a feature filmed by an acceptance command passes")
     void filmedDuringTheRunPasses() throws IOException {
-        var filmed = feature("Pink slip wager");
+        var filmed = feature("Monthly summary");
 
         assertTrue(gate.run(List.of(recordsDuringTheRun(filmed)), List.of(), OVERVIEW,
                 List.of(filmed)).passed());
@@ -380,7 +380,7 @@ class GateTest {
         // The check that makes this mechanism worth anything. Forge cannot watch a video, so it
         // does not try to decide whether a clip is genuine — it requires the clip to be produced,
         // from source, by a command it ran itself. A hand-made file cannot survive that.
-        var filmed = feature("Pink slip wager");
+        var filmed = feature("Monthly summary");
         commit(filmed);
 
         GateResult result = gate.run(List.of("echo built"), List.of(), OVERVIEW, List.of(filmed));
@@ -395,7 +395,7 @@ class GateTest {
     @DisplayName("a file that is not a recording is refused, and the reason is given")
     void stubsAreRefusedWithAReason() throws IOException {
         // An empty file with the right name satisfied the old check completely.
-        var filmed = feature("Pink slip wager");
+        var filmed = feature("Monthly summary");
         String write = "echo not a video> "
                 + filmed.recordingPath(".webm").replace('/', File.separatorChar);
 
@@ -413,12 +413,12 @@ class GateTest {
     void recordingsAreCollectedAutomatically() throws IOException {
         // Owed by the contract rather than by the spec author, so requiring them in the evidence
         // list as well would only be a way to forget one.
-        var filmed = feature("Garage tuning");
+        var filmed = feature("Report export");
 
         gate.run(List.of(recordsDuringTheRun(filmed)), List.of(), OVERVIEW, List.of(filmed));
 
         assertTrue(Files.isRegularFile(
-                evidence.resolve("artifacts/feature-garage-tuning.webm")), "not collected");
+                evidence.resolve("artifacts/feature-report-export.webm")), "not collected");
     }
 
     @Test
@@ -426,13 +426,13 @@ class GateTest {
     void partialRecordingsAreStillCollected() throws IOException {
         // The report is how anyone finds out which of the two was filmed, and it can only show
         // what was collected. Withholding them until the set is complete hides the progress.
-        var filmed = feature("Garage tuning");
+        var filmed = feature("Report export");
 
         GateResult result = gate.run(List.of(recordsDuringTheRun(filmed)), List.of(), OVERVIEW,
-                List.of(filmed, feature("Pink slip wager")));
+                List.of(filmed, feature("Monthly summary")));
 
         assertFalse(result.passed());
-        assertTrue(Files.isRegularFile(evidence.resolve("artifacts/feature-garage-tuning.webm")));
+        assertTrue(Files.isRegularFile(evidence.resolve("artifacts/feature-report-export.webm")));
     }
 
     @Test
@@ -445,7 +445,7 @@ class GateTest {
     @DisplayName("a failing build is not also blamed for having filmed nothing")
     void doesNotReportMissingRecordingsWhenTheBuildFailed() {
         GateResult result = gate.run(List.of("exit 1"), List.of(), OVERVIEW,
-                List.of(feature("Pink slip wager")));
+                List.of(feature("Monthly summary")));
 
         assertEquals(1, result.commands().size(), "the real failure should not be buried");
         assertEquals("exit 1", result.firstFailure().orElseThrow().command());

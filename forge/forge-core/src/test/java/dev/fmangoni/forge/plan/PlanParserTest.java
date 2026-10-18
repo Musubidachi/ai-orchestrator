@@ -12,12 +12,12 @@ class PlanParserTest {
     private static final String HANDOFF = """
             {"status":"partial",
              "summary":"Parser and model are done; codegen is not started.",
-             "completed":["Copybook lexer","Field tree model"],
+             "completed":["Record lexer","Field tree model"],
              "remaining":[
-               {"step":"Generate JAX-RS resources","detail":"Reuse FieldTree; one resource per 01 level","estimate_minutes":45},
+               {"step":"Generate the resource classes","detail":"Reuse FieldTree; one per top-level record","estimate_minutes":45},
                {"step":"Wire the CLI","detail":"picocli is already a dependency","estimate_minutes":20}],
              "sessions_needed":2,
-             "risks":["REDEFINES clauses are not handled yet"]}
+             "risks":["Overlapping field definitions are not handled yet"]}
             """;
 
     @Test
@@ -28,7 +28,7 @@ class PlanParserTest {
         assertEquals(2, plan.getCompleted().size());
         assertEquals(2, plan.getRemaining().size());
         assertEquals(2, plan.getSessionsNeeded());
-        assertEquals("Generate JAX-RS resources", plan.getRemaining().get(0).getStep());
+        assertEquals("Generate the resource classes", plan.getRemaining().get(0).getStep());
         assertEquals(65, plan.remainingMinutes());
         assertTrue(plan.partial());
     }
@@ -42,13 +42,13 @@ class PlanParserTest {
                 Built it.
                 {"status":"complete","summary":"done",
                  "features":[
-                   {"name":"Garage tuning","demo":"change the gearing, watch the dyno move"},
-                   {"name":"Pink slip wager","demo":"win, see the car transfer"}]}
+                   {"name":"Report export","demo":"export a report, open the file"},
+                   {"name":"Bulk import","demo":"import a batch, see the rows appear"}]}
                 """);
 
         assertEquals(2, plan.getFeatures().size());
-        assertEquals("Garage tuning", plan.getFeatures().get(0).getName());
-        assertEquals("change the gearing, watch the dyno move",
+        assertEquals("Report export", plan.getFeatures().get(0).getName());
+        assertEquals("export a report, open the file",
                 plan.getFeatures().get(0).getDemo());
     }
 
@@ -58,7 +58,7 @@ class PlanParserTest {
         Plan plan = PlanParser.parse("""
                 Done.
                 {"status":"complete","summary":"done",
-                 "features":[{"name":"Garage tuning","demo":"x"}],
+                 "features":[{"name":"Report export","demo":"x"}],
                  "ideas":[{"name":"Rival leaderboard","demo":"a table of beaten bots"}]}
                 """);
 

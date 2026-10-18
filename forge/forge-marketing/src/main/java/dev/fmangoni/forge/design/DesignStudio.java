@@ -88,7 +88,7 @@ public final class DesignStudio {
      * the person asked to change changed.
      *
      * <p>Asking used to start from nothing, with the note as the only thing carried over. "I like
-     * the Sticker Garage, try different cars" reached the designers as a sentence about a page they
+     * the Bright Panel, vary the artwork" reached the designers as a sentence about a page they
      * could not see, they drew new looks from scratch, and the page that was liked was deleted with
      * the rest of the board. Now it is kept on the new board as {@link DesignBoard#LIKED}, where it
      * can still be picked, and every designer is handed it and told to keep it.

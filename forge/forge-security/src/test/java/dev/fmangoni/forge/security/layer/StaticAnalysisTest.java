@@ -43,7 +43,7 @@ class StaticAnalysisTest {
                 const run = eval(userFormula);
                 """);
         write(repo, "src/main/java/Store.java",
-                "stmt.executeQuery(\"SELECT * FROM cars WHERE owner = '\" + owner + \"'\");\n");
+                "stmt.executeQuery(\"SELECT * FROM orders WHERE owner = '\" + owner + \"'\");\n");
         write(repo, "src/app.py", "data = yaml.load(stream)\nsafe = yaml.load(stream, Loader=yaml.SafeLoader)\n");
         write(repo, "src/ui/board.test.ts", "expect(eval('1+1')).toBe(2);\n");
         git.commitAll("code");

@@ -128,7 +128,7 @@ public final class LiveProbe {
         try {
             HttpResponse<String> response = get(file, null);
             // An HTML page is never the file: single-page apps answer every unknown path with
-            // index.html, and on Pink Slip that page's `content="width=device-width"` passed for an
+            // index.html, and on Invoice Tool that page's `content="width=device-width"` passed for an
             // assignment — a served .env reported on a project that has no .env at all.
             String type = response.headers().firstValue("Content-Type").orElse("").toLowerCase(Locale.ROOT);
             boolean html = type.contains("html") || response.body().stripLeading().startsWith("<");

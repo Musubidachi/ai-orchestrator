@@ -34,14 +34,14 @@ class EvidenceCollectorTest {
     @Test
     @DisplayName("finds what the globs name, and reports the globs nothing matched")
     void findsAndReportsMissing() throws Exception {
-        file("artifacts/race.webm");
-        file("target/screenshots/garage.png");
+        file("artifacts/export.webm");
+        file("target/screenshots/report.png");
         Path repo = root.resolve("repo");
 
         assertEquals(2, EvidenceCollector.find(repo,
                 List.of("artifacts/*.webm", "target/screenshots/*.png")).size());
         assertEquals(List.of("artifacts/missing.gif"), EvidenceCollector.unmatched(repo,
-                List.of("artifacts/race.webm", "artifacts/missing.gif")));
+                List.of("artifacts/export.webm", "artifacts/missing.gif")));
     }
 
     @Test

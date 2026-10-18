@@ -52,7 +52,7 @@ class DesignStudioTest {
     private final List<AgentTask> tasks = Collections.synchronizedList(new ArrayList<>());
 
     private static final String PAGE = "<!doctype html><html><head><style>body{background:#101;color:#fff}"
-            + "</style></head><body><h1>Center Defense</h1><svg viewBox=\"0 0 10 10\" xmlns=\"http://www.w3.org/2000/svg\">"
+            + "</style></head><body><h1>Timesheet Report</h1><svg viewBox=\"0 0 10 10\" xmlns=\"http://www.w3.org/2000/svg\">"
             + "<circle cx=\"5\" cy=\"5\" r=\"4\"/></svg><p>" + "The playfield, the avatar and the enemies. ".repeat(8)
             + "</p></body></html>";
 
@@ -75,7 +75,7 @@ class DesignStudioTest {
         spec = SpecLoader.load(Files.writeString(root.resolve("004.md"), """
                 ---
                 id: "004"
-                title: Center Defense
+                title: Timesheet Report
                 acceptance:
                   - echo ok
                 ---
@@ -258,7 +258,7 @@ class DesignStudioTest {
     @Test
     @DisplayName("asking for more like one design keeps it first on the new board, and every designer is handed it and told to keep it")
     void moreLikeOneDesign() throws IOException {
-        // 003: "I like the Sticker Garage, try different car looks, the rest looks fine" reached
+        // 003: "I like the Bright Panel, vary the artwork, the rest looks fine" reached
         // designers who could not see that page. They drew new screens, and the page that was liked
         // was deleted with the rest of the board.
         ask(designer(AgentKind.CLAUDE, Map.of("option-1.html", PAGE, "option-2.html", PAGE.replace("#101", "#fde")), TWO),
@@ -268,7 +268,7 @@ class DesignStudioTest {
         Map<AgentKind, Agent> map = new EnumMap<>(AgentKind.class);
         map.put(AgentKind.CLAUDE, designer(AgentKind.CLAUDE, Map.of("option-1.html", PAGE), null));
         map.put(AgentKind.CODEX, outOfQuota(AgentKind.CODEX));
-        DesignBoard board = new DesignStudio(new Agents(map)).ask(spec, paths, "different cars", "", "CLAUDE-2");
+        DesignBoard board = new DesignStudio(new Agents(map)).ask(spec, paths, "vary the artwork", "", "CLAUDE-2");
 
         assertEquals(List.of(DesignBoard.LIKED, "CLAUDE-1"), board.options().stream().map(DesignOption::id).toList());
         DesignOption liked = board.options().get(0);
@@ -282,7 +282,7 @@ class DesignStudioTest {
         String brief = tasks.get(0).brief();
         assertTrue(brief.contains("\"Paper cut\" — flat shapes with soft shadows"), brief);
         assertTrue(brief.contains("It is `reference/liked.html` in this folder"), brief);
-        assertTrue(brief.contains("Change only what they asked to change:\n\ndifferent cars"), brief);
+        assertTrue(brief.contains("Change only what they asked to change:\n\nvary the artwork"), brief);
         assertFalse(brief.contains("What they said they want"), "not the wording for starting from nothing");
 
         assertTrue(DesignStudio.choose(paths, DesignBoard.LIKED, "").isPresent(), "it can still be the one built");

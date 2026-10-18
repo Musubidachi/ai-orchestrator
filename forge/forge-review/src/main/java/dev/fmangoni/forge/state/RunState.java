@@ -144,7 +144,7 @@ public class RunState {
     /**
      * The design the person picked for the polish under way, by name, or null when the look was
      * left to the agent. A polish built to a picture is always reviewed in full, against that
-     * picture: 003's "Hard-Edged Die-Cast" came back with its detailed cars drawn as flat shapes,
+     * picture: 003's "Hard-Edged Mono" came back with its detailed artwork drawn as flat shapes,
      * was judged appearance-only and skipped, and nobody compared it with the design but the person.
      */
     private String polishDesign;

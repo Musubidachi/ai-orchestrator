@@ -135,8 +135,8 @@ public class ReviewBrief {
      * For a polish built to a picked design: does the result look like the picture?
      *
      * <p>Without this a restyle was reviewed only for whether it changed nothing else, or skipped as
-     * appearance-only. 003 was built to "Hard-Edged Die-Cast", a design whose point was its detailed
-     * cars, and came back with flat silhouettes; the colours and panels matched, so nothing objected,
+     * appearance-only. 003 was built to "Hard-Edged Mono", a design whose point was its detailed
+     * artwork, and came back with flat silhouettes; the colours and panels matched, so nothing objected,
      * and the person found it by running the game. The two files named are the only ones the
      * reviewer is told to open, which a read-only session can do.
      */

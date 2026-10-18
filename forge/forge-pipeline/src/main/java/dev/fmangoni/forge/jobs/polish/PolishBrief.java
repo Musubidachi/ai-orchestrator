@@ -84,7 +84,7 @@ public class PolishBrief {
                 Its artwork is part of the look, and the part most easily lost. Draw the program's \
                 pictures — characters, vehicles, icons, illustrations — at the picture's level of \
                 detail, and keep its badges, labels and decorations. Where the program changes a \
-                drawing the picture shows in one state, such as a car the player repaints, make \
+                drawing the picture shows in one state, such as an item the player recolours, make \
                 that detailed drawing recolourable, reusing the picture's SVG if that is easiest. \
                 Do not replace it with a simpler shape. The result is compared with the picture, \
                 from your after screenshot, by a reviewer who will send back what is missing.

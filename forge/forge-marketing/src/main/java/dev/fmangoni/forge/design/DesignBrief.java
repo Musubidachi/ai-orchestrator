@@ -141,8 +141,8 @@ public class DesignBrief {
     /**
      * The person has a look they like and wants it varied in one respect.
      *
-     * <p>Said as strongly as it is because the softer version failed: told only "I like the Sticker
-     * Garage, try different car looks, the rest looks fine", designers who could not see that page
+     * <p>Said as strongly as it is because the softer version failed: told only "I like the Bright
+     * Panel, vary the artwork, the rest looks fine", designers who could not see that page
      * drew new screens from scratch, and changed everything that had been liked.
      */
     private String startingFrom(DesignOption liked, String note) {

@@ -98,7 +98,7 @@ public class TimeContract {
                   "not_verified": ["what the acceptance commands do not actually prove"],
                   "overview": "src/main/java/com/example/thing/Pipeline.java",
                   "features": [
-                    {"name": "Garage tuning",
+                    {"name": "Report export",
                      "demo": "what a recording of it should show, in one sentence"}
                   ],
                   "ideas": [

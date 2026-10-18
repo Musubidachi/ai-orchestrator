@@ -24,8 +24,8 @@ shortcut in writing an empty file with the right name. (Also refused: anything u
 ## The file name
 
 The slug is the feature's name lowercased, every run of characters other than `a-z` and `0-9`
-turned into one hyphen, hyphens trimmed from both ends, and cut to 60 characters: `Pink slip wager`
-becomes `artifacts/feature-pink-slip-wager.webm`. The gate names the exact path for each clip it is
+turned into one hyphen, hyphens trimmed from both ends, and cut to 60 characters: `Monthly summary`
+becomes `artifacts/feature-monthly-summary.webm`. The gate names the exact path for each clip it is
 still waiting for, so copy it from there rather than working it out.
 
 ## Recording a feature

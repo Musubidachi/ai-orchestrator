@@ -37,7 +37,7 @@ public final class KitCheck {
     private final String deployUrl;
 
     /**
-     * @param approvedFeatures ids of features the person approved, e.g. {@code feature-garage-tuning}
+     * @param approvedFeatures ids of features the person approved, e.g. {@code feature-report-export}
      * @param deployUrl        where the project lives, or blank when it is not deployed
      */
     public KitCheck(Path kitDir, Set<String> approvedFeatures, String deployUrl) {

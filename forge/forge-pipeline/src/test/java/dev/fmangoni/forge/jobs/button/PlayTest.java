@@ -44,10 +44,10 @@ class PlayTest {
         home = new ForgeHome(root);
         Files.createDirectories(home.wishlist());
         Files.createDirectories(home.runs());
-        Files.writeString(home.wishlist().resolve("001-center-defense.md"), """
+        Files.writeString(home.wishlist().resolve("001-timesheet-report.md"), """
                 ---
                 id: "001"
-                title: Center Defense
+                title: Timesheet Report
                 acceptance:
                   - echo ok
                 ---
@@ -76,7 +76,7 @@ class PlayTest {
         String answer = play.start("001");
 
         assertEquals(List.of(repo()), opened);
-        assertTrue(answer.contains("Center Defense") && answer.contains("Close that window"), answer);
+        assertTrue(answer.contains("Timesheet Report") && answer.contains("Close that window"), answer);
     }
 
     @Test

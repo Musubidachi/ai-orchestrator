@@ -104,8 +104,8 @@ ${title}.
       remaining: [],
       // One already filmed and one not, so the report has to show both states at once.
       features: [
-        { name: "Garage tuning", demo: "change the gearing, watch the dyno curve move" },
-        { name: "Pink slip wager", demo: "win a race, see the opponent's car transfer" },
+        { name: "Report export", demo: "pick a range, export a report" },
+        { name: "Monthly summary", demo: "import a batch, see the rows appear" },
       ],
       not_verified: [
         "the draw branch has never been rendered",
@@ -121,11 +121,11 @@ ${title}.
   // accepts a file with the right extension: it reads the container, counts the frames and checks
   // the duration, so a fixture that faked it would be testing a path the product refuses.
   fs.mkdirSync(path.join(done, "repo", "artifacts"), { recursive: true });
-  fs.writeFileSync(path.join(done, "repo", "artifacts", "feature-garage-tuning.gif"),
+  fs.writeFileSync(path.join(done, "repo", "artifacts", "feature-report-export.gif"),
     animatedGif());
   fs.writeFileSync(path.join(done, "features.json"), JSON.stringify([{
-    itemId: "feature-garage-tuning",
-    text: "Garage tuning",
+    itemId: "feature-report-export",
+    text: "Report export",
     verdict: "approved",
     comment: "",
     comments: [],

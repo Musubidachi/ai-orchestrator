@@ -110,7 +110,7 @@ When the spec's `monetization.ads` is `test` or `live`, the app shows ads. Build
 - **Never hard-code a real publisher or ad unit id** in the source, and never commit one.
 - Ads must not block or cover the thing the app is for: no interstitial before the first
   interaction, nothing over controls, nothing that shifts the layout under a tap. An offer the spec
-  describes (a "buy a car from the dealer" ad, say) is a feature like any other: build it, list it
+  describes (a "buy an extra pack" ad, say) is a feature like any other: build it, list it
   under `features`, and record it.
 - For live web ads, show a consent prompt before loading the network's script where the network
   requires one, and make the app work when consent is refused.
@@ -209,8 +209,8 @@ sentence saying what a recording of it should show:
 
 ```json
 "features": [
-  {"name": "Garage tuning", "demo": "pick a car, change the gearing, watch the dyno curve move"},
-  {"name": "Pink slip wager", "demo": "win a race, see the opponent's car transfer to your garage"}
+  {"name": "Report export", "demo": "pick a date range, export a report, open the file"},
+  {"name": "Monthly summary", "demo": "import a batch, see every row appear in the table"}
 ]
 ```
 
@@ -220,8 +220,8 @@ each is approved or declined by the person the program is for.
 
 **An approved feature owes a recording of itself, and the gate will not pass the project without
 one.** It goes at `artifacts/feature-<slug>.webm`, where the slug is the feature's name lowercased
-with non-letters turned into hyphens — `Pink slip wager` becomes
-`artifacts/feature-pink-slip-wager.webm`. `.mp4` and `.gif` count too. The gate names the exact
+with non-letters turned into hyphens — `Monthly summary` becomes
+`artifacts/feature-monthly-summary.webm`. `.mp4` and `.gif` count too. The gate names the exact
 path for each one it is still waiting for, so you never have to guess the spelling.
 
 ### The recording has to be produced by an acceptance command

@@ -45,8 +45,8 @@ class MarketingKitTest {
     private RunState state;
     private final List<String> briefs = new ArrayList<>();
 
-    private static final String SITE = "https://pink-slip.pages.dev";
-    private static final Feature TUNING = new Feature("Garage tuning", "change the gearing");
+    private static final String SITE = "https://invoice-tool.pages.dev";
+    private static final Feature TUNING = new Feature("Report export", "export a report");
 
     @BeforeEach
     void setUp() throws Exception {
@@ -55,11 +55,11 @@ class MarketingKitTest {
         spec = SpecLoader.load(Files.writeString(root.resolve("003.md"), """
                 ---
                 id: "003"
-                title: Pink Slip
+                title: Invoice Tool
                 acceptance:
                   - echo ok
                 ---
-                A drag racing game where you bet your car.
+                A browser tool that invoices from a folder of receipts.
                 """));
         state = new RunState();
         state.setId("003");
@@ -85,22 +85,22 @@ class MarketingKitTest {
                 try {
                     Path dir = task.cwd();
                     Files.writeString(dir.resolve("kit.json"), """
-                            {"tagline":"Race for pink slips","short_description":"Bet your car on a drag race.",
-                             "long_description":"Tune it, race it.","press":"A browser drag racing game.",
-                             "claims":[{"text":"Tune the gearing","feature":"%s"}],
-                             "posts":{"x":"Bet your car: %s/?utm_source=x"}}
+                            {"tagline":"Import a batch of invoices","short_description":"Receipts in, one invoice out.",
+                             "long_description":"Drop them in, export.","press":"A browser invoicing tool.",
+                             "claims":[{"text":"Export a report","feature":"%s"}],
+                             "posts":{"x":"Invoice in seconds: %s/?utm_source=x"}}
                             """.formatted(claimFeature, SITE));
                     Files.createDirectories(dir.resolve("site"));
-                    Files.writeString(dir.resolve("site/index.html"), "<h1>Pink Slip</h1>" + proof
+                    Files.writeString(dir.resolve("site/index.html"), "<h1>Invoice Tool</h1>" + proof
                             + "<video src=\"../media/" + TUNING.slug() + "\"></video>");
                     Files.createDirectories(dir.resolve("campaigns"));
                     Files.writeString(dir.resolve("campaigns/google-search.csv"),
-                            "Campaign,Headline 1,Description 1,Final URL\nPS,Bet Your Car,Race it,"
+                            "Campaign,Headline 1,Description 1,Final URL\nIT,Invoice In Seconds,Export it,"
                                     + SITE + "/?utm_source=google\n");
                     String budget = "\"budget\":{\"daily\":5,\"total_cap\":50,\"stop_when\":\"no plays after 200 clicks\"}";
-                    Files.writeString(dir.resolve("campaigns/meta.json"), "{\"headline\":\"Bet your car\",\"primary_text\":\"Race.\",\"url\":\""
+                    Files.writeString(dir.resolve("campaigns/meta.json"), "{\"headline\":\"Invoice in seconds\",\"primary_text\":\"Export.\",\"url\":\""
                             + SITE + "/?utm_source=meta\"," + budget + "}");
-                    Files.writeString(dir.resolve("campaigns/reddit.json"), "{\"headline\":\"Bet your car\",\"url\":\""
+                    Files.writeString(dir.resolve("campaigns/reddit.json"), "{\"headline\":\"Invoice in seconds\",\"url\":\""
                             + SITE + "/?utm_source=reddit\"," + budget + "}");
                 } catch (IOException e) {
                     throw new IllegalStateException(e);

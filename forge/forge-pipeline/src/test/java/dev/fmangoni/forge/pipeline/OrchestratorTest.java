@@ -892,8 +892,8 @@ class OrchestratorTest {
 
     // ------------------------------------------------- Check again, and a clip owed under two names
 
-    private static final Feature CUSTOMIZATION = new Feature("Garage customization", "");
-    private static final Feature TUNING = new Feature("Garage tuning", "");
+    private static final Feature CUSTOMIZATION = new Feature("Report customization", "");
+    private static final Feature TUNING = new Feature("Report export", "");
 
     private void ruled(Feature feature, String verdict) {
         List<Decision> rulings = new ArrayList<>(DecisionStore.load(paths.featuresFile()));
@@ -993,7 +993,7 @@ class OrchestratorTest {
         assertEquals(Phase.PARKED, state.getPhase());
         assertEquals(2, state.getSessions(), "the second gate is where a person should be asked");
         assertTrue(state.getLastError().contains("moved between names"), state.getLastError());
-        assertTrue(state.getLastError().contains("\"Garage customization\""), state.getLastError());
+        assertTrue(state.getLastError().contains("\"Report customization\""), state.getLastError());
     }
 
     // ------------------------------------------------- a spec changed under a project
@@ -1033,7 +1033,7 @@ class OrchestratorTest {
                 "nothing changed, so nothing is said");
 
         // The person edits the spec, and asks for another session.
-        Spec changed = edited(spec, "Build the thing, with a dealer who gives one car for watching an ad.");
+        Spec changed = edited(spec, "Build the thing, with an offer of one extra credit for watching an ad.");
         parked.setPhase(Phase.CONTINUING);
         parked.setRepairRounds(0);
         briefs.clear();
@@ -1042,10 +1042,10 @@ class OrchestratorTest {
         assertTrue(briefs.size() >= 2, "a repair turn followed, so the second brief can be checked: " + briefs.size());
         String told = briefs.get(0);
         assertTrue(told.startsWith("## The spec has changed"), "it outranks the rest, so it comes first:\n" + told);
-        assertTrue(told.contains("+Build the thing, with a dealer who gives one car"), told);
+        assertTrue(told.contains("+Build the thing, with an offer of one extra credit"), told);
         assertTrue(told.contains("-Build the thing."), told);
         assertTrue(briefs.get(1).indexOf("The spec has changed") < 0, "told once, not every turn");
-        assertTrue(Files.readString(paths.repo().resolve("SPEC.md")).contains("a dealer who gives one car"));
+        assertTrue(Files.readString(paths.repo().resolve("SPEC.md")).contains("an offer of one extra credit"));
         assertNull(after.getSpecChange());
     }
 
@@ -1165,7 +1165,7 @@ class OrchestratorTest {
     @Test
     @DisplayName("a polish built to a picked design is reviewed in full against the picture, however little it changed")
     void aPolishBuiltToADesignIsComparedWithIt() throws IOException {
-        // 003: built to "Hard-Edged Die-Cast", it drew the design's detailed cars as flat shapes. It
+        // 003: built to "Hard-Edged Mono", it drew the design's detailed artwork as flat shapes. It
         // changed little besides the look, so it was waved through as appearance-only, and only the
         // person compared it with the picture.
         Spec spec = spec("echo built", 1, 6);
@@ -1186,7 +1186,7 @@ class OrchestratorTest {
         };
         RunState polished = finishedThenPolished(spec, agentsWhere(
                 new StubAgent(AgentKind.CLAUDE, writes("A.java", "class A {}"), finished()), reviewer));
-        polished.setPolishDesign("Hard-Edged Die-Cast");
+        polished.setPolishDesign("Hard-Edged Mono");
         briefs.clear();
 
         RunState state = advance(spec, polished, agentsWhere(
@@ -1195,7 +1195,7 @@ class OrchestratorTest {
         assertEquals(Phase.DONE, state.getPhase(), String.valueOf(state.getLastError()));
         String full = briefs.stream().filter(b -> b.contains("## The look it was asked for")).findFirst()
                 .orElseThrow(() -> new AssertionError("no review compared it with the picture: " + briefs));
-        assertTrue(full.contains("\"Hard-Edged Die-Cast\""), full);
+        assertTrue(full.contains("\"Hard-Edged Mono\""), full);
         assertTrue(full.contains("`" + DesignStudio.CHOSEN_IN_REPO + "`"), "the picture the builder was given");
         assertTrue(full.contains("`" + DesignStudio.PICTURE_AFTER + "`"), "the builder's own picture of the result");
         assertTrue(state.getPolishCheck().contains("compared with that picture"), state.getPolishCheck());
@@ -1214,7 +1214,7 @@ class OrchestratorTest {
                 + "\"summary\":\"Visual comparison remains unreviewed\"}],\"compared_with_design\":false}"));
         RunState polished = finishedThenPolished(spec, agentsWhere(
                 new StubAgent(AgentKind.CLAUDE, writes("A.java", "class A {}"), finished()), reviewer));
-        polished.setPolishDesign("Hard-Edged Die-Cast");
+        polished.setPolishDesign("Hard-Edged Mono");
 
         RunState state = advance(spec, polished, agentsWhere(
                 new StubAgent(AgentKind.CLAUDE, writes("style.css", "body { color: plum; }"), finished()), reviewer));
@@ -1222,7 +1222,7 @@ class OrchestratorTest {
         assertTrue(state.getPhase() != Phase.DONE, "nobody looked, so it is not finished: " + state.getPhase());
         assertTrue(state.getNeedsPerson().contains("no reviewer compared the result with the design"),
                 state.getNeedsPerson());
-        assertEquals("Hard-Edged Die-Cast", state.getPolishDesign(), "still owed a comparison when it resumes");
+        assertEquals("Hard-Edged Mono", state.getPolishDesign(), "still owed a comparison when it resumes");
     }
 
     @Test
@@ -1437,7 +1437,7 @@ class OrchestratorTest {
 
         RunState state = freshState();
         state.setPhase(Phase.CONTINUING);
-        state.setUserFeedback("The race screen is unreadable on a phone.");
+        state.setUserFeedback("The summary screen is unreadable on a phone.");
         state.setBaselineCommit(new Workspace(paths, "house rules").scaffold(spec));
 
         RunState finished = advance(spec, state, agentsWhere(recorder,

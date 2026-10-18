@@ -32,7 +32,7 @@ class WalkthroughTest {
     private RunState state(Phase phase) {
         RunState state = new RunState();
         state.setId("003");
-        state.setTitle("Pink Slip Drag Racing");
+        state.setTitle("Invoice Batch Importer");
         state.setPhase(phase);
         state.setAssignedTo(AgentKind.CLAUDE);
         state.setSessions(4);
@@ -45,11 +45,11 @@ class WalkthroughTest {
     private Plan plan() {
         Plan plan = new Plan();
         plan.setStatus("complete");
-        plan.setSummary("Built the racer, the garage and the wager screen.");
+        plan.setSummary("Built the importer, the report and the summary screen.");
         plan.setOverview("src/main/java/RaceLoop.java");
         plan.setFeatures(new ArrayList<>(List.of(
-                new PlanFeature("Garage tuning", "open the garage"),
-                new PlanFeature("Pink slip wager", "win a title"))));
+                new PlanFeature("Report export", "open the report"),
+                new PlanFeature("Monthly summary", "win a title"))));
         plan.setNotVerified(new ArrayList<>(List.of("nothing renders the replay and looks at it")));
         return plan;
     }
@@ -65,9 +65,9 @@ class WalkthroughTest {
     void verdictComesFirst() {
         String spoken = Walkthrough.of(state(Phase.DONE), clean(), null);
 
-        assertTrue(spoken.startsWith("Pink Slip Drag Racing, built by CLAUDE."), spoken);
+        assertTrue(spoken.startsWith("Invoice Batch Importer, built by CLAUDE."), spoken);
         int verdict = spoken.indexOf("waiting for you to look at it");
-        int detail = spoken.indexOf("Garage tuning");
+        int detail = spoken.indexOf("Report export");
         assertTrue(verdict > 0 && verdict < detail,
                 "a listener cannot skim back up: the verdict has to come first\n" + spoken);
     }
@@ -118,13 +118,13 @@ class WalkthroughTest {
         Review review = new Review();
         Finding blocking = new Finding();
         blocking.setSeverity("blocking");
-        blocking.setSummary("the wager never transfers the title");
+        blocking.setSummary("the summary never totals the last row");
         review.setFindings(new ArrayList<>(List.of(blocking)));
 
         String spoken = Walkthrough.of(state(Phase.DONE), review, null);
 
         assertTrue(spoken.contains("1 blocking finding"), spoken);
-        assertTrue(spoken.contains("the wager never transfers the title"));
+        assertTrue(spoken.contains("the summary never totals the last row"));
     }
 
     @Test

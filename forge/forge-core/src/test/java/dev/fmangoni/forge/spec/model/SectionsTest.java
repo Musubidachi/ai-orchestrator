@@ -21,17 +21,17 @@ class SectionsTest {
     void splitsTheThree() {
         Sections sections = Sections.of("""
                 ## Goal
-                Convert COBOL to REST.
+                Convert records to REST.
 
                 ## Non-goals
-                No CICS.
+                No mainframe access.
 
                 ## Notes
                 Java 24, Maven, hand-rolled parser.
                 """);
 
-        assertEquals("Convert COBOL to REST.", sections.goal());
-        assertEquals("No CICS.", sections.nonGoals());
+        assertEquals("Convert records to REST.", sections.goal());
+        assertEquals("No mainframe access.", sections.nonGoals());
         assertEquals("Java 24, Maven, hand-rolled parser.", sections.notes());
         assertEquals("", sections.extra());
     }
@@ -114,10 +114,10 @@ class SectionsTest {
     void roundTrips() {
         String body = """
                 ## Goal
-                Convert COBOL to REST.
+                Convert records to REST.
 
                 ## Non-goals
-                No CICS.
+                No mainframe access.
 
                 ## Notes
                 Java 24, Maven.

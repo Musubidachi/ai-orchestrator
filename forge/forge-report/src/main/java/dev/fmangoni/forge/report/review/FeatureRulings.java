@@ -93,7 +93,7 @@ public class FeatureRulings {
     /**
      * Says a note has not reached an agent yet.
      *
-     * <p>003's note asking for a dealer ad sat on this page for a day looking like something that
+     * <p>003's note asking for a credit ad sat on this page for a day looking like something that
      * had been dealt with. Nothing on the page separated a request an agent had read from one no
      * agent had seen.
      */

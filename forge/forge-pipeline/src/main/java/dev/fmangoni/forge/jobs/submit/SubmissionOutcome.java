@@ -176,7 +176,7 @@ final class SubmissionOutcome {
      *
      * <p>A note beside a feature is about the feature. Its radio buttons rule on the recording —
      * worth seeing, not worth a clip — so "Worth seeing" plus "slight modification: offer an ad from
-     * a dealer" is a request, and accepting over it drops the request on the floor. That is what
+     * more credit" is a request, and accepting over it drops the request on the floor. That is what
      * happened to 003: saved, shown on the report, never read by an agent. Declined features are
      * left out; a note on something you do not want is not work.
      */

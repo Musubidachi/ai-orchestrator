@@ -129,7 +129,7 @@ public final class DependencyAudit {
     /**
      * Packages with vulnerabilities in the production tree, from {@code npm audit --omit=dev}.
      *
-     * <p>Only those are serious. Pink Slip's six advisories were all in vitest, playwright and the vite
+     * <p>Only those are serious. Invoice Tool's six advisories were all in vitest, playwright and the vite
      * dev server — the tools that build and test it, none of which reaches a player — and a repair turn
      * spent upgrading test tooling fixes nothing anyone using the game is exposed to. They are still
      * reported. Null when the production audit could not be read, in which case everything counts.

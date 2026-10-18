@@ -65,11 +65,11 @@ class SpecWriterTest {
                     + plainYaml);
         }
 
-        FrontMatter front = front("002", "Pink slip");
+        FrontMatter front = front("002", "Invoice tool");
         front.setServe("npm run preview -- --port {port}");
         DeploySettings deploy = new DeploySettings();
         deploy.setCommand("npx wrangler pages deploy dist");
-        deploy.setUrl("https://pink-slip.pages.dev");
+        deploy.setUrl("https://invoice-tool.pages.dev");
         deploy.setRequires(List.of("npx"));
         front.setDeploy(deploy);
         MonetizationSettings money = new MonetizationSettings();

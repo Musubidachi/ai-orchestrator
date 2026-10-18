@@ -13,7 +13,7 @@ import lombok.experimental.UtilityClass;
 /**
  * Holds a project's default look still while extras are added beside it.
  *
- * <p>An extra (a holiday theme, upgraded cars, a new animation) is built as a pack the program can
+ * <p>An extra (a holiday theme, upgraded tiers, a new animation) is built as a pack the program can
  * switch to, and its whole promise is that the look the person already has does not change. A
  * review can be talked round and an agent can mean well; a picture compared with a picture cannot.
  * So once a project has a pack slot its own acceptance suite saves the default look as

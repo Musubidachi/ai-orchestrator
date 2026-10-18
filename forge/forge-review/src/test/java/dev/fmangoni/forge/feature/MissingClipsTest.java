@@ -19,7 +19,7 @@ import org.junit.jupiter.api.io.TempDir;
 /**
  * The clips a project still owes, as questions, and the sign of one feature chased under two names.
  *
- * <p>Built around 003 as it stood: "Garage customization" approved, renamed by the agent to "Garage
+ * <p>Built around 003 as it stood: "Report customization" approved, renamed by the agent to "Report
  * tuning", that approved too, and one test filming it under whichever name it was last told about.
  */
 class MissingClipsTest {
@@ -27,10 +27,10 @@ class MissingClipsTest {
     @TempDir
     Path repo;
 
-    private static final Feature CUSTOMIZATION = new Feature("Garage customization", "");
-    private static final Feature TUNING = new Feature("Garage tuning", "");
-    private static final Feature RESET = new Feature("Empty garage reset", "");
-    private static final Feature WAGER = new Feature("Pink slip wager", "");
+    private static final Feature CUSTOMIZATION = new Feature("Report customization", "");
+    private static final Feature TUNING = new Feature("Report export", "");
+    private static final Feature RESET = new Feature("Empty report reset", "");
+    private static final Feature SUMMARY = new Feature("Monthly summary", "");
 
     private Plan planWith(Feature... features) {
         Plan plan = new Plan();
@@ -54,34 +54,34 @@ class MissingClipsTest {
     @DisplayName("an approved feature the agent stopped listing is asked about, with what it might be")
     void aRenamedFeatureIsAskedAbout() throws IOException {
         film(TUNING);
-        film(WAGER);
+        film(SUMMARY);
         film(RESET);
 
-        List<MissingClip> missing = MissingClips.of(repo, planWith(WAGER, TUNING, RESET),
-                List.of(approved(CUSTOMIZATION), approved(WAGER), approved(TUNING), approved(RESET)));
+        List<MissingClip> missing = MissingClips.of(repo, planWith(SUMMARY, TUNING, RESET),
+                List.of(approved(CUSTOMIZATION), approved(SUMMARY), approved(TUNING), approved(RESET)));
 
         assertEquals(1, missing.size(), missing.toString());
         MissingClip clip = missing.get(0);
         assertEquals(CUSTOMIZATION.id(), clip.id());
-        assertEquals("Garage customization", clip.name());
+        assertEquals("Report customization", clip.name());
         assertFalse(clip.listed(), "the agent no longer lists it, which is the clue it was renamed");
-        // Both garage features share a word with it; the agent's own order breaks the tie, and the
-        // wager, which shares nothing, comes last rather than not at all.
-        assertEquals(List.of("Garage tuning", "Empty garage reset", "Pink slip wager"), clip.sameAs());
+        // Both report features share a word with it; the agent's own order breaks the tie, and the
+        // summary, which shares nothing, comes last rather than not at all.
+        assertEquals(List.of("Report export", "Empty report reset", "Monthly summary"), clip.sameAs());
         assertEquals("no recording was produced", clip.problem());
     }
 
     @Test
     @DisplayName("a feature the agent still lists, and simply did not film, says so")
     void aListedFeatureIsStillListed() throws IOException {
-        film(WAGER);
+        film(SUMMARY);
 
-        List<MissingClip> missing = MissingClips.of(repo, planWith(WAGER, TUNING),
-                List.of(approved(WAGER), approved(TUNING)));
+        List<MissingClip> missing = MissingClips.of(repo, planWith(SUMMARY, TUNING),
+                List.of(approved(SUMMARY), approved(TUNING)));
 
         assertEquals(1, missing.size());
         assertTrue(missing.get(0).listed());
-        assertEquals(List.of("Pink slip wager"), missing.get(0).sameAs());
+        assertEquals(List.of("Monthly summary"), missing.get(0).sameAs());
     }
 
     @Test
@@ -101,19 +101,19 @@ class MissingClipsTest {
                 owed, List.of(take(CUSTOMIZATION)));
 
         assertTrue(moved.isPresent());
-        assertTrue(moved.get().contains("\"Garage tuning\""), moved.get());
-        assertTrue(moved.get().contains("\"Garage customization\""), moved.get());
+        assertTrue(moved.get().contains("\"Report export\""), moved.get());
+        assertTrue(moved.get().contains("\"Report customization\""), moved.get());
         assertTrue(moved.get().contains("only a person can settle"), moved.get());
     }
 
     @Test
     @DisplayName("a feature approved since the last gate is missing, not moved")
     void aNewApprovalIsNotAMove() {
-        // Tuning was fixed, and the wager is missing because it was only just asked for. Parking on
+        // Export was fixed, and the summary is missing because it was only just asked for. Parking on
         // that would stop a project for doing exactly what it should.
         Optional<String> moved = MissingClips.moved(
                 List.of(TUNING.id()), List.of(TUNING.id()),
-                List.of(TUNING, WAGER), List.of(take(WAGER)));
+                List.of(TUNING, SUMMARY), List.of(take(SUMMARY)));
 
         assertTrue(moved.isEmpty(), moved.toString());
     }

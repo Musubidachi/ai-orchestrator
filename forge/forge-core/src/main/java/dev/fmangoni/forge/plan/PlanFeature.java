@@ -20,7 +20,7 @@ import lombok.NoArgsConstructor;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class PlanFeature {
 
-    /** A few words: "Garage tuning", "Pink slip wager". Becomes the recording's filename. */
+    /** A few words: "Report export", "Bulk import". Becomes the recording's filename. */
     private String name = "";
 
     /**

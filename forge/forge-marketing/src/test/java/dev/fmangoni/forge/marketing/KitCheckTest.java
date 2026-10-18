@@ -17,8 +17,8 @@ class KitCheckTest {
     @TempDir
     Path kit;
 
-    private static final String SITE = "https://pink-slip.pages.dev";
-    private static final Set<String> APPROVED = Set.of("feature-garage-tuning", "feature-pink-slip-wager");
+    private static final String SITE = "https://invoice-tool.pages.dev";
+    private static final Set<String> APPROVED = Set.of("feature-report-export", "feature-monthly-summary");
 
     private void write(String relative, String content) throws Exception {
         Path file = kit.resolve(relative);
@@ -30,30 +30,30 @@ class KitCheckTest {
     @BeforeEach
     void goodKit() throws Exception {
         write("kit.json", """
-                {"tagline":"Race for pink slips",
-                 "short_description":"A drag racing game where you bet your car.",
-                 "long_description":"Tune a car, wager it, race.",
-                 "press":"Pink Slip is a browser drag racing game.",
-                 "keywords":["drag racing"],
-                 "claims":[{"text":"Tune engine and gearing","feature":"feature-garage-tuning"},
-                           {"text":"Win the other driver's car","feature":"feature-pink-slip-wager"}],
-                 "posts":{"x":"Bet your car on a drag race: https://pink-slip.pages.dev/?utm_source=x",
-                          "reddit":{"title":"I made a drag racing game where you bet your car","body":"Play it."},
-                          "hacker_news":{"title":"Show HN: Pink Slip, a drag racing game"},
+                {"tagline":"Import a batch of invoices",
+                 "short_description":"A browser tool that turns a folder of receipts into one invoice.",
+                 "long_description":"Drop the files in, check the totals, export.",
+                 "press":"Invoice Tool is a browser invoicing tool.",
+                 "keywords":["invoicing"],
+                 "claims":[{"text":"Export a report for any date range","feature":"feature-report-export"},
+                           {"text":"Summarise a month in one click","feature":"feature-monthly-summary"}],
+                 "posts":{"x":"Turn a folder of receipts into one invoice: https://invoice-tool.pages.dev/?utm_source=x",
+                          "reddit":{"title":"I made a tool that invoices from a folder of receipts","body":"Try it."},
+                          "hacker_news":{"title":"Show HN: Invoice Tool, invoicing from a folder"},
                           "linkedin":"New project."}}
                 """);
-        write("site/index.html", "<html><body><h1>Pink Slip</h1><a href=\"" + SITE + "\">Play</a></body></html>");
+        write("site/index.html", "<html><body><h1>Invoice Tool</h1><a href=\"" + SITE + "\">Open</a></body></html>");
         write("campaigns/google-search.csv", """
                 Campaign,Ad group,Headline 1,Headline 2,Description 1,Final URL
-                Pink Slip,Racing,Bet Your Car,Drag Race Online,"Tune it, wager it, win theirs. Free in your browser.",https://pink-slip.pages.dev/?utm_source=google
+                Invoice Tool,Invoicing,Invoice In Seconds,Receipts To Invoice,"Drop them in, check the totals, export. Free in your browser.",https://invoice-tool.pages.dev/?utm_source=google
                 """);
         write("campaigns/meta.json", """
-                {"headline":"Bet your car","primary_text":"A drag race where the loser hands over the keys.",
-                 "url":"https://pink-slip.pages.dev/?utm_source=meta",
-                 "budget":{"daily":5,"total_cap":50,"stop_when":"no plays after 200 clicks"}}
+                {"headline":"Invoice in seconds","primary_text":"A folder of receipts in, one invoice out.",
+                 "url":"https://invoice-tool.pages.dev/?utm_source=meta",
+                 "budget":{"daily":5,"total_cap":50,"stop_when":"no exports after 200 clicks"}}
                 """);
         write("campaigns/reddit.json", """
-                {"headline":"A drag racing game where you bet your car","url":"https://pink-slip.pages.dev/?utm_source=reddit",
+                {"headline":"Invoicing from a folder of receipts","url":"https://invoice-tool.pages.dev/?utm_source=reddit",
                  "budget":{"daily":5,"total_cap":30,"stop_when":"under 1% click-through after 3 days"}}
                 """);
     }
@@ -72,7 +72,7 @@ class KitCheckTest {
     @DisplayName("a claim about something nobody approved is caught")
     void unapprovedClaim() throws Exception {
         String json = Files.readString(kit.resolve("kit.json")).replace(
-                "{\"text\":\"Win the other driver's car\",\"feature\":\"feature-pink-slip-wager\"}",
+                "{\"text\":\"Summarise a month in one click\",\"feature\":\"feature-monthly-summary\"}",
                 "{\"text\":\"Online multiplayer\",\"feature\":\"feature-multiplayer\"}");
         write("kit.json", json);
 
@@ -85,7 +85,7 @@ class KitCheckTest {
     void inventedSocialProof() throws Exception {
         write("site/index.html", "<p>Loved by 10,000+ players!</p><p>★★★★★</p>");
         write("campaigns/reddit.json", Files.readString(kit.resolve("campaigns/reddit.json"))
-                .replace("A drag racing game", "\\\"Best racing game I have played all year\\\" — Dave. A drag racing game"));
+                .replace("Invoicing from", "\\\"Best invoicing tool I have used all year\\\" — Dave. Invoicing from"));
 
         List<KitProblem> problems = check();
 
@@ -99,7 +99,7 @@ class KitCheckTest {
     void limits() throws Exception {
         write("campaigns/google-search.csv", """
                 Campaign,Ad group,Headline 1,Description 1,Final URL
-                Pink Slip,Racing,The Most Exciting Drag Racing Game Ever,Short,https://pink-slip.pages.dev/?utm_source=google
+                Invoice Tool,Invoicing,The Most Exciting Invoice Software Ever,Short,https://invoice-tool.pages.dev/?utm_source=google
                 """);
 
         assertTrue(check().stream().anyMatch(p -> p.where().equals("google-search.csv row 1 Headline 1")
@@ -110,7 +110,7 @@ class KitCheckTest {
     @DisplayName("ads and posts must send people to the project's own site, tagged, with a budget that stops")
     void landingAndBudget() throws Exception {
         write("campaigns/meta.json", """
-                {"headline":"Bet your car","primary_text":"Race.","url":"https://pink-slip.pages.dev/",
+                {"headline":"Invoice in seconds","primary_text":"Export.","url":"https://invoice-tool.pages.dev/",
                  "budget":{"daily":50,"total_cap":20}}
                 """);
         write("site/index.html", "<a href=\"https://some-affiliate.example/track\">Play</a>");

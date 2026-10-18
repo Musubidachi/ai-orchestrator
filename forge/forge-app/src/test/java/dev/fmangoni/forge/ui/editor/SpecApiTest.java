@@ -26,7 +26,7 @@ class SpecApiTest {
     @BeforeEach
     void setUp() {
         api = new SpecApi(wishlist);
-        api.save(draft("003", "Pink slip drag racing", ""));
+        api.save(draft("003", "Invoice batch importer", ""));
     }
 
     private static Draft draft(String id, String title, String originalFile) {
@@ -42,10 +42,10 @@ class SpecApiTest {
     @Test
     @DisplayName("a new spec cannot take an id another spec already has")
     void newSpecWithATakenIdIsRefused() throws Exception {
-        SaveResult result = api.save(draft("003", "Center defense", ""));
+        SaveResult result = api.save(draft("003", "Timesheet report", ""));
 
         assertFalse(result.valid());
-        assertTrue(result.error().contains("003-pink-slip-drag-racing.md"), result.error());
+        assertTrue(result.error().contains("003-invoice-batch-importer.md"), result.error());
         try (var files = Files.list(wishlist)) {
             assertEquals(1, files.count(), "nothing was written");
         }
@@ -54,10 +54,10 @@ class SpecApiTest {
     @Test
     @DisplayName("a new spec matching an existing one's id and title does not overwrite it")
     void sameFilenameIsNotOverwritten() throws Exception {
-        Path existing = wishlist.resolve("003-pink-slip-drag-racing.md");
+        Path existing = wishlist.resolve("003-invoice-batch-importer.md");
         String before = Files.readString(existing);
 
-        Draft copy = draft("003", "Pink slip drag racing", "");
+        Draft copy = draft("003", "Invoice batch importer", "");
         copy.setBody("Something else entirely.");
 
         assertFalse(api.save(copy).valid());
@@ -67,14 +67,14 @@ class SpecApiTest {
     @Test
     @DisplayName("saving a spec over itself, or renaming it, is still allowed")
     void editingAndRenamingStillWork() {
-        assertTrue(api.save(draft("003", "Pink slip drag racing", "003-pink-slip-drag-racing.md"))
+        assertTrue(api.save(draft("003", "Invoice batch importer", "003-invoice-batch-importer.md"))
                 .valid());
 
         SaveResult renamed = api.save(
-                draft("003", "Pink slips", "003-pink-slip-drag-racing.md"));
+                draft("003", "Invoices", "003-invoice-batch-importer.md"));
 
         assertTrue(renamed.valid(), renamed.error());
-        assertEquals(List.of("003-pink-slips.md"),
+        assertEquals(List.of("003-invoices.md"),
                 api.list().stream().map(SpecSummary::file).toList());
     }
 
@@ -105,8 +105,8 @@ class SpecApiTest {
         SpecApi withRuns = withEarlierRun("007", "Crochet pattern differ");
 
         assertTrue(withRuns.save(draft("007", "crochet pattern differ", "")).valid());
-        assertTrue(withRuns.save(draft("003", "Pink slip drag racing",
-                "003-pink-slip-drag-racing.md")).valid(), "a spec that exists edits as before");
+        assertTrue(withRuns.save(draft("003", "Invoice batch importer",
+                "003-invoice-batch-importer.md")).valid(), "a spec that exists edits as before");
     }
 
     @Test
@@ -124,9 +124,9 @@ class SpecApiTest {
     @Test
     @DisplayName("changing a spec's id to one already taken is refused")
     void reassigningToATakenIdIsRefused() {
-        api.save(draft("004", "Center defense", ""));
+        api.save(draft("004", "Timesheet report", ""));
 
-        assertFalse(api.save(draft("003", "Center defense", "004-center-defense.md")).valid());
+        assertFalse(api.save(draft("003", "Timesheet report", "004-timesheet-report.md")).valid());
         assertEquals(2, api.list().size());
     }
 }

@@ -63,12 +63,12 @@ class DeckTest {
         docs.setStep("write the user guide");
         plan.setRemaining(new ArrayList<>(List.of(docs)));
         plan.setFeatures(new ArrayList<>(List.of(
-                new PlanFeature("Garage tuning", "change the gearing, watch the curve move"),
-                new PlanFeature("Pink slip wager", "win a race, take the other car"))));
+                new PlanFeature("Report export", "pick a range, export a report"),
+                new PlanFeature("Monthly summary", "import a batch, see the rows appear"))));
 
         state = new RunState();
         state.setId("001");
-        state.setTitle("Drag Racing");
+        state.setTitle("Invoice Tool");
         state.setPhase(Phase.DONE);
         state.setPlan(plan);
 
@@ -194,17 +194,17 @@ class DeckTest {
     @DisplayName("only features nobody has ruled on are asked about, each with the clip to judge it by")
     void unansweredFeaturesComeWithTheirClips() throws IOException {
         DecisionStore.save(paths.featuresFile(), List.of(
-                Decision.of("feature-garage-tuning", "Garage tuning", "approved", "")));
-        Path clip = paths.repo().resolve("artifacts/feature-pink-slip-wager.gif");
+                Decision.of("feature-report-export", "Report export", "approved", "")));
+        Path clip = paths.repo().resolve("artifacts/feature-monthly-summary.gif");
         Files.createDirectories(clip.getParent());
         Clips.write(clip);
 
         DeckView deck = deal();
 
-        assertEquals(List.of("Pink slip wager"), deck.getFeatures().stream().map(FeatureCard::getName).toList());
+        assertEquals(List.of("Monthly summary"), deck.getFeatures().stream().map(FeatureCard::getName).toList());
         assertEquals(1, deck.getFeaturesAlreadyRuled());
         FeatureCard card = deck.getFeatures().getFirst();
-        assertEquals("/runs/001/repo/artifacts/feature-pink-slip-wager.gif", card.getClip(),
+        assertEquals("/runs/001/repo/artifacts/feature-monthly-summary.gif", card.getClip(),
                 "an address the editor serves, not a path on this machine");
         assertEquals("image", card.getClipKind());
         assertEquals("Recorded by the last gate run.", card.getClipNote());
@@ -223,7 +223,7 @@ class DeckTest {
     @Test
     @DisplayName("ideas the agent has not built are counted, not dealt")
     void ideasAreOnlyCounted() {
-        state.getPlan().getIdeas().add(new PlanFeature("Rival leaderboard", "race the same ghost twice"));
+        state.getPlan().getIdeas().add(new PlanFeature("Saved filters", "reuse the same filter twice"));
 
         DeckView deck = deal();
 

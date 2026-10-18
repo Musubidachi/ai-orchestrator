@@ -100,7 +100,7 @@ class DependencyAuditTest {
     @Test
     @DisplayName("npm: a vulnerability only in development tooling is reported, but is not serious")
     void devDependenciesAreNotSerious() throws Exception {
-        // Pink Slip, for real: six advisories, every one in vitest, playwright or the vite dev server.
+        // Invoice Tool, for real: six advisories, every one in vitest, playwright or the vite dev server.
         Path repo = repo();
         Files.writeString(repo.resolve("package.json"), "{}");
         Files.writeString(repo.resolve("package-lock.json"), "{}");
