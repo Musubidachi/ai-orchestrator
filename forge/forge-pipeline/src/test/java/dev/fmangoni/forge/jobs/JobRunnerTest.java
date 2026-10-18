@@ -202,6 +202,21 @@ class JobRunnerTest {
                 jobs.statuses().stream().map(s -> s.identity().getId()).toList());
     }
 
+    @Test
+    @DisplayName("an improvement to an improvement gets a row, so a running grandchild is visible")
+    void improvementsToImprovementsAreListed() {
+        spec("001", "Alpha", 1, "claude", null);
+        spec("001.1", "Alpha faster", 2, "claude", "001");
+        spec("001.2", "Alpha faster still", 3, "claude", "001.1");
+
+        // 001.2 used to fall through every group the board built: not a project, not an improvement
+        // to a project, and not an orphan either, because 001.1 was right there in the wishlist.
+        // The queue ranks improvements flat and ran it regardless, so the dashboard sat showing
+        // nothing running while an agent worked, and nothing explaining what the next one awaited.
+        assertEquals(List.of("001", "001.1", "001.2"),
+                jobs.statuses().stream().map(s -> s.identity().getId()).toList());
+    }
+
     // ---------------------------------------------------------------- approval
 
     private Decision ok(String id, String text) {

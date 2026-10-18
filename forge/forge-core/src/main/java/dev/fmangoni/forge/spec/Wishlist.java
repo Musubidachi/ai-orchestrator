@@ -4,10 +4,12 @@ import dev.fmangoni.forge.spec.model.Spec;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * The wishlist as a graph: projects, and the improvements requested against them.
@@ -61,6 +63,37 @@ public final class Wishlist {
     /** Standalone projects, most important first. */
     public List<Spec> roots() {
         return specs.stream().filter(spec -> !spec.isImprovement()).sorted(BY_PRIORITY).toList();
+    }
+
+    /**
+     * Every spec in reading order: each project, followed by the improvements beneath it.
+     *
+     * <p>To any depth, because an improvement can itself be improved. Walking only one level deep
+     * left a grandchild in no group at all — not a root, not an improvement to a root, and not an
+     * orphan either, since its parent was present — so it had no row on the dashboard while it was
+     * running, and the one spec nobody could see was the one holding up everything after it.
+     *
+     * <p>Ends with whatever the descent could not reach: an improvement whose parent is not in the
+     * wishlist, and the members of a parent cycle written by hand. Every spec appears exactly once,
+     * which is the property worth having — a caller listing this can be sure it is listing all of
+     * them.
+     */
+    public List<Spec> inFamilyOrder() {
+        List<Spec> out = new ArrayList<>();
+        Set<String> listed = new HashSet<>();
+        roots().forEach(root -> appendFamily(root, out, listed));
+        specs.stream().filter(spec -> !listed.contains(spec.id())).forEach(out::add);
+        return out;
+    }
+
+    private void appendFamily(Spec spec, List<Spec> out, Set<String> listed) {
+        // Guards the descent against a parent cycle, which would otherwise recur until the stack
+        // ran out. Wishlist's other walks are bounded for the same reason.
+        if (!listed.add(spec.id())) {
+            return;
+        }
+        out.add(spec);
+        improvementsTo(spec.id()).forEach(child -> appendFamily(child, out, listed));
     }
 
     /**

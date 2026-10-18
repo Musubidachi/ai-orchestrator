@@ -12,7 +12,6 @@ import dev.fmangoni.forge.state.RunState;
 import dev.fmangoni.forge.state.RunStore;
 import dev.fmangoni.forge.state.UnreadableState;
 import dev.fmangoni.forge.status.JobStatus;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -34,18 +33,12 @@ final class StatusBoard {
     List<JobStatus> statuses() {
         Wishlist wishlist = projects.wishlist();
         Map<String, Integer> positions = queue.positions(wishlist);
-        List<JobStatus> out = new ArrayList<>();
-        // Projects first, each followed by the improvements requested against it, so the list
-        // reads the way the work actually relates rather than in raw filename order.
-        for (Spec spec : wishlist.roots()) {
-            out.add(statusOf(spec, wishlist, positions));
-            wishlist.improvementsTo(spec.id())
-                    .forEach(child -> out.add(statusOf(child, wishlist, positions)));
-        }
-        wishlist.all().stream()
-                .filter(wishlist::isOrphan)
-                .forEach(orphan -> out.add(statusOf(orphan, wishlist, positions)));
-        return out;
+        // Projects first, each followed by the improvements requested against it at any depth, so
+        // the list reads the way the work actually relates rather than in raw filename order.
+        // Every spec gets a row: the queue will run a spec whether or not this board shows it.
+        return wishlist.inFamilyOrder().stream()
+                .map(spec -> statusOf(spec, wishlist, positions))
+                .toList();
     }
 
     private JobStatus statusOf(Spec spec, Wishlist wishlist, Map<String, Integer> positions) {

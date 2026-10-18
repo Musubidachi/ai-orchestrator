@@ -249,6 +249,36 @@ class WishlistTest {
     }
 
     @Test
+    @DisplayName("reading order nests improvements under improvements, however deep the chain runs")
+    void nestsImprovementsToAnyDepth() throws IOException {
+        Spec root = spec("001", "", "mvn -q test", "a.png", 1);
+        Spec other = spec("002", "", "mvn -q test", "b.png", 2);
+        Spec child = spec("001.1", "001", "mvn -q test", "c.png", 50);
+        Spec grandchild = spec("001.2", "001.1", "mvn -q test", "d.png", 50);
+        Spec greatGrandchild = spec("001.3", "001.2", "mvn -q test", "e.png", 50);
+        Wishlist wishlist = new Wishlist(List.of(root, other, child, grandchild, greatGrandchild));
+
+        assertEquals(List.of("001", "001.1", "001.2", "001.3", "002"),
+                wishlist.inFamilyOrder().stream().map(Spec::id).toList());
+    }
+
+    @Test
+    @DisplayName("every spec appears in reading order, including ones no project leads to")
+    void readingOrderLeavesNothingOut() throws IOException {
+        Spec root = spec("001", "", "mvn -q test", "a.png", 1);
+        Spec orphan = spec("002", "999", "mvn -q test", "b.png", 2);
+        Spec cycleA = spec("003", "004", "mvn -q test", "c.png", 3);
+        Spec cycleB = spec("004", "003", "mvn -q test", "d.png", 4);
+        Wishlist wishlist = new Wishlist(List.of(root, orphan, cycleA, cycleB));
+
+        // The descent from the projects reaches 001 alone. The other three are listed anyway: a
+        // spec missing from this list is one nobody can see is stuck, and the queue runs a spec
+        // whether or not anything listed it.
+        assertEquals(List.of("001", "002", "003", "004"),
+                wishlist.inFamilyOrder().stream().map(Spec::id).toList());
+    }
+
+    @Test
     @DisplayName("a parent cycle written by hand terminates rather than hanging the run")
     void survivesACycle() throws IOException {
         Spec a = spec("001", "002", "mvn -q test", "a.png");
