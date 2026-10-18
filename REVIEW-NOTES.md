@@ -526,14 +526,14 @@ Honest uncertainty, not hedging. These are the things I would ask someone else t
 Not defects in the code — artefacts in the live data that would mislead you if you read the
 dashboard as fact.
 
-- **004 (Center Defense)** spent **about seven turns** (not nine sessions — its first sessions predate
+- **004 (a browser game)** spent **about seven turns** (not nine sessions — its first sessions predate
   the breakage) on the broken Codex sandbox. The turns exited cleanly and wrote coherent summaries
   of having done nothing. Its recorded "diagnosis" of a Playwright video deadlock is disproven: the
   "repair" commit changed no source, and the same suite then passed 293 times in a row. The one
   176-minute gate that prompted it most likely slept through a machine standby (see §15).
   *(Added after the audit:)* 004 then spent three days re-running its gate every twelve minutes and
   throwing on its handoff's `overview`, which held a sentence rather than a path. Fixed; see §15.
-- **005 (DOCX/PDF editor)** had **seven calls** refused by Fable before the ladder was corrected.
+- **005 (a document editor)** had **seven calls** refused by Fable before the ladder was corrected.
   *(Corrected:)* they did not consume repair rounds — each was a failed call that changed nothing,
   retried every ten minutes without charge, which is its own problem (§15).
 - If either parks at its limit, that is an artefact, not a verdict, and reopening is the right call.
@@ -622,7 +622,7 @@ And what they review should be kept as history, with anything that comes back sh
   one line — file and summary — with the reviewer's explanation dropped. The next review was a fresh
   read with no idea what had been sent back, so an unfixed defect returned under new wording. After
   the single automatic repair, every project went to DONE whatever the review said. Evidence at the
-  time: 001's division rounding, 002's auto-bounds and 005's DOCX ordering had each been sent back,
+  time: 001's division rounding, 002's auto-bounds and 005's element ordering had each been sent back,
   and each was in that week's reviews again.
 - **The loop now** (`pipeline.run.ReviewLoop`):
   - Findings carry ids, shared with the review form.
@@ -913,8 +913,8 @@ and the details beside the table, the list on a phone, and its filters.
 
 ## Follow-up (2026-10-04): one clip, two names, and no way to say so
 
-003 parked on "recordings: 1 feature(s) unfilmed" after 23 sessions. The person had approved
-"Garage customization"; the agent later renamed it "Garage tuning", and that was approved too. One
+003 parked on "recordings: 1 feature(s) unfilmed" after 23 sessions. The person had approved one
+feature by name; the agent later renamed it to a near-synonym, and that was approved too. One
 feature, two approvals, two clips owed, one test filming it. Told which name was missing, the agent
 renamed the clip from the other each session, so every gate found exactly one missing, a different
 one each time, until the session budget ran out. Nothing in the dashboard let the person say they
@@ -950,8 +950,8 @@ change that is only visual.
 - **Answers you can see.** A reply under the project's buttons is now full-strength text in a box.
   "Still Want It" is recorded as answered (`RunState.keptClips`, cleared by the next gate) and the
   question collapses to "still wanted: Run Another Session builds it and films it", with a way to
-  change the answer. "The agent no longer lists it" now says "renamed or removed": 003's dealer car
-  had been deleted, not renamed.
+  change the answer. "The agent no longer lists it" now says "renamed or removed": the feature 003
+  was asked about had been deleted rather than renamed.
 - **A note on a missing clip.** Each clip question has a box. Typed beside Still Want It, it goes
   to the next session as the person's request (`userFeedback`), parked project or not, and is marked
   heard so nothing delivers it twice. The report's form saved such notes on a parked project and
@@ -974,12 +974,12 @@ change that is only visual.
 
 ## Follow-up (2026-10-05): a spec edited under a running project now reaches its agent
 
-003's spec was edited to allow a rewarded ad that gave a car from a dealer, and an ads setting was
+003's spec was edited to allow a rewarded ad that granted an in-game item, and an ads setting was
 added. The ads setting reached the agent, through `AGENTS.md`, which is rewritten every turn. The
 edit to the prose did not: `SPEC.md` was written once, when the project started, on the reasoning
 that rewriting the contract under a build would move "done". Sessions 25 to 30 read the September
-copy, which still said "Do not add recovery currencies or reward systems", refused to rebuild the
-dealer, and asked the person to decline it, which they then did. The reviewer had been reading the
+copy, which still said "Do not add recovery currencies or reward systems", refused to build the
+feature, and asked the person to decline it, which they then did. The reviewer had been reading the
 current spec all along, so the agent and the reviewer were working to different contracts.
 
 The reasoning protected the project from the one person entitled to change it. Now, before every
@@ -988,8 +988,8 @@ difference it rewrites the copy in its own commit, and the brief opens with "The
 the diff, and that the new version wins over earlier decisions. The notice is kept on the state
 (`specChange`) until a turn actually reaches a model, because the copy is already current by the
 next turn and a refused one would otherwise have been the only notice. Run against 003's copy, the
-diff holds the dealer exception and two earlier edits nobody had told the agent about either: the
-browser test now asking for `race.webm`, and `race.webm` in the evidence list.
+diff holds that exception and two earlier edits nobody had told the agent about either: a browser
+test asking for a new recording, and that recording in the evidence list.
 
 ## Follow-up (2026-10-05): a design kept for later keeps its note
 
@@ -997,8 +997,7 @@ The design page has one box, "Anything you particularly want?", sent with whiche
 pressed. On a finished project Build delivers it to the session. On an unfinished one the button is
 Keep This One for Later, and `Polish.keep` saved the pick and dropped the box without a word: the
 reply said "kept", and when the project finished and the design was built, the note was gone. It
-came up on 004 Center Defense, where the change wanted was "clowns seen from above instead of the x
-and the !".
+came up on 004, where the person wanted one of the game's markers drawn differently.
 
 The board now stores the note with the pick (`DesignBoard.chosenNote`). The page shows it beside the
 kept design and puts it back in the box when the project is finished, so building it sends the same
@@ -1008,10 +1007,10 @@ this have none, and load as before.
 
 ## Follow-up (2026-10-06): more like one design, and a vendor's hold let go on a person's word
 
-**Asking again lost the design that was liked.** On 003 the person liked "Sticker Garage" and asked
-again: "I like the Sticker Garage (bright cartoon pit-lane), could you generate additional designs
-with different car looks. The rest looks fine." Asking empties the design folder and starts from
-nothing, and the note was the only thing carried into the brief. The designer could not see the page
+**Asking again lost the design that was liked.** On 003 the person liked one of the designs and
+asked again, naming it and saying they wanted the same screen with one element drawn differently and
+the rest left alone. Asking empties the design folder and starts from nothing, and the note was the
+only thing carried into the brief. The designer could not see the page
 the note named, drew two new screens, and changed everything that had been liked. The liked page was
 deleted with the board; it was recovered from the Claude log, where the designer's own `Write` of it
 was recorded in full.
@@ -1032,14 +1031,14 @@ spends no session and records the hold again.
 
 ## Follow-up (2026-10-07): a polish built to a picture is compared with the picture
 
-003 was polished to "Hard-Edged Die-Cast", a design whose point was its detailed cars: shaded
-panels, two-tone glass, decals, chunky gold wheels. The builder matched the palette, panels and
-buttons and drew the cars as flat silhouettes, and dropped the ribbon, the "YOURS" tag and the road.
-`PolishScope` asked the cheapest model whether the change was appearance-only, it said yes, and the
-project went back to the person unreviewed. Nobody compared the result with the picture until the
-person ran the game. The polish brief contributed: it called the picture "where to get to, not code
-to paste", which reads as licence to approximate, and a car that changes colour with the paint
-picker is easier to redraw simply than to recolour.
+003 was polished to a design whose whole point was its detailed artwork: shaded panels, layered
+highlights, decals, heavy metalwork. The builder matched the palette, panels and buttons, drew the
+artwork as flat silhouettes, and dropped three decorative elements the design had. `PolishScope`
+asked the cheapest model whether the change was appearance-only, it said yes, and the project went
+back to the person unreviewed. Nobody compared the result with the picture until the person ran the
+program. The polish brief contributed: it called the picture "where to get to, not code to paste",
+which reads as licence to approximate, and artwork that has to recolour itself at runtime is easier
+to redraw simply than to recolour.
 
 A polish built to a picked design now records the design on the state (`polishDesign`) and skips
 `PolishScope`: it is always reviewed in full, and `ReviewBrief` adds "The look it was asked for",
@@ -1071,9 +1070,9 @@ A sweep of the stuck projects found two Forge faults behind most of them.
 **Rechecks judged real fixes "still present".** A recheck asked the reviewer to decide "from the
 diff" whether each previous finding was fixed, and the diff runs from the start of the project and
 stops at 60k characters. On a large project the file the fix went into is past the cut. The
-reviewer, told not to open files, said so — "DocxParagraphEdit is not included in the supplied
-diff", "the supplied diff omits cameras.py", "the supplied diff contains no FieldUsageAnalyzer
-changes" — and ruled the finding still present. 005 was held for a person over a fix that was in
+reviewer, told not to open files, said so — three separate reviews reported that the class the
+finding was about was not in the diff they had been given, naming it each time — and ruled the
+finding still present. 005 was held for a person over a fix that was in
 place with two tests passing; 002 and 001 were on the same road. `ReviewRound` now carries the
 current text of each file a previous finding names (30k per file, 90k in all), `ReviewBrief` shows
 them under "Those files as they stand now", and the reviewer is told to decide from them.
@@ -1083,13 +1082,13 @@ only by Review Again and Fix Blocking Findings. A polish, a design or extra, a r
 requested through the review form all inherited the count, so 003's Christmas theme was held "after
 4 repair turns" on its first finding, having had none. Each of those now starts the count again.
 
-Fixed by hand in the same sweep: 004's carnival restyle (built by Codex, which still cannot launch a
-browser) moved the arena when the warning pill appeared and overflowed the start card at 320x568;
-003's Christmas frost trim was anchored to the page instead of the tuning panel.
+Fixed by hand in the same sweep: 004's restyle (built by Codex, which still cannot launch a
+browser) moved the play area when the warning pill appeared and overflowed the start card at
+320x568; 003's seasonal trim was anchored to the page instead of the panel it belonged to.
 
 ## Follow-up (2026-10-10): the idea generator Forge built, used by Forge
 
-006, a passive-income idea generator Forge built, now feeds the wishlist. `ui.suggest.IdeaSource`
+006, an idea generator Forge built, now feeds the wishlist. `ui.suggest.IdeaSource`
 reads `idea-generator.json` beside the wishlist (project, main class, categories), runs
 `java -cp runs/<project>/repo/target/classes <main> --count 1 --seed <random> --format json`
 through `CliRunner` with a 30-second cap, in a temporary folder deleted afterwards (the generator
@@ -1104,10 +1103,10 @@ compiling a project's repository from the editor would be a side effect of press
 
 ## Follow-up (2026-10-11): a feature named with a whole request, and four held projects
 
-**003 parked on a clip it had made.** A feature was added with the whole request as its name ("Add a
-logo start screen, a short video showing two cars racing in a 3d rendering; After pressing ..."), so
-the clip it owed was named after that sentence. Claude built the logo screen, tested it, and filmed it
-as `feature-logo-start-screen.webm`; the gate found nothing under the long name. None of the clip
+**003 parked on a clip it had made.** A feature was added with the whole request as its name — a
+sentence describing a logo start screen and what should follow it — so the clip it owed was named
+after that sentence. Claude built the screen, tested it, and filmed it as
+`feature-logo-start-screen.webm`; the gate found nothing under the long name. None of the clip
 question's answers fit: Same Feature only offers approved features, and Not Worth a Clip declines the
 feature. The approved entry in `features.json` was renamed to "Logo start screen", with the request
 kept in its comment, and Check Again passed. The dashboard has no way to rename a feature; a short
@@ -1115,16 +1114,16 @@ name with the detail in the note avoids needing one.
 
 **Fixed by hand, then sent back with Fix Blocking Findings** so the reviewer rules on each by id:
 
-- 004: the inner chalk circle was `inset: 100px` of a ring that is 234px on a phone, about 34px
-  across and under the avatar; both circles now keep the design's proportion. The typography finding
+- 004: the inner ring was `inset: 100px` of one that is 234px on a phone, about 34px
+  across and hidden under another element; both now keep the design's proportion. The typography finding
   was already fixed — both screenshots show bold sans-serif — and the next review should say so.
-- 005: a line break pasted from Word (a vertical tab) landed invisible and untracked, and none could
-  be typed. `LineBreakMarks` now shows and records breaks in inserted text, and Shift+Enter types one.
-- 001: inline `PERFORM ... END-PERFORM` (new `Ast.PerformInline`, also in the generator-runtime copy),
-  a trailing `ROUNDED` rejected rather than read as a paragraph, an unterminated literal rejected. The
-  fourth finding, CALL preservation, was already fixed and tested; `FieldUsageAnalyzer.java` is 33k,
-  past the 30k per-file excerpt, so the reviewer never saw the method. Expect it to need a person's
-  ruling unless the excerpt is made to reach it.
+- 005: a line break pasted from a word processor (a vertical tab) landed invisible and untracked,
+  and none could be typed. `LineBreakMarks` now shows and records breaks in inserted text, and Shift+Enter types one.
+- 001: an inline loop form the parser did not know (a new AST node, also in the generator-runtime
+  copy), a trailing modifier keyword rejected rather than read as a label, an unterminated literal
+  rejected. The fourth finding, call preservation, was already fixed and tested;
+  `FieldUsageAnalyzer.java` is 33k, past the 30k per-file excerpt, so the reviewer never saw the
+  method. Expect it to need a person's ruling unless the excerpt is made to reach it.
 
 ## Follow-up (2026-10-11): rechecks see the code a finding is about, and long files are noted
 
@@ -1144,9 +1143,9 @@ so it costs no quota and says the same each round; the person can send it back f
 ## Follow-up (2026-10-11): 004 on a desktop, and screenshots in notes
 
 **004 broke in a desktop window.** `view-controls.css` still carried the original 800px desktop layout
-above 700px wide (controls pinned top-right, 236px of masthead kept free), and the carnival restyle
-had made the game a 390px poster at every size. Inside it the buttons stretched into tall pills and
-the start card and arena were squeezed to half width. Nothing caught it because the spec named only
+above 700px wide (controls pinned top-right, 236px of masthead kept free), and the restyle
+had made the page a 390px poster at every size. Inside it the buttons stretched into tall pills and
+the start card and play area were squeezed to half width. Nothing caught it because the spec named only
 phones and landscape, so every test, screenshot and review picture was phone-sized. Fixed by hand
 (`polish.css`: the poster keeps its phone layout above 700px), and the spec now asks for 1920x1080
 and 1366x768 to be laid out correctly and checked in the browser tests; a session was started on it
@@ -1191,31 +1190,31 @@ project would lose a rule it needs. The gate's missing-clip message now names th
 
 001, later the same day, fixed by hand and sent back with Fix Blocking Findings (its 30th and last
 allowed session): the lexer read any leading digit as a number, so `1-AMOUNT` became `1`, `-`,
-`AMOUNT` (a COBOL word holding a letter is now a name; all-digit runs, level numbers and PIC clauses
-unchanged; test `aFieldNameMayStartWithADigit`). And the five serious advisories waiting for a
+`AMOUNT` (a token holding a letter is now a name; all-digit runs, level numbers and type
+declarations unchanged; test `aFieldNameMayStartWithADigit`). And the five serious advisories waiting for a
 ruling were all Jackson 2.18.8; two are fixed only on the 2.21 line, so it moved to 2.21.7, in its own
 pom and in the pom template of the services it generates (the integration test builds and runs one).
 One medium advisory is fixed only in Jackson 3 and was left. The AI review's unconfirmed note on
-identifiers reaching generated Java and shell code unescaped was not acted on.
+identifiers reaching generated code unescaped was not acted on.
 
 On 2026-10-12, 001 came back held on three new findings after four repair turns, and 004.1 on one.
-For 001, two were fixed by hand: a period inside IF/EVALUATE/inline PERFORM was read past, so the
-statements after it ran under the condition (now rejected, saying why; a period straight after
-`EVALUATE X` stays tolerated because `examples/programs/DISCOUNT.cbl` relies on it and nothing can
-land in the wrong branch), and `PROCEDURE DIVISION USING` could name a field that is not in LINKAGE,
-or one twice. The third (P-scaled PICTUREs, exact COMP-1/COMP-2 storage) is scope: the spec asks for
+For 001, two were fixed by hand: a statement terminator inside a conditional block was read past, so
+the statements after it ran under the condition (now rejected, saying why; one position stays
+tolerated because the project's own example input relies on it and nothing can land in the wrong
+branch), and an entry-point declaration could name a parameter that was never declared, or name one
+twice. The third (exact storage for two numeric forms) is scope: the spec asks for
 "all forms" of numeric types, so each review finds another. The person chose to have it built, and
-raised `max_sessions` from 30 (33 used) to 40. For 004.1 the reviewer blocked optional theme sound as
-outside the appearance-only scope, but the person had approved "Theme-aware sound" as a feature; they
+raised `max_sessions` from 30 (33 used) to 40. For 004.1 the reviewer blocked an optional sound
+setting as outside the appearance-only scope, but the person had approved it as a feature; they
 chose to keep it, so the spec now says so explicitly (off by default, remembered, nothing else
-changes). They had also declined "Moonlit Haunting", the theme itself, by mistake; it is approved
+changes). They had also declined the theme itself by mistake; it is approved
 again. Both were sent back with Fix Blocking Findings.
 
-Later on 2026-10-12: 004.1 parked on one flaky e2e step (a tap read a moving enemy's box, then landed
+Later on 2026-10-12: 004.1 parked on one flaky e2e step (a tap read a moving target's box, then landed
 beside it after a resize); the helper now re-aims up to three times and still requires the removal
-(30/30 runs passed). Check Again then failed only on "Third look pack", approved by the person with no
-third pack in the code; they chose to have one built, so its spec says so and `max_sessions` went 6
-to 8. 002 parked on three clips owed under names the agent had since lengthened; ruled Same Feature
+(30/30 runs passed). Check Again then failed only on a third look pack, approved by the person with
+no third pack in the code; they chose to have one built, so its spec says so and `max_sessions` went
+6 to 8. 002 parked on three clips owed under names the agent had since lengthened; ruled Same Feature
 (Forge's own first suggestion each time), Check Again, and it reached DONE. 001's last finding and its
 high security item were one bug: CALL never ticked the request budget, so a self-call fan-out ran
 2^depth calls unchecked; every CALL is now a step, with a test that hangs without the fix.
@@ -1223,34 +1222,33 @@ high security item were one bug: CALL never ticked the request budget, so a self
 The same work caught a bug in `Attachments`: `git rm --cached /.forge-images/` fails (a leading
 slash is a path outside the repository), which was swallowed; both now pass the pattern without it.
 
-On 2026-10-13, 003.1's "Reptile Attack" build did not match its design: the agent laid a honeycomb
-over the old car art instead of redrawing the cars, and the review checked only that the pack was
-applied. The person then gave a sheet of street-racing cars as the look wanted for every car, so all
-nine were redrawn by hand (commit ba263a2 in runs/003/repo): one kit (`racerKit.ts`) builds each
-model from its profile (`racerModels.ts`), with wide-body arches, a seeded splatter livery in the
-paint and a per-paint accent, aero, LED lamps, number boards and deep-dish wheels. Unit 179/179 and
-e2e 42/42 with CI=true. It changes the default look on purpose, so the look reference was set aside
-as `runs/003/look-reference.before-street-racers.png` (what `LookCheck.forget` does for a replaced
-look), and the next gate adopts the new one. The packs still draw over the new cars.
+On 2026-10-13, one of 003.1's look packs did not match its design: the agent laid a pattern over the
+existing artwork instead of redrawing it, and the review checked only that the pack was applied. The
+person then supplied a reference sheet for the look they wanted, so all nine of the project's drawn
+models were redrawn by hand (commit ba263a2 in runs/003/repo): one kit module builds each model from
+its own profile data, with a seeded texture in its colourway and a per-colourway accent. Unit
+179/179 and e2e 42/42 with CI=true. It changes the default look on purpose, so the look reference
+was set aside alongside the run (what `LookCheck.forget` does for a replaced look), and the next
+gate adopts the new one. The packs still draw over the new artwork.
 
-On 2026-10-14 the person wanted the cars exactly as painted, which drawn shapes cannot do, so they
-generated side-view paintings of the nine models in the six paints (54 images, from
-`Downloads\car images`). Each was cleaned of stray specks, trimmed, scaled to one length on one road
-line and saved as `public/cars/<model>_<paint>.webp` (3.5 MB); `carImages.ts` loads them and holds
-each model's wheels as measured, so the mechanic's custom rims still land on them (commit 078dd06).
-The drawn cars stay as the stand-in until a picture loads, and in Reptile Attack, which redraws the
-cars itself. Car canvases now render at the screen's pixel density. The default-look screenshot waits
-for all 54 pictures (`data-cars-ready`), so it cannot catch a half-loaded page. Unit 179/179, e2e 42/42.
+On 2026-10-14 the person wanted the artwork exactly as supplied, which drawn shapes cannot do, so
+they generated paintings of the nine models in six colourways (54 images). Each was cleaned of stray
+specks, trimmed, scaled to one size on one baseline and saved as a `.webp` under the project's own
+assets (3.5 MB); a loader module reads them and holds each model's anchor points as measured, so the
+per-model overlays still land on them (commit 078dd06). The drawn versions stay as the stand-in
+until a picture loads, and in the one pack that redraws them itself. The canvases now render at the
+screen's pixel density. The default-look screenshot waits for all 54 pictures (a readiness flag on
+the page), so it cannot catch a half-loaded page. Unit 179/179, e2e 42/42.
 
 ## Follow-up (2026-10-08): the comparison with the picture did not happen, and now cannot be skipped
 
-The first polish reviewed under the rule above (003, "Hard-Edged Die-Cast") was not compared with
-anything. Codex's review said "the design HTML and result screenshot were not included in the
+The first polish reviewed under the rule above (003, the detailed-artwork design) was not compared
+with anything. Codex's review said "the design HTML and result screenshot were not included in the
 supplied diff and were not inspected", filed it as a note, and the project went to DONE. The brief
 opened with "do not run any commands — the complete diff is below and it is all you need", and the
 request to open the two files came forty lines later; the reviewer obeyed the first. (The build
-itself was good this time: the stronger polish brief produced the picture's detailed cars, ribbon,
-tag, corners and road. It was found to be good by a person, which is the gap.)
+itself was good this time: the stronger polish brief produced the picture's detailed artwork and
+every decorative element it had. It was found to be good by a person, which is the gap.)
 
 The opening line now carries the exception when a design is owed a comparison, and the reviewer
 must say `"compared_with_design": true`. A reply without it is treated like an unreadable one, so
@@ -1259,7 +1257,7 @@ instead of finishing it.
 
 ## Follow-up (2026-10-08): extras beside the look — themes, variants, animations
 
-Asked for: holiday themes for Pink Slip, upgraded models of the cars a player could buy, and new
+Asked for, on 003: seasonal themes, upgraded versions of the things a player could buy, and new
 animations, "without losing the existing". Suggest Updated Design could only replace a look.
 
 The page now has **Replace the look** or **Add an extra** (theme, variants, animation). The kind is

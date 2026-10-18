@@ -49,9 +49,9 @@ thing: suspend, and do not spend a repair round on a problem no repair can reach
 a rate limit gets, for the same reason.
 
 **Detected from stderr only**, which is the entire reason it is safe. This codebase has already paid
-once for matching phrases against what a model writes: the passive-income project's own template
-data contains "a proxy API that pools and manages rate limits", and two real turns were thrown away
-as refusals because of it. Model prose goes to stdout. The signal used here is
+once for matching phrases against what a model writes: one project's own template
+data contains the phrase "a proxy API that pools and manages rate limits", and two real turns were
+thrown away as refusals because of it. Model prose goes to stdout. The signal used here is
 `codex_core::tools::router` refusing to create a process — the CLI's internal logger, which no
 project's content can reach. `SignalsTest` pins both directions: three of the real rejections
 classify as `TOOL_BROKEN`, and the same words in a model's own output do not.
@@ -439,7 +439,7 @@ scratch folder. Two false results came out of it, both fixed with a test that fa
 - **A served `.env` on a project that has none.** Vite's preview server answers any unknown path with
   `index.html`, and its `content="width=device-width"` passed the "assignment" rule. An HTML response
   now never counts as a file, and `.env` needs `NAME=value` lines.
-- **Six serious npm findings that were all test tooling.** Every advisory on Pink Slip was in vitest,
+- **Six serious npm findings that were all test tooling.** Every advisory on 003 was in vitest,
   playwright or the vite dev server — nothing shipped to a player — and each would have earned a repair
   turn. A second `npm audit --omit=dev` decides what ships; the rest are reported at their real
   severity as development dependencies and are not serious.
@@ -557,7 +557,7 @@ parent ids) must now be letters, digits, `.`, `-` and `_`, with no `..`.
 
 `EvidenceCollector` walked the whole repository for each glob, went through every file in
 `node_modules` before discarding it, and followed junctions — so a glob like `**/*.png` could copy
-files from outside the project into evidence the report serves. Pink Slip's fifteen globs took about
+files from outside the project into evidence the report serves. 003's fifteen globs took about
 690 ms per gate; one walk that never enters `.git`, `node_modules` or a link takes about 6 ms, with
 identical results.
 
@@ -588,7 +588,7 @@ fix, and not at all with it.
 
 ### A gate could test a server it did not start
 
-Pink Slip's `playwright.config.ts` has `reuseExistingServer: !process.env.CI`, Playwright's generated
+003's `playwright.config.ts` has `reuseExistingServer: !process.env.CI`, Playwright's generated
 default, and nothing set `CI`. So whatever already answered on port 4173 — a preview server an agent
 left running with an older build, or another Vite project gating at the same moment on the same
 default port — is what the acceptance suite would test and the feature recordings would film. Not
@@ -598,8 +598,8 @@ the house rules tell agents to stop the servers they start.
 
 ### A note beside a filmed feature was accepted over
 
-The "dealer" request on 003 is still on disk, under **Worth seeing**, and has never reached an agent
-(no "dealer" in any log). The brief did carry feature remarks by then, but only if something else
+One feature request on 003 is still on disk, under **Worth seeing**, and has never reached an agent
+(nothing in any log quotes it). The brief did carry feature remarks by then, but only if something else
 reopened the project: with every feature filmed and every review item fine, the same submission
 *accepted* it and the request was lost a second time. A feature's radio buttons rule on its
 recording, so a note beside one is about the feature: a note no session has been given now reopens
@@ -677,7 +677,7 @@ otherwise replaced with the next number past every spec and run directory.
 ### Every gate added the feature recordings to git history again
 
 A gate deletes and re-records each feature's clip, and the next commit — Forge's own `git add -A`
-after a turn, or the agent's — stored the new take as another binary. Pink Slip's history held 73
+after a turn, or the agent's — stored the new take as another binary. 003's history held 73
 media blobs, 21.8 MB, from six commits that changed nothing else in `artifacts/feature-*`, two of
 them agent commits titled "Refresh … recordings". Forge now puts `artifacts/feature-*` in
 `.git/info/exclude` (not `.gitignore`, which is the project's) and drops them from the index before
