@@ -57,9 +57,7 @@ public final class ModelChoice {
         String baseline = spec.modelFor(kind);
         int start = baseline.isBlank() ? middleIndex(ladder) : ladder.indexOf(baseline);
         if (start < 0) {
-            // A model the ladder does not list: the spec means it, and there is no rung to climb
-            // from, so it is used as given rather than replaced by a guess.
-            return baseline;
+            return fallback(kind, baseline, ladder);
         }
         return ladder.get(Math.clamp((long) start + Math.max(0, repairRounds), 0, ladder.size() - 1));
     }
@@ -72,7 +70,29 @@ public final class ModelChoice {
      */
     public String bigReview(AgentKind kind) {
         String named = spec.modelFor(kind);
-        return named.isBlank() ? top(kind) : named;
+        List<String> ladder = tiers.forVendor(kind);
+        if (named.isBlank()) {
+            return top(kind);
+        }
+        return ladder.contains(named) || ladder.isEmpty() ? named : fallback(kind, named, ladder);
+    }
+
+    /**
+     * What to run when the spec names a model the vendor no longer offers.
+     *
+     * <p>The bottom rung, and said out loud. The ladder is refreshed from the vendors at startup,
+     * so a model missing from it is one this account cannot reach — and using it as written spends
+     * the whole turn being refused, three times over, before the project is parked for a person.
+     * The cheapest rung is the one choice certain to run, which beats not running at all.
+     *
+     * <p>It is announced because it is Forge doing something other than what the spec asked for,
+     * and the spec's author is the only one who can decide whether the substitute is good enough.
+     */
+    private String fallback(AgentKind kind, String named, List<String> ladder) {
+        String lowest = ladder.getFirst();
+        System.err.println(kind + " no longer offers " + named + "; using " + lowest
+                + " instead - set a model it does offer in the spec, or run 'forge models'");
+        return lowest;
     }
 
     /**

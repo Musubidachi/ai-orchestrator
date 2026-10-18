@@ -67,7 +67,7 @@ public record ModelTiers(Map<String, List<String>> byVendor) {
             Map<String, List<String>> merged = new LinkedHashMap<>(discover());
             merged.putAll(onDisk);
 
-            ModelTiers tiers = new ModelTiers(ordered(pruned(merged)));
+            ModelTiers tiers = new ModelTiers(ordered(pruned(merged, VendorModels.cached())));
             if (!onDisk.keySet().containsAll(merged.keySet())) {
                 // Written back so a vendor added by an upgrade is visible and editable rather than
                 // only existing in memory.
@@ -79,6 +79,31 @@ public record ModelTiers(Map<String, List<String>> byVendor) {
             System.err.println("Ignoring unreadable models.json: " + e.getMessage());
             return new ModelTiers(ordered(discover()));
         }
+    }
+
+    /**
+     * The ladder brought in line with what every vendor offers now, Antigravity included.
+     *
+     * <p>Meant for startup, and nowhere near a page load: this is the one path that runs
+     * {@code agy models}, which reaches the network. {@link #load} cannot, so it prunes against
+     * the cached vendors only — and Antigravity is precisely the vendor with no cache, so its
+     * retired models survived every read and were discovered by a run being refused instead. That
+     * cost project 005 a day parked on {@code gemini-3.1-pro-high}, withdrawn weeks earlier.
+     *
+     * <p>Written back when it changed, so the editor and the next command see the same ladder.
+     */
+    public static ModelTiers refresh(Path forgeRoot) {
+        ModelTiers current = load(forgeRoot);
+        Map<AgentKind, List<String>> available = VendorModels.asked();
+        if (available.isEmpty()) {
+            // No vendor could be asked. Keeping a stale ladder beats emptying a working one.
+            return current;
+        }
+        ModelTiers refreshed = new ModelTiers(ordered(pruned(current.byVendor(), available)));
+        if (!refreshed.byVendor().equals(current.byVendor())) {
+            refreshed.save(forgeRoot.resolve("models.json"));
+        }
+        return refreshed;
     }
 
     /**
@@ -101,12 +126,13 @@ public record ModelTiers(Map<String, List<String>> byVendor) {
      * real when it was written is not necessarily real now. Choosing one costs a whole turn to find
      * out, and the refusal arrives as a failed run rather than as an explanation.
      *
-     * <p>Only where the vendor actually answered, and never down to nothing: an empty answer means
-     * "could not ask", and pruning a working ladder on the strength of it would be worse than the
-     * stale entry it was meant to catch.
+     * <p>Only where the vendor actually answered: a vendor absent from {@code available} was not
+     * asked, or could not be, and pruning a working ladder on the strength of silence would be
+     * worse than the stale entry it was meant to catch.
      */
-    private static Map<String, List<String>> pruned(Map<String, List<String>> configured) {
-        Map<AgentKind, List<String>> available = VendorModels.cached();
+    static Map<String, List<String>> pruned(Map<String, List<String>> configured,
+                                            Map<AgentKind, List<String>> available) {
+        Map<AgentKind, List<String>> placeable = VendorModels.forLadder(available);
         Map<String, List<String>> kept = new LinkedHashMap<>(configured);
         available.forEach((kind, offered) -> {
             List<String> listed = configured.get(kind.name());
@@ -114,14 +140,30 @@ public record ModelTiers(Map<String, List<String>> byVendor) {
                 return;
             }
             List<String> real = listed.stream().filter(offered::contains).toList();
-            if (!real.isEmpty() && real.size() < listed.size()) {
-                List<String> gone = listed.stream().filter(model -> !offered.contains(model)).toList();
-                System.err.println("models.json lists " + kind + " models this account cannot use: "
-                        + String.join(", ", gone) + " - ignoring them");
-                kept.put(kind.name(), real);
+            if (real.size() == listed.size()) {
+                return;
             }
+            List<String> gone = listed.stream().filter(model -> !offered.contains(model)).toList();
+            System.err.println("models.json lists " + kind + " models this account cannot use: "
+                    + String.join(", ", gone) + " - ignoring them");
+            kept.put(kind.name(), replacement(listed, real, placeable.getOrDefault(kind, List.of())));
         });
         return kept;
+    }
+
+    /**
+     * What a vendor's ladder becomes once the models it cannot run are taken out.
+     *
+     * <p>Whatever survives, normally. When nothing does, what the vendor offers instead — an empty
+     * ladder would hand every job back to the CLI's own default and silently undo the tiering. A
+     * vendor offering nothing this code can rank keeps its stale list, which is at least a list.
+     */
+    private static List<String> replacement(List<String> listed, List<String> real,
+                                            List<String> offered) {
+        if (!real.isEmpty()) {
+            return real;
+        }
+        return offered.isEmpty() ? listed : offered;
     }
 
     public List<String> forVendor(AgentKind kind) {

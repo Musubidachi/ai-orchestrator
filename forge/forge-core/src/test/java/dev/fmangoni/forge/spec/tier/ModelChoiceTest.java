@@ -100,12 +100,29 @@ class ModelChoiceTest {
     }
 
     @Test
-    @DisplayName("a model the ladder does not list is used as written, not replaced by a guess")
-    void unlistedModelIsRespected() throws IOException {
-        ModelChoice choice = choice("claude_model: some-preview-build");
+    @DisplayName("a model the ladder does not list falls to the bottom rung rather than being used")
+    void unlistedModelFallsToTheBottomRung() throws IOException {
+        ModelChoice choice = choice("claude_model: some-retired-build");
 
-        assertEquals("some-preview-build", choice.implement(AgentKind.CLAUDE, 0));
-        assertEquals("some-preview-build", choice.implement(AgentKind.CLAUDE, 3));
+        // It used to be passed through on the grounds that the spec meant it. The ladder is now
+        // refreshed from the vendors at startup, so absent from it means this account cannot run
+        // it — and a model the CLI refuses costs the turn, three times over, and parks the
+        // project. The cheapest rung is the one choice certain to run.
+        assertEquals("haiku", choice.implement(AgentKind.CLAUDE, 0));
+        assertEquals("haiku", choice.implement(AgentKind.CLAUDE, 3));
+        assertEquals("haiku", choice.bigReview(AgentKind.CLAUDE));
+    }
+
+    @Test
+    @DisplayName("a vendor with no ladder at all still honours the model the spec names")
+    void unlistedModelSurvivesAnEmptyLadder() throws IOException {
+        ModelChoice choice = new ModelChoice(new ModelTiers(Map.of()), spec("claude_model: opus"));
+
+        // No ladder means nothing was discovered and nothing configured, so there is no evidence
+        // the model is wrong and no rung to drop to. Substituting here would override a working
+        // setting on a machine where discovery simply did not run.
+        assertEquals("opus", choice.implement(AgentKind.CLAUDE, 0));
+        assertEquals("opus", choice.bigReview(AgentKind.CLAUDE));
     }
 
     @Test
