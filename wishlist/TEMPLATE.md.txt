@@ -1,0 +1,61 @@
+---
+# Copy this file to wishlist/NNN-short-name.md and fill it in.
+# Saved as .md.txt so the loader ignores it — only .md files are picked up.
+
+id: "001"                       # unique; becomes runs/001/
+title: Crochet pattern differ   # shown in the report
+
+# parent: "001"                 # set this to make the entry an IMPROVEMENT to project 001:
+                                # it runs in that project's repo, against its existing code,
+                                # waits until the parent is accepted, and must satisfy the
+                                # parent's acceptance commands as well as its own.
+
+priority: 50                    # lower runs first; default 50 leaves room either side.
+                                # Orders what STARTS next, across projects and improvements
+                                # alike. A running turn is never interrupted.
+
+assign: auto                    # claude | codex | antigravity | auto, which balances across
+                                # whichever vendors vendors.json lets build
+stack: java                     # hint for the scaffold
+
+# claude_model: opus            # per-vendor model for this spec; omit to leave the CLI
+# codex_model: gpt-6-astra      # default. Set these with the editor's sliders; the
+                                # available tiers live in models.json at the Forge root.
+
+# THE CONTRACT. Forge runs these itself, in a fresh process, from the repo root.
+# They decide whether the project is done — the agent's own report is ignored.
+# A spec with no acceptance commands is refused.
+acceptance:
+  - mvn -q test
+  - mvn -q exec:java -Dexec.args="samples/a.pdf samples/b.pdf out.html"
+
+# Artefacts to keep and show in the report. Images are rendered inline.
+evidence:
+  - out.html
+  - target/screenshots/*.png
+
+max_repair_rounds: 4            # attempts to fix something broken, then it parks
+max_sessions: 12                # total agent turns; a big project needs many, and
+                                # needing more time is not the same as being stuck
+agent_timeout_minutes: 30       # cap on a single agent turn
+gate_timeout_minutes: 20        # cap on a single acceptance command
+---
+
+## Goal
+
+What the program does, and why you want it. Write this as if briefing a competent contractor who
+has never met you: what problem it solves, what the input is, what the output should look like.
+
+## Non-goals
+
+What it must not grow into. This section does real work — it is the main thing stopping an agent
+from gold-plating a small tool into a framework.
+
+## Notes
+
+How you think it ought to be built. Libraries you want or refuse, the shape of the CLI, file
+formats, edge cases you already know about, anything you would otherwise end up explaining twice.
+
+Be specific about what "correct" means for the tricky parts. The acceptance commands above can only
+check what you thought to check; this section is where you tell the agent what you could not
+express as a command.

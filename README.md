@@ -75,12 +75,13 @@ whichever of the other two did not build the project. **ffmpeg** is optional too
 
 **On a fresh clone there is no state.** `runs/`, `logs/`, `index.html` and the various `*.json` at
 the root are all working data, excluded from the repository and rebuilt on first use. What you
-clone is Forge itself plus `house-rules.md` and `skills/`. `wishlist/` is excluded too: the specs
-are your own ideas, and they are input to Forge rather than part of it — create the directory and
-write your first spec using the format documented under "Ranking" and "Models, per spec". In
-particular
-`models.json` is discovered from what your own subscriptions can reach (`forge models`), so there
-is deliberately no copy of someone else's in the repository.
+clone is Forge itself plus `house-rules.md`, `skills/` and `backups/`. The specs in `wishlist/` are
+excluded — they are your own ideas, and they are input to Forge rather than part of it — with one
+exception: **`wishlist/TEMPLATE.md.txt` ships**, because `SpecLoader` refuses an incomplete spec and
+a clone with nothing to copy has nowhere to start. Copy it to `wishlist/001-your-project.md` and
+fill it in; it is saved as `.md.txt` so the loader ignores it until you do. `models.json` is
+discovered from what your own subscriptions can reach (`forge models`), so there is deliberately no
+copy of someone else's in the repository.
 
 Codex needs **0.153.4 or newer**. Older builds reject the `ultra` reasoning effort that the current
 desktop app writes into `~/.codex/config.toml`, and fail at config load before doing anything.
@@ -105,7 +106,10 @@ Then open `index.html`.
 | `run` | advance every eligible project, then write the reports |
 | `status` | one line per project |
 | `report` | regenerate the HTML from state on disk |
-| `prune` | delete build output from runs finished over N days ago |
+| `rank` | renumber the wishlist: projects first, then improvements |
+| `prune` | delete build output from runs finished over N days ago (default 7) |
+| `tour` | narrate a Maven project's code, as a page and optionally an mp4 |
+| `models` | what each vendor offers, and what the ladder uses |
 | `build` | rebuild the jar (`forge.bat` only) |
 
 ### Changing Forge itself while it is running
@@ -144,6 +148,21 @@ the project carries on from the same place when the new editor starts.
 
 No `forge` command rebuilds the jar while a Forge is running from it. `forge status` in a second
 window uses the jar that is there, and says so if the sources are newer.
+
+#### Stopping Forge from the dashboard
+
+The scripts above are for rebuilding. To stop Forge and leave it stopped, the dashboard has
+**Finish and stop** in its header, which is the same courtesy in one press: it stops taking new
+work, waits for any agent turn to reach its commit, and only then exits. Nothing is killed, and the
+confirmation names the projects working at that moment so you know what is being waited for.
+
+A bar across the top then says what it is waiting for, and the page says plainly when Forge has
+gone rather than freezing and looking broken. If the wait runs out with a turn still in flight,
+Forge stays up, goes back to taking work, and the bar says which project held it — press it again
+to keep waiting, or stop that project from its card first. Pressing it repeatedly is safe for the
+same reason: a Forge being asked to stop does not start a fresh turn between attempts.
+
+Start it again with `forge-ui.bat`. There is no button for that, because nothing is left listening.
 
 The root defaults to wherever `forge.bat` lives, but your own `--root` wins because Forge takes the
 first occurrence of an option. That is how you keep the generated projects on another drive:
@@ -473,14 +492,23 @@ reachable from the network.
 ## How a project moves
 
 ```
-NEW → PLANNING → SCAFFOLDED → GATING ─┬─ pass ─→ SECURITY_CHECK ─→ REVIEWING ─┬─→ DONE
+NEW → PLANNING → SCAFFOLDED → GATING ─┬─ pass ─→ SECURITY_CHECK ─→ REVIEWING ─┬─→ DONE → ACCEPTED
                       ↑               │                                       │
-                      └── REPAIRING ←─┴─ fail                                 └─→ REVIEW_REPAIR ─┐
-                             └── rounds exhausted ──→ PARKED                                     │
-                                                                                                 │
-        any agent turn hitting a quota limit ──→ SUSPENDED (resumes later) ──────────────────────┘
+                      ├── REPAIRING ←─┴─ fail                                 └─→ REVIEW_REPAIR ─┐
+                      │      └── rounds exhausted ──→ PARKED                                     │
+                      ├── CONTINUING ←── a failed gate the handoff called unfinished             │
+                      ├── SECURITY_REPAIR ←── findings from the security check                   │
+                      └──────────────────────────────────────────────────────────────────────────┘
+                                     every repair loop returns through the gate
+
+        any agent turn hitting a quota limit ──→ SUSPENDED, resuming where it was
         a CLI logged out or broken, or the same failure three times ──→ waiting for you (Start)
 ```
+
+Fourteen phases in all. The four easiest to miss: **CONTINUING** is a failed gate that was honest
+about being unfinished (see *Needing more time is not failing*), **SECURITY_REPAIR** is the
+security reading's own repair loop, **REVIEW_REPAIR** the cross-review's, and **ACCEPTED** is the
+one only you can cause.
 
 - **PLANNING** is one read-only turn on the best model the building vendor has, before any code
   exists. It writes `runs/NNN/plan.md`, which goes in front of every turn that follows — see below.
@@ -639,12 +667,15 @@ different limits:
 
 | limit | value | what it bounds |
 |---|---|---|
-| **per vendor** | 1 | concurrent calls to each CLI, so **2** agent turns at most, ever |
+| **per vendor** | 1 by default | concurrent calls to that CLI — `concurrency` in `vendors.json` |
 | `--workers` | 4 | projects *in flight*, including those in their own gate |
 
+So the number of turns that can be talking to a model at once is the sum of the vendors'
+`concurrency`, which on the defaults is one per installed CLI. Raise one when a vendor has headroom
+and you want the wall clock back; leave it at 1 when quota is tight.
+
 `--workers` is deliberately the larger: a project spends much of a turn running its own tests,
-holding no agent slot, and capping in-flight work at the vendor limit would leave a CLI idle. So
-the top **2** ranks are what is actually talking to a model at any moment.
+holding no agent slot, and capping in-flight work at the vendor limit would leave a CLI idle.
 
 A running turn is never interrupted by a higher-ranked arrival — the quota already spent would be
 thrown away and the project left mid-edit for nothing.
@@ -737,7 +768,7 @@ that claims progress while changing nothing is treated as stuck, and does spend 
 ## Layout
 
 ```
-wishlist/         one spec per idea (see TEMPLATE.md.txt)
+wishlist/         one spec per idea; TEMPLATE.md.txt is the one that ships — copy it
 house-rules.md    constraints copied into every workspace as CLAUDE.md and AGENTS.md
 skills/           procedures agents load when they need them, copied into every workspace
 backups/          house-rules.md as it was before the skills, and the script that checks nothing was lost
@@ -788,10 +819,11 @@ re-imported.
 
 ## Concurrency
 
-Projects run in parallel, but at most **one call per vendor at a time**. The limit sits on each
-agent call rather than on the project, because a project does not use one vendor throughout — a
-Claude-built project is reviewed by Codex. Fanning out more sessions against a single subscription
-drains the same quota window faster and invites a throttle mid-project.
+Projects run in parallel, but each vendor is called `concurrency` times at a time — **one by
+default**. The limit sits on each agent call rather than on the project, because a project does not
+use one vendor throughout: a Claude-built project is reviewed by Codex. Fanning out more sessions
+against a single subscription drains the same quota window faster and invites a throttle
+mid-project, which is why the default is one and raising it is a decision about a particular plan.
 
 ## The risk worth knowing
 
@@ -827,6 +859,9 @@ What Forge does enforce:
 ### Codex's settings, in `vendors.json`
 
 Codex remembers nothing between turns that Forge can rely on, so everything is said on every call.
+Every vendor gets a block; this is the Codex one from the machine Forge was built on, so it shows
+settings that are not defaults — `builds: false` here means this account spends Codex on reviewing
+rather than building, which is a choice about two particular subscriptions.
 
 ```json
 "CODEX" : {
@@ -840,6 +875,8 @@ Codex remembers nothing between turns that Forge can rely on, so everything is s
 
 | setting | what it does |
 |---|---|
+| `builds` | whether `auto` may hand this vendor a project of its own. Building is where quota goes — a dozen turns, each carrying a growing conversation — while reviewing is one read-only turn. Turning it off is not "use this vendor less"; it is "spend it on the work that unblocks other work". **Claude and Codex build by default; Antigravity never does.** The example above is one machine's answer to a lopsided pair of plans, not the default. |
+| `concurrency` | how many calls may reach this vendor at once. Default 1, never below 1 whatever the file says. It does not change what the work costs, only how fast the window empties: two at a time finishes two projects in the time one would take, at the price of being cut off with two half-built projects instead of one. |
 | `windowsSandbox` | which Windows sandbox Codex uses for Forge's turns: `elevated`, `unelevated` or `mxc`. Omit it to use whatever your own Codex is configured with. On this machine `elevated` cannot start a process from Forge, and `unelevated` writes inside the workspace and is denied outside it. Your `~/.codex/config.toml` is not touched. |
 | `disabledFeatures` | passed as `--disable`. `codex features list` names them all. |
 | `disabledMcpServers` | MCP servers written directly into your Codex config, switched off for Forge's turns. `codex mcp list` shows them. |

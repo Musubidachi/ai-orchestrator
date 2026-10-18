@@ -31,7 +31,12 @@ node_modules/
 # --- Your own input, not Forge's code --------------------------------------
 # The specs are project ideas, which belong to whoever wrote them rather than
 # in a public repository. Forge reads this directory; it is not part of it.
-/wishlist/
+#
+# The template is the exception, and is excluded from the exclusion: without it
+# a clone has no valid spec to copy, and SpecLoader refuses an incomplete one.
+# Ignoring the contents rather than the directory is what lets git see it.
+/wishlist/*
+!/wishlist/TEMPLATE.md.txt
 
 # --- State Forge writes for itself -----------------------------------------
 # All of this is rebuilt on first use. Committing it would push one machine's
@@ -41,7 +46,6 @@ node_modules/
 /logs/
 /.scratch/
 /spawn/
-/backups/
 /children.pids
 /dashboard.json
 /quota.json

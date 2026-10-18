@@ -29,7 +29,8 @@ constructs one.
   events — never the model's prose or the files it read, on a failed call as on a clean one.
 - **Command lines live in `*Args` classes**, apart from the code that runs them, so
   `AgentArgsTest` and `AntigravityArgsTest` can pin every flag.
-- **One call per vendor at a time** (`ThrottledAgent`). The limit sits on the call, not the project.
+- **`vendors.json` decides how many calls reach a vendor at once** (`ThrottledAgent`), one by
+  default. The limit sits on the call, not the project.
 - **Usage comes from the vendor's own closing event** (`Usage`), not from an estimate.
 
 ## Adding a vendor
