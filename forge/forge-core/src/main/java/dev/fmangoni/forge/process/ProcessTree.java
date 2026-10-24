@@ -1,7 +1,9 @@
 package dev.fmangoni.forge.process;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -26,6 +28,11 @@ import java.util.Set;
  * a leftover is recoverable, and killing a stranger is not.
  */
 public final class ProcessTree {
+
+    /** How many times a refused look at a process's children is made before going without it. */
+    static final int LOOKS = 3;
+
+    private static final Duration BETWEEN_LOOKS = Duration.ofMillis(50);
 
     private final ProcessHandle root;
     private final Instant started;
@@ -71,7 +78,7 @@ public final class ProcessTree {
     }
 
     private static void collect(ProcessHandle parent, Instant parentStarted, Set<ProcessHandle> found) {
-        parent.children().forEach(child -> {
+        childrenOf(parent).forEach(child -> {
             Instant childStarted = child.info().startInstant().orElse(null);
             if (childStarted == null || childStarted.isBefore(parentStarted)) {
                 return;
@@ -80,5 +87,49 @@ public final class ProcessTree {
                 collect(child, childStarted, found);
             }
         });
+    }
+
+    /**
+     * A process's children, read from Windows's list of every process on the machine.
+     *
+     * <p>That list is a snapshot, and Windows sometimes cannot take one, most likely while a browser
+     * suite is starting and stopping processes by the hundred. The JDK reports it as a bare
+     * {@code RuntimeException("snapshot not available")}, and nothing caught it: one refused look
+     * among the thousands a ten-minute gate takes threw the gate away as "Forge hit an error" and
+     * skipped the clean-up after the command. 003.4 lost two gates to it in twelve hours.
+     *
+     * <p>So a refused look is tried again, and one refused every time counts as nothing seen under
+     * that process this time. That is safe because a running command's tree is looked at again at
+     * every interval and everything seen is kept, so a child missed by one look is not lost. Only
+     * the JDK's bare {@code RuntimeException} is taken as a refusal; anything more specific is a
+     * real failure and still surfaces.
+     */
+    private static List<ProcessHandle> childrenOf(ProcessHandle parent) {
+        for (int look = 1; ; look++) {
+            try {
+                return parent.children().toList();
+            } catch (RuntimeException refused) {
+                if (refused.getClass() != RuntimeException.class) {
+                    throw refused;
+                }
+                if (look == LOOKS || !paused()) {
+                    System.err.println("[process] could not list the processes under " + parent.pid()
+                            + " (" + refused.getMessage() + ") in " + look
+                            + (look == 1 ? " try" : " tries") + "; going without them this time");
+                    return List.of();
+                }
+            }
+        }
+    }
+
+    /** False when interrupted, which is a reason to stop trying again rather than to swallow it. */
+    private static boolean paused() {
+        try {
+            Thread.sleep(BETWEEN_LOOKS.toMillis());
+            return true;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return false;
+        }
     }
 }

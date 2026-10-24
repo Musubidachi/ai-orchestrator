@@ -21,6 +21,9 @@ final class FakeHandle implements ProcessHandle, ProcessHandle.Info {
     private final Instant started;
     private final List<FakeHandle> claimed = new ArrayList<>();
     private boolean killed;
+    private int refusals;
+    private RuntimeException failure;
+    private int looks;
 
     /** @param started when it started, or null for a process that will not say */
     FakeHandle(long pid, Instant started) {
@@ -32,6 +35,26 @@ final class FakeHandle implements ProcessHandle, ProcessHandle.Info {
     FakeHandle claims(FakeHandle child) {
         claimed.add(child);
         return this;
+    }
+
+    /**
+     * Refuses the next {@code times} looks at its children the way Windows does when it cannot
+     * take a process snapshot, which the JDK reports as a bare RuntimeException.
+     */
+    FakeHandle refuses(int times) {
+        refusals = times;
+        return this;
+    }
+
+    /** Fails every look at its children with {@code failure}, which is not a refused snapshot. */
+    FakeHandle failsWith(RuntimeException failure) {
+        this.failure = failure;
+        return this;
+    }
+
+    /** How many times its children were asked for. */
+    int looks() {
+        return looks;
     }
 
     boolean killed() {
@@ -50,6 +73,14 @@ final class FakeHandle implements ProcessHandle, ProcessHandle.Info {
 
     @Override
     public Stream<ProcessHandle> children() {
+        looks++;
+        if (failure != null) {
+            throw failure;
+        }
+        if (refusals > 0) {
+            refusals--;
+            throw new RuntimeException("snapshot not available");
+        }
         return claimed.stream().map(ProcessHandle.class::cast);
     }
 

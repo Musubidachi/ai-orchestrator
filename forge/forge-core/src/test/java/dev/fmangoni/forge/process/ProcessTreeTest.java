@@ -2,6 +2,8 @@ package dev.fmangoni.forge.process;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
@@ -90,6 +92,41 @@ class ProcessTreeTest {
                 "something the command started was left running");
         assertFalse(editor.killed(), "killed a process that only shared a parent id");
         assertFalse(agentTurn.killed(), "killed a stranger's child");
+    }
+
+    @Test
+    @DisplayName("a process snapshot Windows refuses is asked for again, and the tree is still found")
+    void aRefusedSnapshotIsTriedAgain() {
+        // 003.4 lost two gates in twelve hours to one refused look among thousands: the JDK's
+        // "snapshot not available" went straight up through the gate as "Forge hit an error".
+        FakeHandle child = new FakeHandle(20, AFTER);
+        FakeHandle command = new FakeHandle(10, COMMAND_STARTED).claims(child).refuses(ProcessTree.LOOKS - 1);
+
+        assertEquals(Set.of(child), ProcessTree.of(command, COMMAND_STARTED).members());
+        assertEquals(ProcessTree.LOOKS, command.looks());
+    }
+
+    @Test
+    @DisplayName("a snapshot refused every time is a look that saw nothing, not a failed command")
+    void aSnapshotRefusedEveryTimeSeesNothing() {
+        FakeHandle child = new FakeHandle(20, AFTER);
+        FakeHandle command = new FakeHandle(10, COMMAND_STARTED).claims(child).refuses(ProcessTree.LOOKS);
+        ProcessTree tree = ProcessTree.of(command, COMMAND_STARTED);
+
+        assertEquals(Set.of(), tree.members(), "going without them this time");
+        assertEquals(ProcessTree.LOOKS, command.looks(), "gave up after its tries, not before or after");
+        assertEquals(Set.of(child), tree.members(), "the next look, as the next interval makes, sees it again");
+    }
+
+    @Test
+    @DisplayName("a failure that is not a refused snapshot is not taken for one")
+    void anyOtherFailureSurfaces() {
+        IllegalStateException bug = new IllegalStateException("a real defect");
+        FakeHandle command = new FakeHandle(10, COMMAND_STARTED).failsWith(bug);
+
+        assertSame(bug, assertThrows(IllegalStateException.class,
+                () -> ProcessTree.of(command, COMMAND_STARTED).members()));
+        assertEquals(1, command.looks(), "not retried: only the JDK's bare refusal is");
     }
 
     @Test
