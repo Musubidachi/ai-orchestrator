@@ -1874,7 +1874,8 @@ function fillDetail(card, d, j) {
 const reopenedClips = new Set();
 
 function clipQuestions(box, j) {
-  const owed = (j.running ? [] : (j.unfilmed || []))
+  // A card not on this machine asks nothing: its answers would be written over by Resume.
+  const owed = (j.running || notHere(j) ? [] : (j.unfilmed || []))
     .map(clip => reopenedClips.has(j.id + "/" + clip.id) ? {...clip, kept: false} : clip);
   box.hidden = owed.length === 0;
   const signature = JSON.stringify(owed);

@@ -450,6 +450,8 @@ class UiServerTest {
         state.setAssignedTo(AgentKind.CLAUDE);
         RunPaths paths = RunPaths.under(runs, "001");
         RunStore.save(paths.stateFile(), state);
+        // The repository every finished project has: without it Forge rightly reads it as not here.
+        Files.createDirectories(paths.repo().resolve(".git"));
 
         String body = post("/api/jobs/walkthrough", "{\"id\":\"001\"}").body();
 

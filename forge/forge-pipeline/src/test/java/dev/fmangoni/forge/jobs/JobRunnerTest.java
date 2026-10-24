@@ -62,6 +62,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.EnumMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -321,6 +322,26 @@ class JobRunnerTest {
         assertEquals("shelved on GitHub as shelf/001: resume it to work on it here", jobs.recheck("001"));
         assertEquals(Phase.DONE, stateOf("001").getPhase(), "and its state was not touched");
         assertEquals("shelf/001", statusOf("001").outward().getShelvedBranch());
+
+        // The page hides every other button too, and the server holds when one is pressed anyway:
+        // whatever they wrote in the run folders, Resume would write over.
+        String shelved = "shelved on GitHub as shelf/001: resume it to work on it here";
+        Map<String, String> buttons = new LinkedHashMap<>();
+        buttons.put("deploy", jobs.deploy("001"));
+        buttons.put("publish", jobs.publish("001"));
+        buttons.put("shelve", jobs.shelve("001"));
+        buttons.put("approve look", jobs.approveLook("001"));
+        buttons.put("marketing", jobs.marketing("001"));
+        buttons.put("security", jobs.rescan("001"));
+        buttons.put("walkthrough", jobs.walkthrough("001").text());
+        buttons.put("ask for designs", jobs.askForDesigns("001", "", "", ""));
+        buttons.put("build design", jobs.buildDesign("001", "CODEX-1", "", ""));
+        buttons.put("play", jobs.play("001"));
+        buttons.put("attach", jobs.attach("001", new byte[] {1}));
+        buttons.put("feature", jobs.ruleFeature("001", "f1", "declined", "", ""));
+        buttons.put("review form", jobs.decide("001", List.of()));
+        buttons.forEach((button, said) -> assertEquals(shelved, said, button));
+        assertFalse(jobs.unshelve("001").startsWith("shelved on GitHub"), "Resume is the one way back");
     }
 
     @Test
@@ -969,6 +990,7 @@ class JobRunnerTest {
         plan.setNotVerified(List.of("the only claim still being made"));
         state.setPlan(plan);
         RunStore.save(paths.stateFile(), state);
+        hasRepository("001", Phase.DONE);
         reviewed("001", new Review());
 
         DecisionStore.save(paths.decisionsFile(), List.of(
@@ -1025,6 +1047,7 @@ class JobRunnerTest {
         }
         state.setPlan(plan);
         RunStore.save(paths.stateFile(), state);
+        hasRepository(id, Phase.DONE);
         reviewed(id, new Review());
         return paths;
     }

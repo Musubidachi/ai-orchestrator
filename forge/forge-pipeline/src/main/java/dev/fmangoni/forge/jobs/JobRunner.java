@@ -41,6 +41,7 @@ import java.util.Optional;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 /**
  * Starts and stops projects on demand, so the dashboard can override the queue.
@@ -66,6 +67,7 @@ import java.util.concurrent.TimeUnit;
 public final class JobRunner {
 
     private final ForgeHome home;
+    private final Projects projects;
     private final JobPool pool;
     private final StartRules rules;
     private final JobQueue queue;
@@ -103,6 +105,7 @@ public final class JobRunner {
         this.pool = new JobPool(maxInFlight);
         this.rules = new StartRules(home, agents, quota, pool);
         Projects projects = new Projects(home, rules.eligibility());
+        this.projects = projects;
         LockedElsewhere elsewhere = new LockedElsewhere();
         this.queue = new JobQueue(home, rules, pool, elsewhere);
         this.shutdown = new Shutdown(projects, pool);
@@ -261,17 +264,17 @@ public final class JobRunner {
 
     /** See {@link Attachments#save}. Starts nothing, so it takes no lock. */
     public String attach(String id, byte[] image) {
-        return attachments.save(id, image);
+        return here(id, () -> attachments.save(id, image));
     }
 
     /** See {@link Submissions#ruleFeature}. */
     public synchronized String ruleFeature(String id, String itemId, String verdict, String sameAs) {
-        return submissions.ruleFeature(id, itemId, verdict, sameAs);
+        return here(id, () -> submissions.ruleFeature(id, itemId, verdict, sameAs));
     }
 
     /** See {@link Submissions#ruleFeature}, with what the person wants changed about it. */
     public synchronized String ruleFeature(String id, String itemId, String verdict, String sameAs, String note) {
-        return submissions.ruleFeature(id, itemId, verdict, sameAs, note);
+        return here(id, () -> submissions.ruleFeature(id, itemId, verdict, sameAs, note));
     }
 
     /** Records what you decided about each outstanding item, and does whatever follows. See {@link Submissions}. */
@@ -280,6 +283,10 @@ public final class JobRunner {
     }
 
     public synchronized String decide(String id, List<Decision> decisions, List<Decision> features) {
+        String away = notHere(id);
+        if (away != null) {
+            return away;
+        }
         boolean wasApproved = phaseOf(id) == Phase.ACCEPTED;
         String result = submissions.decide(id, decisions, features);
         // Approving a version is what puts it on GitHub: the person asked for those to be one act.
@@ -291,12 +298,12 @@ public final class JobRunner {
 
     /** See {@link DeployJob}. */
     public synchronized String deploy(String id) {
-        return deploys.start(id);
+        return here(id, () -> deploys.start(id));
     }
 
     /** See {@link ShelfJob}: the whole family to GitHub, and deleted here. */
     public synchronized String shelve(String id) {
-        return shelves.shelve(id);
+        return here(id, () -> shelves.shelve(id));
     }
 
     /** See {@link ShelfJob}: the whole family back from GitHub, to carry on here. */
@@ -311,7 +318,25 @@ public final class JobRunner {
 
     /** See {@link PublishJob}: Publish, pressed to try again or to put up versions approved before it existed. */
     public synchronized String publish(String id) {
-        return publishes.start(id);
+        return here(id, () -> publishes.start(id));
+    }
+
+    /**
+     * Runs a button's job only for a project whose repository is on this machine.
+     *
+     * <p>The page hides these buttons on a shelved or missing project, and this is what holds when
+     * something presses one anyway. Each works in the repository or in the run folders: on a shelved
+     * one, whatever it wrote would be written over by Resume from GitHub, and on a missing one there
+     * is nothing to work in. Resume itself is the one thing not asked this.
+     */
+    private String here(String id, Supplier<String> job) {
+        String away = notHere(id);
+        return away != null ? away : job.get();
+    }
+
+    /** See {@code Eligibility.notHere}; null for an id with no spec, which each job answers itself. */
+    private String notHere(String id) {
+        return projects.find(id).map(project -> rules.eligibility().notHere(project.spec())).orElse(null);
     }
 
     private Phase phaseOf(String id) {
@@ -320,12 +345,12 @@ public final class JobRunner {
 
     /** See {@link MarketingJob}. */
     public synchronized String marketing(String id) {
-        return marketing.start(id);
+        return here(id, () -> marketing.start(id));
     }
 
     /** See {@link SecurityRescan}. */
     public synchronized String rescan(String id) {
-        return rescans.start(id);
+        return here(id, () -> rescans.start(id));
     }
 
     /**
@@ -336,17 +361,18 @@ public final class JobRunner {
      * same project rather than writing underneath one.
      */
     public synchronized Narration walkthrough(String id) {
-        return walkthroughs.speak(id);
+        String away = notHere(id);
+        return away != null ? new Narration(away, "") : walkthroughs.speak(id);
     }
 
     /** See {@link Polish#ask}. */
     public synchronized String askForDesigns(String id, String note, String base, String extra) {
-        return polish.ask(id, note, base, extra);
+        return here(id, () -> polish.ask(id, note, base, extra));
     }
 
     /** See {@link Polish#build}. */
     public synchronized String buildDesign(String id, String optionId, String note, String extra) {
-        return polish.build(id, optionId, note, extra);
+        return here(id, () -> polish.build(id, optionId, note, extra));
     }
 
     /** See {@link Polish#view}. Reads only, so it takes no lock. */
@@ -361,7 +387,7 @@ public final class JobRunner {
 
     /** See {@link Play}. Synchronized so it cannot open a project a Start is in the middle of launching. */
     public synchronized String play(String id) {
-        return play.start(id);
+        return here(id, () -> play.start(id));
     }
 
     /** See {@link Shutdown}. */
