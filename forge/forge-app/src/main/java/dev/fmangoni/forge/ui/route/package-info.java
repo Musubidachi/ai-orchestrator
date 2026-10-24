@@ -10,6 +10,6 @@
  *
  * <p><b>Start with:</b> {@code SpecRoutes}, {@code JobRoutes}, {@code SystemRoutes}.
  *
- * <p>Depends on: agent.ledger, agent.model, jobs, jobs.button, jobs.polish, jobs.stop, jobs.work, report.deck, spec, spec.model, spec.rank, spec.tier, status.league, ui.editor, ui.http, ui.request, ui.suggest.
+ * <p>Depends on: agent.ledger, agent.model, jobs, jobs.button, jobs.polish, jobs.stop, jobs.work, report.deck, spec, spec.model, spec.rank, spec.tier, status.league, status.spend, ui.editor, ui.http, ui.request, ui.suggest.
  */
 package dev.fmangoni.forge.ui.route;

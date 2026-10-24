@@ -1,6 +1,7 @@
 package dev.fmangoni.forge.pipeline.turn;
 
 import dev.fmangoni.forge.agent.model.Agent;
+import dev.fmangoni.forge.agent.model.AgentKind;
 import dev.fmangoni.forge.agent.model.AgentOutcome;
 import dev.fmangoni.forge.agent.model.AgentResult;
 import dev.fmangoni.forge.agent.model.AgentTask;
@@ -17,6 +18,7 @@ import dev.fmangoni.forge.state.RunState;
 import dev.fmangoni.forge.state.RunStore;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.LinkedHashMap;
 
 /**
  * Runs the assigned agent, commits whatever it produced, and hands the result to the gate.
@@ -46,17 +48,17 @@ final class AgentTurn {
         String specChange = state.getSpecChange() == null ? "" : state.getSpecChange();
         // A new vendor taking the project over hears that before anything else (see Recovery).
         String takeover = state.getTakeover() == null || state.getTakeover().isBlank() ? "" : state.getTakeover() + "\n\n";
+        String model = run.models().implement(agent.kind(), state.getRepairRounds());
         AgentResult result = agent.run(
                 AgentTask.writable(paths.repo(),
                                 takeover + specChange + brief + RunFileBrief.ifOwed(paths.repo()) + PlanText.section(paths),
                                 run.spec().agentTimeout(), paths.logs())
                         .continuing(Conversation.sessionFor(state, agent.kind()))
-                        .using(run.models().implement(agent.kind(), state.getRepairRounds())));
+                        .using(model));
 
         run.workspace().git().commitAll(commitMessage + " (" + agent.kind() + ")");
         state.setTurnInFlight(false);
-        state.setTokensSpent(state.getTokensSpent() + Usage.from(
-                agent.kind(), result.proc() == null ? "" : result.proc().stdout()).totalTokens());
+        countTokens(state, agent.kind(), model, result);
         Conversation.remember(state, agent.kind(), result.sessionId());
 
         if (result.blockedExternally()) {
@@ -66,6 +68,28 @@ final class AgentTurn {
         } else {
             completed(result);
         }
+    }
+
+    /**
+     * Adds what the vendor said this turn cost to the project's total and to its model's share.
+     *
+     * <p>Both come off the one figure the vendor reported, so the split can never disagree with the
+     * total it was taken from. A blank model means the ladder had nothing for this vendor and the
+     * CLI chose for itself, which is worth seeing as itself rather than filed under a guess.
+     */
+    private static void countTokens(RunState state, AgentKind kind, String model, AgentResult result) {
+        long moved = Usage.from(kind, result.proc() == null ? "" : result.proc().stdout()).totalTokens();
+        if (moved <= 0) {
+            return;
+        }
+        state.setTokensSpent(state.getTokensSpent() + moved);
+        // A state.json written with an explicit null here deserialises as one, and losing the turn
+        // to it would be exactly the silent drop the house rules are about. Make the map instead.
+        if (state.getTokensByModel() == null) {
+            state.setTokensByModel(new LinkedHashMap<>());
+        }
+        String named = model == null || model.isBlank() ? "the CLI's own default" : model;
+        state.getTokensByModel().merge(kind + "/" + named, moved, Long::sum);
     }
 
     private void beforeTurn() {

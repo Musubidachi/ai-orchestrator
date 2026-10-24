@@ -249,6 +249,29 @@ class UiServerTest {
     }
 
     @Test
+    @DisplayName("the board's whole token spend is served, with the part no model is named for")
+    void servesTokenTotals() throws Exception {
+        // Deliberately not the same question as /api/usage above: that is the vendor's window,
+        // which resets, and this is the work, which does not. A project whose split covers only
+        // part of its total is the normal case, not an edge one.
+        RunState state = new RunState();
+        state.setId("001");
+        state.setTokensSpent(50_000);
+        state.setTokensByModel(Map.of("CLAUDE/sonnet", 20_000L));
+        RunStore.save(RunPaths.under(runs, "001").stateFile(), state);
+
+        HttpResponse<String> response = get("/api/tokens");
+
+        assertEquals(200, response.statusCode());
+        var totals = Http.mapper().readTree(response.body());
+        assertEquals(50_000, totals.get("total").asLong(), response.body());
+        assertEquals(1, totals.get("projects").asInt());
+        assertEquals(30_000, totals.get("unattributed").asLong());
+        assertEquals("sonnet", totals.get("byModel").get(0).get("model").asText());
+        assertEquals(20_000, totals.get("byModel").get(0).get("tokens").asLong());
+    }
+
+    @Test
     @DisplayName("the spec list reports what is on disk")
     void listsSpecs() throws Exception {
         HttpResponse<String> response = get("/api/list");

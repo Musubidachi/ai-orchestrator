@@ -197,6 +197,11 @@
   .t-todo{background:var(--grey-bg);color:var(--grey-fg)}
   .b-fail{background:var(--fail)} .b-wait{background:var(--wait)} .b-pass{background:var(--pass)}
   .b-accent{background:var(--accent)} .b-todo{background:#4a4a47}
+  #spend{order:99997;margin:1.25rem 0 0;font-size:.85rem}
+  #spend .spend-total{color:var(--fg)}
+  #spend .spend-total b{font-weight:600}
+  #spend .spend-models{margin:.2rem 0 0;font-size:.8rem;color:var(--muted);line-height:1.5}
+  #spend .spend-models b{color:var(--fg);font-weight:600}
   #usageBar{order:99998;margin:1.25rem 0 .75rem;font-size:.8rem;color:var(--muted)}
   #usageBar div{margin:.1rem 0}
   #usageBar b{color:var(--fg);font-weight:600}
@@ -380,6 +385,7 @@
   <div id="jobs" data-filter="all">
     <div class="ledgerhead" aria-hidden="true"><span>Rank</span><span>Project</span><span>Stage</span>
       <span class="num">Worked</span><span class="num tokens">Tokens</span><span>Open items</span></div>
+    <div id="spend" hidden></div>
     <div id="usageBar"></div>
     <details id="league" hidden>
       <summary id="leagueSummary"></summary>
@@ -2045,6 +2051,33 @@ async function loadUsage() {
     }).join("");
 }
 
+/* What the whole board has spent, and on which models.
+ *
+ * Not the same question as loadUsage above, and the difference is the point of having both: a
+ * window is the vendor's limit and resets when it runs out, while this is the work and does not.
+ * Measured here against a day's usage bar, the lifetime total was several times it. */
+let spendLoadedAt = 0;
+async function loadSpend() {
+  // Moves at the pace of agent turns, not of this page's four-second poll.
+  if (Date.now() - spendLoadedAt < 30000) return;
+  spendLoadedAt = Date.now();
+  const s = await fetch("/api/tokens").then(r => r.json()).catch(() => null);
+  const box = $("spend");
+  if (!s || !s.total) { box.hidden = true; return; }
+  box.hidden = false;
+  const models = (s.byModel || []).map(m =>
+    `<b>${esc(m.model)}</b> ${count(m.tokens)} <span class="muted">(${esc(m.vendor)}, `
+    + `${m.projects} project${m.projects === 1 ? "" : "s"})</span>`).join(" · ");
+  // Named as its own figure rather than folded into a model's share. Most of the history predates
+  // the split, and quietly attributing it would make the biggest number on the page a guess.
+  const rest = !s.unattributed ? ""
+    : `${models ? " · " : ""}${count(s.unattributed)} before the split was recorded`;
+  box.innerHTML =
+    `<div class="spend-total"><b>${count(s.total)} tokens</b> across `
+    + `${s.projects} project${s.projects === 1 ? "" : "s"}, all models</div>`
+    + (models || rest ? `<div class="spend-models">${models}${rest}</div>` : "");
+}
+
 /*
  * The vendors, ranked by what the runs on disk say each one did.
  *
@@ -2118,6 +2151,7 @@ async function loadJobs() {
 
   loadQuota(jobs);
   loadUsage();
+  loadSpend();
   loadLeague();
   jobs.forEach(upsert);
 

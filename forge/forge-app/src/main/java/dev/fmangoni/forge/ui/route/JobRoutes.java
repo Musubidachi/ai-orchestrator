@@ -5,6 +5,7 @@ import com.sun.net.httpserver.HttpHandler;
 import dev.fmangoni.forge.jobs.JobRunner;
 import dev.fmangoni.forge.jobs.button.Narration;
 import dev.fmangoni.forge.status.league.League;
+import dev.fmangoni.forge.status.spend.Spend;
 import dev.fmangoni.forge.ui.http.Endpoints;
 import dev.fmangoni.forge.ui.http.Http;
 import dev.fmangoni.forge.ui.request.AutoRequest;
@@ -62,6 +63,9 @@ public final class JobRoutes {
         endpoints.write("/api/jobs/play", action(JobRunner::play));
         // Read from the runs on disk, so it answers with no agent CLI installed too.
         endpoints.read("/api/league", exchange -> Http.json(exchange, 200, League.of(runsDir)));
+        // What the whole board has spent, and on which models. Also read from the runs, and so
+        // not to be confused with /api/usage, which is the vendors' own windows.
+        endpoints.read("/api/tokens", exchange -> Http.json(exchange, 200, Spend.of(runsDir)));
         // A write: it puts a transcript and a recording in the run's directory.
         endpoints.write("/api/jobs/walkthrough", this::walkthrough);
         endpoints.readOrWrite("/api/auto", this::auto);

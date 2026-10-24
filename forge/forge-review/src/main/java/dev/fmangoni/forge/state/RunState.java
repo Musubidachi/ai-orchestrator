@@ -212,6 +212,23 @@ public class RunState {
     private long tokensSpent;
 
     /**
+     * The same tokens, split by the model that moved them, keyed {@code VENDOR/model}.
+     *
+     * <p>Recorded beside {@link #tokensSpent} rather than worked out from it afterwards, because
+     * neither end of that sum survives the project: a project changes hands when the person
+     * reassigns it, and climbs the ladder a rung per repair round, so one total covers several
+     * models. Attributing it to whichever vendor is assigned at the end would be wrong by most of
+     * it — 003 took 41 sessions. The key carries the vendor because a model name on its own is
+     * unique only by luck.
+     *
+     * <p>Holds nothing for turns taken before it existed, so on an older project these sum to less
+     * than {@link #tokensSpent}. The remainder is reported as unattributed rather than shared out
+     * over the models, which would be a guess dressed as a measurement.
+     */
+    @Builder.Default
+    private Map<String, Long> tokensByModel = new LinkedHashMap<>();
+
+    /**
      * Milliseconds Forge has actually spent working on this project, summed across every step.
      *
      * <p>Accumulated in milliseconds and shown in seconds. Rounding each step to whole seconds

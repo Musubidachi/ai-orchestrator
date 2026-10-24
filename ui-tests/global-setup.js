@@ -95,6 +95,10 @@ ${title}.
     workedMillis: 900_000,
     // A project that has spent tokens and whose suite has slowed down, so the card shows both.
     tokensSpent: 31_400_000,
+    // Two-thirds of it split by model and the rest from before the split was recorded, so the
+    // board's spend panel has to show both kinds. Written here, not into .fixture, which this
+    // file rebuilds on every run.
+    tokensByModel: { "CLAUDE/sonnet": 20_000_000, "CODEX/gpt-5.6-sol": 1_400_000 },
     commandSeconds: { "npm test": [20, 21, 19, 60] },
     baselineCommit: "0000000000000000000000000000000000000000",
     plan: {

@@ -190,6 +190,24 @@ test("the card separates time worked from time elapsed", async ({ page }) => {
   await expect(page.locator("#jobs")).not.toContainText("working for");
 });
 
+test("the whole board's token spend is shown, and what no model is named for is said so", async ({ page }) => {
+  // The question the dashboard could not answer before: what has this machine spent in total.
+  // Per vendor and per window it could (see #usageBar below), but a window resets and remembers
+  // only the last few, so its lifetime figure came to less than one project's own total.
+  const spend = page.locator("#spend");
+  await expect(spend).toContainText("31.4M tokens");
+  await expect(spend).toContainText("across 1 project, all models");
+
+  // Biggest share first, each with the vendor that was asked for it: a model name on its own is
+  // unique only by luck.
+  await expect(spend).toContainText("sonnet 20.0M (CLAUDE, 1 project)");
+  await expect(spend).toContainText("gpt-5.6-sol 1.4M (CODEX, 1 project)");
+
+  // The rest is named rather than shared out over the two models above. Most of the history on a
+  // real board predates the split, and attributing it would make the largest figure here a guess.
+  await expect(spend).toContainText("10.0M before the split was recorded");
+});
+
 test("what each vendor has spent is shown, with no invented remaining figure", async ({ page }) => {
   // Recorded on every turn since usage was measured, and displayed nowhere until now.
   const usage = page.locator("#usageBar");

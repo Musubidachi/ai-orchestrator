@@ -349,6 +349,11 @@ class OrchestratorTest {
 
         assertEquals(Phase.DONE, state.getPhase());
         assertEquals(10_000, state.getTokensSpent());
+        // And split by the model that moved them, off the same figure, so the dashboard's total
+        // and its per-model rows can never disagree. Keyed by vendor too: a model name alone is
+        // unique only by luck.
+        // "middling" is the ladder's middle rung, which is what an implementation turn takes.
+        assertEquals(Map.of("CLAUDE/middling", 10_000L), state.getTokensByModel());
     }
 
     @Test
