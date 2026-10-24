@@ -65,6 +65,11 @@ nothing at all, while doing nothing or the wrong thing.
 - Use an API key, or a credential or OAuth code someone pastes. Forge uses the vendors'
   subscription CLIs as they are logged in.
 - Log in, install a tool, spend money, or run a remote installer on anyone's behalf.
-- Deploy, publish or post anything except when a person clicks the button for it.
+- Deploy, publish or post anything except when a person clicks the button for it. The one
+  exception is GitHub publishing, and only once a person has switched it on in `publishing.json`:
+  an enhancement's branch is pushed to its family's private repository as the enhancement begins,
+  and approving a version pushes it. The person asked for both, and the queue may begin an
+  enhancement with nobody at the screen. Never more than that: no new repository, no shelf, and
+  no deploy without a click.
 - Let an agent work outside its `runs/NNN/repo`.
 - Treat an agent's own claim of success as done. The gate decides.
