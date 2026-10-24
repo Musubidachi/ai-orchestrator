@@ -1,0 +1,22 @@
+# GitHub publishing and shelving, as proved against the real GitHub by LiveGitHubTest on 2026-10-24.
+# See FrozenGitHubCodeTest before changing anything listed here.
+1d610fb75d4f05a6503b5157a4f813c4476ee92ee2505de52724fd5da055a48c  src/main/java/dev/fmangoni/forge/deploy/Executables.java
+8c15b6d3814b17e8a5bd9c06cb488303fc126e70843142dbc9ffb40cfd0a18d3  src/main/java/dev/fmangoni/forge/deploy/Readiness.java
+fab8f81c147738d232246479ee10a5fb6b18758ba441260384b211d6f8e096f5  src/main/java/dev/fmangoni/forge/deploy/github/BranchPush.java
+738edea97508ab37be716453775e439183bc3389e1b2505464cd52f8013f0e0f  src/main/java/dev/fmangoni/forge/deploy/github/Branches.java
+60625bdc6b2f9a7cd8cb54b975a6dbfd4d380d49a5f6ee517cc0572b349a1f71  src/main/java/dev/fmangoni/forge/deploy/github/GitHubAccount.java
+8a6e9dea8a0dfe7e52ed750a200b2f237aae82ffdf0c776b02cead396b454e5e  src/main/java/dev/fmangoni/forge/deploy/github/GitHubCli.java
+b29a14f7bdae429dc3baafc0a09284481b6b45da745785204fdef3013e9236f8  src/main/java/dev/fmangoni/forge/deploy/github/Publication.java
+dc0788e1de130bac28b1039121a1b9e222992010a7ce1da09831709ccd63d1a5  src/main/java/dev/fmangoni/forge/deploy/github/PublishedBranch.java
+ade94a8c1ebdc0475ae2cd31a609481bd67400ff188f8784647b1cfec0982568  src/main/java/dev/fmangoni/forge/deploy/github/Publisher.java
+6981f589aa9e96a15c563e82564ec3247ee78898c63753ac52c10a055be24cbb  src/main/java/dev/fmangoni/forge/deploy/github/Tips.java
+6bace6af8abbb834ab1c1eb050e8da99e7c7e7e059a0a93f3dbd22ae807a3c8f  src/main/java/dev/fmangoni/forge/deploy/github/package-info.java
+90e005b3ec6dd13dced88f2a27f985b57b7838ce642b548ee9b3ec5d11999603  src/main/java/dev/fmangoni/forge/deploy/shelf/LocalDelete.java
+5ff35110e5846adec3e236f10e75e370eb540020705fce2f53e8bd04a457a90a  src/main/java/dev/fmangoni/forge/deploy/shelf/ShelfEntry.java
+297666c3bf26d719b1f5e49956fef55642ac904005964914b82a5783e42ff342  src/main/java/dev/fmangoni/forge/deploy/shelf/ShelfFiles.java
+b39fc27c1512f3e1d4ac72eb685cabc8ebe0f2f29064e042358224d3501fb274  src/main/java/dev/fmangoni/forge/deploy/shelf/ShelfGit.java
+ec65f90a7f13a6309fbfae289a5ab19aa0d61e76570042b835a62b1b26fc6230  src/main/java/dev/fmangoni/forge/deploy/shelf/ShelfManifest.java
+2ecb55ba4691d4e9ab1cfc7a010a747ba3109d4591ee7ca6f265389bffce7db5  src/main/java/dev/fmangoni/forge/deploy/shelf/ShelfMark.java
+b17d761b3bd79d1f764ccff58623da47fe9dc060c75bf05f4b4810e0bae1de52  src/main/java/dev/fmangoni/forge/deploy/shelf/Shelver.java
+c59676f4a4fdc7727f2fae760a017f22bd3192fee116ad35d175f0449d959eb6  src/main/java/dev/fmangoni/forge/deploy/shelf/package-info.java
+7e8d40e5a5cdfd45c1f9d0e8a1ad902f8be78bad406d8f9e0233592407fc360e  src/test/java/dev/fmangoni/forge/deploy/shelf/LiveGitHubTest.java

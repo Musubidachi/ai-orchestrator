@@ -59,6 +59,9 @@ nothing at all, while doing nothing or the wrong thing.
 - **`@Builder` on a record compiles under javac and breaks in Eclipse.** Lombok generates nothing
   there, so the build is green here and the Problems view is full of undefined constructors. Use a
   `@Value` class with `@Builder`. `noBuilderOnRecords` guards it.
+- **The GitHub publishing and shelving code is frozen.** It was proved against the real GitHub,
+  and a change that passes every suite can still lose a shelved project there. `FrozenGitHubCodeTest`
+  fails on any change until `LiveGitHubTest` has passed again; see `forge-deploy/CLAUDE.md`.
 
 ## Never
 
