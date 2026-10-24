@@ -16,6 +16,7 @@ import dev.fmangoni.forge.feature.Clips;
 import dev.fmangoni.forge.feature.Feature;
 import dev.fmangoni.forge.feature.Features;
 import dev.fmangoni.forge.gate.CommandResult;
+import dev.fmangoni.forge.gate.LookCheck;
 import dev.fmangoni.forge.gate.RunFile;
 import dev.fmangoni.forge.design.DesignStudio;
 import dev.fmangoni.forge.git.Git;
@@ -568,6 +569,36 @@ class OrchestratorTest {
         assertEquals(Phase.DONE, state.getPhase());
         assertNull(state.getLastError());
         assertTrue(Files.isRegularFile(paths.repo().resolve("Main.java")));
+    }
+
+    @Test
+    @DisplayName("a gate stopped only by the default look waits for the person, and no session is spent on it")
+    void aChangedLookWaitsForThePerson() throws IOException {
+        // 003.4 added the navigation bar it was asked to. Its look then differed from the reference
+        // kept outside its repository, which no agent can touch, and it spent three more sessions on
+        // that with no code changed: the gate's own screenshots counted as progress.
+        Spec spec = spec("exit 0", 2, 12);
+        seedPlan();
+        Files.writeString(paths.lookReference(), "the look kept for it");
+        AtomicInteger turns = new AtomicInteger();
+        Agent builder = new StubAgent(AgentKind.CLAUDE, repo -> {
+            turns.incrementAndGet();
+            try {
+                Files.createDirectories(repo.resolve("artifacts"));
+                Files.writeString(repo.resolve(LookCheck.DEFAULT_LOOK), "not the look kept for it");
+                writeOverview(repo);
+            } catch (IOException e) {
+                throw new IllegalStateException(e);
+            }
+        }, finished());
+
+        RunState state = advance(spec, freshState(), agentsWhere(builder,
+                new StubAgent(AgentKind.CODEX, OrchestratorTest::writesNothing, CLEAN_REVIEW)));
+
+        assertEquals(Phase.PARKED, state.getPhase());
+        assertTrue(state.getLastError().startsWith("only the default look differs from the one kept for it"),
+                state.getLastError());
+        assertEquals(1, turns.get(), "held at once, not sent back to sessions that cannot reach the reference");
     }
 
     @Test

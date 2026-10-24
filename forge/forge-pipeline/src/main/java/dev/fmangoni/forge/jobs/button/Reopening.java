@@ -1,5 +1,6 @@
 package dev.fmangoni.forge.jobs.button;
 
+import dev.fmangoni.forge.gate.LookCheck;
 import dev.fmangoni.forge.jobs.queue.PipelineJobs;
 import dev.fmangoni.forge.jobs.work.JobPool;
 import dev.fmangoni.forge.jobs.work.Project;
@@ -99,6 +100,25 @@ public final class Reopening {
             return null;
         });
         return outcome != null ? outcome : pipeline.start(id);
+    }
+
+    /**
+     * Approves the default look a project's gate stopped on, and checks its gate again.
+     *
+     * <p>For a version that changed the main screen on purpose: the old reference is set aside, not
+     * deleted ({@link LookCheck#retire}), and the gate run next adopts the look the person has just
+     * seen as the new default. Only after a gate that stopped on the look itself, so the button
+     * cannot be used to wave anything else through.
+     */
+    public String approveLook(String id) {
+        String refused = withState(id, (paths, state) -> {
+            if (state.getPhase() != Phase.PARKED || !LookCheck.failed(state.getLastFailure())) {
+                return "its gate did not stop on the default look, so there is no new look to approve";
+            }
+            LookCheck.retire(paths.lookReference(), id);
+            return null;
+        });
+        return refused != null ? refused : recheck(id);
     }
 
     /**

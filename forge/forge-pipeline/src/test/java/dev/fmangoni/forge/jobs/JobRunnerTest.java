@@ -262,6 +262,30 @@ class JobRunnerTest {
     }
 
     @Test
+    @DisplayName("Approve New Look keeps the old look aside and checks the gate again, and only after the look stopped it")
+    void approvingANewLook() throws IOException {
+        finished("001", Phase.PARKED);
+        RunPaths paths = RunPaths.under(home.runs(), "001");
+        Files.writeString(paths.lookReference(), "the look kept for it");
+        RunState state = stateOf("001");
+        state.setLastFailure(new CommandResult("npm test", 1, "", false, Duration.ZERO, ""));
+        RunStore.save(paths.stateFile(), state);
+
+        assertTrue(jobs.approveLook("001").startsWith("its gate did not stop on the default look"));
+        assertTrue(Files.exists(paths.lookReference()), "nothing is set aside for a failure that was not the look's");
+
+        state.setLastFailure(new CommandResult("default look: 56% changed", 1, "", false, Duration.ZERO, ""));
+        RunStore.save(paths.stateFile(), state);
+        String message = jobs.approveLook("001");
+
+        assertFalse(Files.exists(paths.lookReference()), message);
+        assertEquals("the look kept for it",
+                Files.readString(paths.lookReference().resolveSibling("look-reference.before-001.png")),
+                "set aside, not deleted");
+        assertTrue(stateOf("001").getPhase() != Phase.PARKED, "the gate runs again: " + message);
+    }
+
+    @Test
     @DisplayName("approving a project never reaches GitHub unless publishing is switched on")
     void publishingIsOffWithoutTheSwitch() {
         // gh is logged in on the machine these tests run on. Without the switch being off by

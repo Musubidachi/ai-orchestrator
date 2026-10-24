@@ -89,6 +89,39 @@ public class LookCheck {
         }
     }
 
+    /** How the gate names a failure of this check: {@code default look: 56% changed}. */
+    public final String FAILURE = "default look: ";
+
+    /** Whether a gate failure is this check's, rather than one of the acceptance commands'. */
+    public boolean failed(CommandResult failure) {
+        return failure != null && failure.command() != null && failure.command().startsWith(FAILURE);
+    }
+
+    /**
+     * Lets the next gate adopt a new default, keeping the old reference beside it.
+     *
+     * <p>For a look a person approved after seeing it: a version that changed the main screen on
+     * purpose, such as one adding a navigation bar. Kept rather than deleted, as
+     * {@code look-reference.before-<why>.png}, so going back is a rename.
+     *
+     * @return where the old reference now is
+     */
+    public Path retire(Path reference, String why) {
+        if (!Files.isRegularFile(reference)) {
+            throw new IllegalStateException("there is no look reference at " + reference + " to set aside");
+        }
+        String stem = "look-reference.before-" + why.replaceAll("[^A-Za-z0-9.\\-]+", "-");
+        Path kept = reference.resolveSibling(stem + ".png");
+        for (int n = 2; Files.exists(kept); n++) {
+            kept = reference.resolveSibling(stem + "-" + n + ".png");
+        }
+        try {
+            return Files.move(reference, kept);
+        } catch (IOException e) {
+            throw new IllegalStateException("cannot set the look reference " + reference + " aside", e);
+        }
+    }
+
     /** Lets the next gate adopt a new default: the look was replaced on purpose. */
     public void forget(Path reference) {
         try {
@@ -129,6 +162,6 @@ public class LookCheck {
     }
 
     private Optional<CommandResult> fail(String what, String detail) {
-        return Optional.of(new CommandResult("default look: " + what, 1, detail, false, Duration.ZERO, ""));
+        return Optional.of(new CommandResult(FAILURE + what, 1, detail, false, Duration.ZERO, ""));
     }
 }

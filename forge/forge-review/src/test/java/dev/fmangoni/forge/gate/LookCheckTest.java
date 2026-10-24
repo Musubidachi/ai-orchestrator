@@ -10,6 +10,7 @@ import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.Optional;
 import javax.imageio.ImageIO;
 import org.junit.jupiter.api.DisplayName;
@@ -120,5 +121,24 @@ class LookCheckTest {
         assertTrue(LookCheck.check(repo(), reference()).isEmpty());
         save(Color.PINK, Color.YELLOW, 200);
         assertTrue(LookCheck.check(repo(), reference()).isEmpty(), "held to the new default from now on");
+    }
+
+    @Test
+    @DisplayName("an approved look sets the old reference aside, never over an earlier one, and the next is adopted")
+    void approvingKeepsTheOldLook() throws IOException {
+        save(Color.CYAN, Color.MAGENTA, 200);
+        LookCheck.check(repo(), reference());
+        save(Color.PINK, Color.YELLOW, 200);
+        Optional<CommandResult> changed = LookCheck.check(repo(), reference());
+        assertTrue(LookCheck.failed(changed.orElseThrow()), "known for this check's, not a command's");
+        assertFalse(LookCheck.failed(new CommandResult("npm test", 1, "", false, Duration.ZERO, "")));
+        Files.writeString(root.resolve("look-reference.before-003.4.png"), "an earlier one, kept");
+
+        Path kept = LookCheck.retire(reference(), "003.4");
+
+        assertEquals(root.resolve("look-reference.before-003.4-2.png"), kept);
+        assertEquals("an earlier one, kept", Files.readString(root.resolve("look-reference.before-003.4.png")));
+        assertFalse(Files.exists(reference()));
+        assertTrue(LookCheck.check(repo(), reference()).isEmpty(), "the approved look is the default now");
     }
 }

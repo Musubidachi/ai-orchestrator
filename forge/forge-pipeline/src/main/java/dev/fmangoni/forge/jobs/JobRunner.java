@@ -285,6 +285,11 @@ public final class JobRunner {
         return deploys.start(id);
     }
 
+    /** See {@link Reopening#approveLook}. */
+    public synchronized String approveLook(String id) {
+        return reopening.approveLook(id);
+    }
+
     /** See {@link PublishJob}: Publish, pressed to try again or to put up versions approved before it existed. */
     public synchronized String publish(String id) {
         return publishes.start(id);

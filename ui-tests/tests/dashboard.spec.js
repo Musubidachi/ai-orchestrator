@@ -1044,6 +1044,42 @@ test("a finished project with blocking findings offers to send them straight bac
   await expect(gamma.locator(".msg")).toHaveText("started");
 });
 
+test("a project stopped only by its default look shows the kept look beside the new one, and approving keeps the new", async ({ page }) => {
+  // 003.4 the way it really stopped: everything passed but the look, which its navigation bar had
+  // changed on purpose, and no agent can reach the reference that is kept outside its repository.
+  await page.route("**/api/jobs", async (route) => {
+    const response = await route.fetch();
+    const jobs = await response.json();
+    jobs.filter(j => j.id === "003").forEach(j => {
+      j.phase = "PARKED";
+      j.lastError = "only the default look differs from the one kept for it (56% changed): "
+        + "approve the new look if the change was meant, or send it back if it was not";
+      j.lastFailingCommand = "default look: 56% changed";
+    });
+    await route.fulfill({ response, json: jobs });
+  });
+  // Stubbed and read back: a real approval sets the fixture's look aside and starts its gate.
+  let approved = null;
+  await page.route("**/api/jobs/approve-look", async (route) => {
+    approved = route.request().postDataJSON();
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ result: "started" }) });
+  });
+  await page.reload();
+
+  const gamma = await open(page, "003");
+  const looks = gamma.locator(".looks");
+  await expect(looks).toBeVisible();
+  await expect(looks.locator("img").nth(0)).toHaveAttribute("src", "/runs/003/look-reference.png");
+  await expect(looks.locator("img").nth(1)).toHaveAttribute("src", "/runs/003/repo/artifacts/look-default.png");
+  await expect(looks).toContainText("Kept");
+  await expect(looks).toContainText("Now");
+  await expect(gamma.locator(".recheck"), "checking again would only fail the same way").toBeHidden();
+
+  page.once("dialog", dialog => dialog.accept());
+  await gamma.locator(".approvelook").click();
+  await expect.poll(() => approved).toEqual({ id: "003" });
+});
+
 test("a project parked on a clip asks about it, and can be checked again without a session", async ({ page }) => {
   // 003 the way it really parked: one feature approved under two names, the clip made under one.
   // The only way to settle it was a form row folded away under "all ruled on", which nothing

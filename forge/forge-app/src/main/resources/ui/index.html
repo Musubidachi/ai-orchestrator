@@ -246,6 +246,10 @@
   .move-sub,.move .caveat{color:var(--soft);font-size:.88rem}
   .move-acts{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center}
   .clips{display:flex;flex-direction:column;gap:.5rem}
+  .looks{display:flex;gap:.75rem;flex-wrap:wrap}
+  .looks figure{margin:0;width:11rem}
+  .looks img{display:block;width:100%;border:1px solid var(--line);border-radius:6px}
+  .looks figcaption{color:var(--muted);font-size:.78rem;margin-top:.25rem}
   .clipq{padding:.6rem .75rem;border-radius:.6rem;background:var(--card);border:1px solid var(--line)}
   .clipwhy{margin-top:.15rem;font-size:.82rem;color:var(--amber-fg)}
   .clipacts{display:flex;flex-wrap:wrap;gap:.4rem;align-items:center;margin-top:.5rem}
@@ -1097,7 +1101,9 @@ const DETAIL = `
     <div class="move-sub"></div>
     <div class="caveat" hidden></div>
     <div class="clips" hidden></div>
+    <div class="looks" hidden></div>
     <div class="move-acts">
+      <button class="approvelook" hidden>Approve New Look</button>
       <button class="recheck" hidden>Check Again</button>
       <button class="act-btn"></button>
       <button class="fixblocking" hidden></button>
@@ -1515,6 +1521,35 @@ function fillDetail(card, d, j) {
   recheck.title = "Runs the acceptance commands and the checks after them, and nothing else. "
     + "If they pass, the project carries on to the security check and the review.";
   recheck.onclick = () => jobAction(j.id, "/api/jobs/recheck");
+
+  // A gate stopped by the default look alone. No agent can settle that, since the look it is held to
+  // is kept outside its repository, so the card shows the kept look beside the new one and the
+  // person decides. Check Again would only fail the same way; Run Another Session sends it back.
+  const lookStop = j.phase === "PARKED" && (j.lastFailingCommand || "").startsWith("default look:");
+  const looks = q(".looks");
+  const approveLook = q(".approvelook");
+  looks.hidden = approveLook.hidden = j.running || !lookStop;
+  if (lookStop && !j.running) {
+    recheck.hidden = true;
+    const family = j.id.split(".")[0];
+    // Drawn once per stop, not every poll: reloading two screenshots every four seconds flickers.
+    if (looks.dataset.stop !== j.lastFailingCommand) {
+      looks.dataset.stop = j.lastFailingCommand;
+      looks.innerHTML =
+        `<figure><img src="/runs/${encodeURIComponent(family)}/look-reference.png" alt="The default look kept for it">`
+        + `<figcaption>Kept</figcaption></figure>`
+        + `<figure><img src="/runs/${encodeURIComponent(family)}/repo/artifacts/look-default.png" alt="The default look now">`
+        + `<figcaption>Now</figcaption></figure>`;
+    }
+    approveLook.className = "approvelook primary";
+    approveLook.title = "Keeps the new look as the default, sets the old one aside without deleting it, "
+      + "and checks the gate again. No agent session is spent.";
+    approveLook.onclick = () => {
+      const ok = confirm(`Keep the new look as ${j.title}'s default?\n\nThe old one is set aside, not deleted, `
+        + "and the gate runs again. Every later gate holds the project to the new look.");
+      if (ok) jobAction(j.id, "/api/jobs/approve-look");
+    };
+  }
 
   clipQuestions(q(".clips"), j);
 

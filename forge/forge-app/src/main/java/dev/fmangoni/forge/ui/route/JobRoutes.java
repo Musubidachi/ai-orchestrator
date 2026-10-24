@@ -48,6 +48,8 @@ public final class JobRoutes {
         endpoints.write("/api/jobs/fix", action(JobRunner::fixBlocking));
         // Runs a parked project's gate and nothing else: no agent, no session spent.
         endpoints.write("/api/jobs/recheck", action(JobRunner::recheck));
+        // A gate stopped only by the default look: the person saw both and keeps the new one.
+        endpoints.write("/api/jobs/approve-look", action(JobRunner::approveLook));
         // One feature's ruling from the dashboard. Saves it and starts nothing.
         endpoints.write("/api/jobs/feature", this::feature);
         // A screenshot pasted or picked into a note, saved where the project's agent can open it.

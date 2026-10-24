@@ -18,7 +18,11 @@ evidence the spec names.
   gate that passed). Its suite saves `artifacts/look-default.png`; the first passing gate keeps it
   beside the repository (`RunPaths.lookReference`), and later gates fail when more than 2% of the
   pixels changed, the size changed, or the screenshot stopped being saved. Only a polish that
-  replaces the look clears the reference (`LookCheck.forget`).
+  replaces the look clears the reference (`LookCheck.forget`), or a person who saw both looks and
+  pressed Approve New Look, which sets the old one aside as `look-reference.before-<id>.png`
+  (`LookCheck.retire`). A gate stopped only by this check is held for the person at once
+  (`GateStep`): no agent can reach the reference, so another session could only undo work that
+  may have been asked for, or change nothing.
 - **Every project owes a `run.bat`** (`RunFile`). The gate checks it exists and starts something. It
   never runs it: it opens a window and does not exit. Whether it works is for the person.
 

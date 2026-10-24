@@ -55,7 +55,17 @@ public final class GateStep {
         }
         state.setLastFailure(result.firstFailure().orElse(null));
         state.setLastError(result.summary());
-        if (gateOnly) {
+        if (LookCheck.failed(state.getLastFailure())) {
+            // Everything else passed: this check only runs on a gate that did. What differs is the
+            // default look, against a reference kept outside the repository, where no agent can
+            // reach it. So another session can only undo work that may have been asked for, or
+            // change nothing: 003.4 added the navigation bar it was asked to, and spent its last
+            // three sessions on this with no code changed. Whether the look was meant to change
+            // is the person's call.
+            park("only the default look differs from the one kept for it ("
+                    + state.getLastFailure().command().substring(LookCheck.FAILURE.length())
+                    + "): approve the new look if the change was meant, or send it back if it was not");
+        } else if (gateOnly) {
             // Check again asked a question of the gate, not of an agent. The answer is no, so the
             // project goes back to waiting for the person who asked, with what the gate said.
             park("the gate was checked again and still fails: " + result.summary());
