@@ -147,6 +147,14 @@ public final class Shelver {
         return "not shelved, and nothing was deleted: " + why + undone;
     }
 
+    /**
+     * Brings the family back from its shelf, into a repository folder that is not here.
+     *
+     * <p>Only into nothing. A repository already where the clone goes may be work nobody has
+     * anywhere else, so Resume never writes over it, moves it, or clones beside it: it says what is
+     * there and leaves it for the person. An empty folder is nothing. Whatever this call cloned and
+     * could not finish is taken away again, so the next Resume finds nothing in its way.
+     */
     public String resume() {
         Optional<ShelfMark> found;
         try {
@@ -157,17 +165,20 @@ public final class Shelver {
         if (found.isEmpty()) {
             return family + " is not shelved";
         }
+        String inTheWay = alreadyHere();
+        if (inTheWay != null) {
+            return inTheWay;
+        }
         ShelfMark mark = found.get();
         String remote = mark.url().endsWith(".git") ? mark.url() : mark.url() + ".git";
-        String setAside = setAside();
         String problem = ShelfGit.clone(remote, mark.branch(), repo, github.credentialHelper(), log);
         if (problem != null) {
-            return "not resumed: " + problem + setAside;
+            return "not resumed: " + problem + cleared();
         }
         Git git = new Git(repo, log);
         if (!git.head().equals(mark.commit())) {
-            LocalDelete.tree(repo);
-            return "not resumed: " + mark.branch() + " on GitHub is not the shelf Forge made, so it was left alone" + setAside;
+            return "not resumed: " + mark.branch() + " on GitHub is not the shelf Forge made, so it was left alone"
+                    + cleared();
         }
         Path incoming = RunPaths.under(runsDir, family).root().resolve(".shelf-incoming");
         try {
@@ -187,32 +198,41 @@ public final class Shelver {
                 throw new IllegalStateException("the repository is not back at " + mark.head().substring(0, 7));
             }
         } catch (IOException | IllegalStateException | UncheckedIOException e) {
-            return "not resumed: " + e.getMessage() + "; the shelf is still on GitHub, so resume again" + setAside;
+            return "not resumed: " + e.getMessage() + "; the shelf is still on GitHub, so resume again" + cleared();
         } finally {
             LocalDelete.tree(incoming);
         }
         mark.lift(runsDir);
         String gone = new ShelfGit(repo, log).deleteRemote(remote, mark.branch(), github.credentialHelper());
-        return (gone == null
+        return gone == null
                 ? "resumed here, and " + mark.branch() + " was taken off GitHub"
-                : "resumed here, but " + mark.branch() + " is still on GitHub: " + gone) + setAside;
+                : "resumed here, but " + mark.branch() + " is still on GitHub: " + gone;
     }
 
-    /** A repository already where the clone goes, from a shelf that could not delete it all, kept aside. */
-    private String setAside() {
+    /** Why Resume will not clone, or null: something is already where the repository goes. */
+    private String alreadyHere() {
         if (!Files.exists(repo)) {
-            return "";
+            return null;
         }
-        Path aside = repo.resolveSibling("repo.before-resume");
-        for (int n = 2; Files.exists(aside); n++) {
-            aside = repo.resolveSibling("repo.before-resume-" + n);
-        }
-        try {
-            Files.move(repo, aside);
-            return " (what was left of the old repository is in " + aside + ")";
+        try (Stream<Path> entries = Files.list(repo)) {
+            if (entries.findAny().isEmpty()) {
+                return null;
+            }
         } catch (IOException e) {
-            throw new UncheckedIOException("cannot set " + repo + " aside to resume into", e);
+            return "not resumed: " + repo + " is already there and cannot be looked in: " + e.getMessage();
         }
+        boolean repository = Files.isDirectory(repo.resolve(".git"));
+        return "not resumed, and nothing was cloned: " + (repository ? "a repository is already at " : "files are already at ")
+                + repo + ". Resume only brings " + family + " back where there is nothing, so it never writes over "
+                + (repository ? "a repository that may hold work found nowhere else. " : "them; they may be what the shelve could not delete. ")
+                + "Move it somewhere else, then press Resume from GitHub again.";
+    }
+
+    /** Takes away what this resume cloned, so the next one finds nothing in its way. */
+    private String cleared() {
+        List<Path> left = LocalDelete.tree(repo);
+        return left.isEmpty() ? "" : "; " + left.size() + " file(s) of the clone could not be removed, such as "
+                + left.getFirst() + ", and must go before resuming again";
     }
 
     private static void copyTree(Path from, Path to) throws IOException {

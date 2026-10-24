@@ -16,6 +16,7 @@ import dev.fmangoni.forge.state.RunStore;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
@@ -187,6 +188,72 @@ class ShelverTest {
                 new Shelver(runs, "003", github, PART).shelve());
         assertEquals(List.of(), github.created);
         assertTrue(Files.exists(repo));
+    }
+
+    @Test
+    @DisplayName("a repository already here is never cloned over, moved or touched, and the shelf stays on GitHub")
+    void aRepositoryHereIsNotClonedOver() throws Exception {
+        FakeGitHub github = new FakeGitHub(root.resolve("github"), "fabrizio");
+        new Shelver(runs, "003", github, PART).shelve();
+        // Put back by hand, or work started again: either way, nobody else may have it.
+        Files.createDirectories(repo);
+        git.init();
+        Files.writeString(repo.resolve("mine.txt"), "work found nowhere else\n");
+        String mine = git.commitAll("Started again by hand");
+
+        String result = new Shelver(runs, "003", github, PART).resume();
+
+        assertTrue(result.startsWith("not resumed, and nothing was cloned: a repository is already at "), result);
+        assertEquals(mine, git.head(), "the repository here is exactly as it was");
+        assertEquals("work found nowhere else\n", Files.readString(repo.resolve("mine.txt")));
+        assertFalse(Files.exists(repo.resolveSibling("repo.before-resume")), "and was not moved aside");
+        assertTrue(github.branches(REPOSITORY).containsKey("shelf/003"), "the shelf is still on GitHub");
+        assertTrue(Shelver.markOf(runs, "003").isPresent(), "and still marked here");
+    }
+
+    @Test
+    @DisplayName("files a shelve could not delete stop a resume; an empty folder does not")
+    void leftoversStopAResumeButAnEmptyFolderDoesNot() throws Exception {
+        FakeGitHub github = new FakeGitHub(root.resolve("github"), "fabrizio");
+        new Shelver(runs, "003", github, PART).shelve();
+        Files.createDirectories(repo);
+        Files.writeString(repo.resolve("locked.tmp"), "Windows would not let it go");
+
+        String refused = new Shelver(runs, "003", github, PART).resume();
+
+        assertTrue(refused.startsWith("not resumed, and nothing was cloned: files are already at "), refused);
+        assertTrue(Files.exists(repo.resolve("locked.tmp")), "left for the person to look at");
+        Files.delete(repo.resolve("locked.tmp"));
+
+        assertEquals("resumed here, and shelf/003 was taken off GitHub", new Shelver(runs, "003", github, PART).resume());
+        assertEquals(head, git.head());
+    }
+
+    @Test
+    @DisplayName("a resume that fails takes its own clone away, so resuming again is not stopped by it")
+    void aFailedResumeLeavesNothingInTheWay() throws Exception {
+        FakeGitHub github = new FakeGitHub(root.resolve("github"), "fabrizio");
+        new Shelver(runs, "003", github, PART).shelve();
+        String shelf = github.branches(REPOSITORY).get("shelf/003");
+        Path bare = root.resolve("github").resolve(REPOSITORY + ".git");
+        bareGit(bare, "update-ref", "refs/heads/shelf/003", shelf + "~1");
+
+        String failed = new Shelver(runs, "003", github, PART).resume();
+
+        assertTrue(failed.startsWith("not resumed: shelf/003 on GitHub is not the shelf Forge made"), failed);
+        assertFalse(Files.exists(repo), "what it cloned is gone again");
+        assertTrue(Shelver.markOf(runs, "003").isPresent());
+
+        bareGit(bare, "update-ref", "refs/heads/shelf/003", shelf);
+        assertEquals("resumed here, and shelf/003 was taken off GitHub", new Shelver(runs, "003", github, PART).resume());
+        assertEquals(head, git.head());
+    }
+
+    private void bareGit(Path bare, String... args) {
+        List<String> all = new ArrayList<>(List.of("--git-dir=" + bare));
+        all.addAll(List.of(args));
+        assertTrue(CliRunner.run(Path.of("git"), all, root, null, Duration.ofMinutes(1),
+                root.resolve("test-git.log")).ok(), String.join(" ", args));
     }
 
     private String gitOut(String... args) {
