@@ -147,12 +147,19 @@ public final class Eligibility {
                 && anyReviewerFree(state);
     }
 
-    /** A fresh run for a spec that has never been started. */
+    /**
+     * A fresh run for a spec that has never been started.
+     *
+     * <p>The one place a run is made from a spec, by the scheduler and by Start alike. An enhancement
+     * built to a picked design starts out owing a comparison with it, as a project restyled while
+     * DONE does.
+     */
     public RunState create(Spec spec, Assignment assignment) {
         return RunState.builder()
                 .id(spec.id())
                 .title(spec.title())
                 .assignedTo(assignment.decide(spec))
+                .polishDesign(spec.design().orElse(null))
                 .createdAt(Instant.now())
                 .build();
     }

@@ -85,6 +85,12 @@ public record Spec(Path source, FrontMatter front, String body) {
         return serve == null || serve.isBlank() ? Optional.empty() : Optional.of(serve.trim());
     }
 
+    /** The picked design this enhancement restyles its parent to, when it was built to one. */
+    public Optional<String> design() {
+        String design = front.getDesign();
+        return design == null || design.isBlank() ? Optional.empty() : Optional.of(design.trim());
+    }
+
     /** The page of the served app to look at, always starting with a slash. */
     public String servePath() {
         String path = front.getServePath();

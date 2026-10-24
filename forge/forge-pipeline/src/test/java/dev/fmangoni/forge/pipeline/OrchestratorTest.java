@@ -1206,7 +1206,7 @@ class OrchestratorTest {
         assertTrue(state.getPolishCheck().contains("compared with that picture"), state.getPolishCheck());
         assertNull(state.getPolishDesign(), "settled: the next review is not about the picture");
         assertTrue(full.startsWith("Review this change. Do not modify any files. Do not run any commands, except "
-                + "to open the two files"), "said first, where the rule against commands is: " + full);
+                + "to open the files named"), "said first, where the rule against commands is: " + full);
     }
 
     @Test

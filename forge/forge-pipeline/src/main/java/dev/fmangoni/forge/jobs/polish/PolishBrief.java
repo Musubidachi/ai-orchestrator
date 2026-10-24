@@ -23,6 +23,9 @@ import lombok.experimental.UtilityClass;
 @UtilityClass
 public class PolishBrief {
 
+    /** How a note names a picture the person attached; the same marker {@code DesignBrief} reads. */
+    private final String ATTACHED_PICTURE = "[image: ";
+
     /**
      * @param note   what the person particularly wants, or blank
      * @param chosen the design they picked, or null to leave the look to the agent
@@ -51,12 +54,35 @@ public class PolishBrief {
                 Look at it before and after. Capture the running program before you start as \
                 `%s` and again when you are done as `%s`, and compare the two yourself. If you \
                 cannot see the improvement, neither will I.
-
+                %s
                 If there is nothing here that a person looks at — a library, or a tool with no \
                 output worth styling — say so in your handoff and change nothing, rather than \
                 inventing something to decorate. For a command-line tool, what it prints and any \
                 report or page it generates are what there is to polish.""".formatted(
-                look(chosen), wanted, DesignStudio.PICTURE_BEFORE, DesignStudio.PICTURE_AFTER);
+                look(chosen), wanted, DesignStudio.PICTURE_BEFORE, DesignStudio.PICTURE_AFTER, screens(note));
+    }
+
+    /**
+     * When the note names pictures the person attached, a screenshot of every screen they show.
+     *
+     * <p>One screenshot of the main screen is all a picked design needs, since that is all it draws.
+     * Pictures of seven screens need seven, or the reviewer holding each picture up to the result
+     * has nothing to hold it against for six of them. The pictures outrank the design because the
+     * design was drawn from them.
+     */
+    private String screens(String note) {
+        if (note == null || !note.contains(ATTACHED_PICTURE)) {
+            return "";
+        }
+        return """
+
+                My pictures are the look I want, and where one disagrees with the design, the \
+                picture wins. Match each one as a still picture: motion it only implies, such as \
+                a moving camera or blur, is not asked for, and the program's own animation stays. \
+                When you are done, also capture every screen my pictures show, each as \
+                `artifacts/polish-after-<screen>.png` named for the screen, such as \
+                `artifacts/polish-after-garage.png`. They are compared with my pictures one by one.
+                """;
     }
 
     private String look(DesignOption chosen) {

@@ -29,6 +29,9 @@ public class ReviewBrief {
     public final String PICKED_DESIGN = "artifacts/polish-design.html";
     public final String PICTURE_AFTER = "artifacts/polish-after.png";
 
+    /** How a note names a picture the person attached; the same marker {@code DesignBrief} reads. */
+    private final String ATTACHED_PICTURE = "[image: ";
+
     public String of(Spec spec, String diff) {
         return of(spec, diff, List.of());
     }
@@ -110,8 +113,8 @@ public class ReviewBrief {
                 ```diff
                 %s
                 ```
-                """.formatted(allowed(design), recheck(round), againstTheDesign(design), spec.body(), leads(unproven),
-                truncate(diff));
+                """.formatted(allowed(design), recheck(round), againstTheDesign(design, spec.body()), spec.body(),
+                leads(unproven), truncate(diff));
     }
 
     /**
@@ -126,9 +129,10 @@ public class ReviewBrief {
             return "Do not modify any files, and do not run any commands — the complete diff is below "
                     + "and it is all you need.";
         }
-        return "Do not modify any files. Do not run any commands, except to open the two files named "
+        return "Do not modify any files. Do not run any commands, except to open the files named "
                 + "under \"The look it was asked for\" below, which you must: read the picture's page, and "
-                + "view the screenshot with your image tool. The diff below is all you need for the rest.";
+                + "view every screenshot and picture named there with your image tool. The diff below is "
+                + "all you need for the rest.";
     }
 
     /**
@@ -137,13 +141,43 @@ public class ReviewBrief {
      * <p>Without this a restyle was reviewed only for whether it changed nothing else, or skipped as
      * appearance-only. 003 was built to "Hard-Edged Mono", a design whose point was its detailed
      * artwork, and came back with flat silhouettes; the colours and panels matched, so nothing objected,
-     * and the person found it by running the game. The two files named are the only ones the
-     * reviewer is told to open, which a read-only session can do.
+     * and the person found it by running the game. The files named are the only ones the reviewer
+     * is told to open, which a read-only session can do.
      */
-    private String againstTheDesign(String design) {
+    private String againstTheDesign(String design, String spec) {
         if (design == null || design.isBlank()) {
             return "";
         }
+        return designSection(design, ownPictures(spec));
+    }
+
+    /**
+     * When the person attached pictures of the look, they are what is being asked for.
+     *
+     * <p>The picked design is a vendor's redrawing of them, and the main screen only. Compared with
+     * the redrawing alone, a restyle can match it and still miss the pictures, and every screen but
+     * the main one goes unexamined. An enhancement carries the person's note in its spec, which is
+     * where the pictures are named.
+     */
+    private String ownPictures(String spec) {
+        if (spec == null || !spec.contains(ATTACHED_PICTURE)) {
+            return "";
+        }
+        return """
+
+                The person also attached pictures of the look they want, named in the spec below \
+                as `[image: <path>]`; each is at that path in the repository. They are the look \
+                being asked for, and the design was drawn from them, so open every one, and where \
+                a picture and the design disagree, the picture wins. A picture of any screen is \
+                compared with the builder's screenshot of that screen, \
+                `artifacts/polish-after-<screen>.png`. A screen a picture shows with no screenshot \
+                of it is blocking, for the same reason as above. Motion a still picture implies, \
+                such as a moving camera or blur, is not asked for.
+                """;
+    }
+
+    /** @param pictures the person's own pictures, said before the reply is asked for so they are opened first */
+    private String designSection(String design, String pictures) {
         return """
 
                 ## The look it was asked for
@@ -164,12 +198,12 @@ public class ReviewBrief {
 
                 If `%3$s` is missing, empty or shows something other than the program's main \
                 screen, raise that as blocking too: without it, nobody has looked.
-
+                %4$s
                 Say in your reply whether you did this: add `"compared_with_design": true` beside \
-                `findings` once you have opened both files and compared them, and \
-                `"compared_with_design": false` if you could not open either. A review that did not \
+                `findings` once you have opened every file named here and compared them, and \
+                `"compared_with_design": false` if you could not open them. A review that did not \
                 compare is not accepted as one, so do not write true without having looked.
-                """.formatted(design, PICKED_DESIGN, PICTURE_AFTER);
+                """.formatted(design, PICKED_DESIGN, PICTURE_AFTER, pictures);
     }
 
     /** The files the findings are in, as they stand now, so a fix can be seen whatever the diff kept. */

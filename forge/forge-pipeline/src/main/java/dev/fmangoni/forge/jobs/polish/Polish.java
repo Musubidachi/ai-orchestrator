@@ -185,7 +185,7 @@ public final class Polish {
             Spec enhancement = kind.isBlank()
                     ? DesignEnhancement.write(projects.home(), project.wishlist(), project.spec(), chosen, note)
                     : DesignEnhancement.writeExtra(projects.home(), project.wishlist(), project.spec(),
-                            chosen.name() + " " + kind, request);
+                            chosen.name() + " " + kind, request, chosen.name());
             return pipeline.start(enhancement.id()) + ": added " + enhancement.id() + " \""
                     + enhancement.title() + "\", an enhancement with this design as its brief";
         }

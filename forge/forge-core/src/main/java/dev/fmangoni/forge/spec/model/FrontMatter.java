@@ -109,6 +109,16 @@ public class FrontMatter {
     @JsonInclude(JsonInclude.Include.NON_EMPTY)
     private String servePath = "";
 
+    /**
+     * The picked design an enhancement restyles its parent to, by name; blank for any other spec.
+     *
+     * <p>Written by the design button, not by hand. A project restyled while DONE has the design on
+     * its state, and its review holds the result up to the picture. An enhancement's state is made
+     * fresh from its spec, so without this its review never knew there was a picture at all.
+     */
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
+    private String design = "";
+
     /** How to publish the project, or null for one that is never deployed. See {@link DeploySettings}. */
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private DeploySettings deploy;

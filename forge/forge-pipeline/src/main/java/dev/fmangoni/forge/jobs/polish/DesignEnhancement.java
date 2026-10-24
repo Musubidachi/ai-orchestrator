@@ -32,7 +32,8 @@ class DesignEnhancement {
 
     /** Writes the spec into the wishlist and returns it as loaded back, so what runs is what was written. */
     Spec write(ForgeHome home, Wishlist wishlist, Spec parent, DesignOption chosen, String note) {
-        return write(home, wishlist, parent, parent.title() + " visual update", body(parent, chosen, note));
+        return write(home, wishlist, parent, parent.title() + " visual update", body(parent, chosen, note),
+                chosen == null ? "" : chosen.name());
     }
 
     /**
@@ -40,8 +41,9 @@ class DesignEnhancement {
      *
      * @param name    what is added, such as "Pumpkin Patch theme", which titles the enhancement
      * @param request the {@link ExtraBrief} for it
+     * @param design  the picked design the pack is drawn from, which its review compares it with
      */
-    Spec writeExtra(ForgeHome home, Wishlist wishlist, Spec parent, String name, String request) {
+    Spec writeExtra(ForgeHome home, Wishlist wishlist, Spec parent, String name, String request, String design) {
         String body = """
                 ## Goal
                 Add "%s" to %s, beside the look it has now.
@@ -54,12 +56,13 @@ class DesignEnhancement {
                 ## Notes
                 %s
                 """.formatted(name, parent.title(), request);
-        return write(home, wishlist, parent, parent.title() + " — " + name, body);
+        return write(home, wishlist, parent, parent.title() + " — " + name, body, design);
     }
 
-    private Spec write(ForgeHome home, Wishlist wishlist, Spec parent, String title, String body) {
+    private Spec write(ForgeHome home, Wishlist wishlist, Spec parent, String title, String body, String design) {
         FrontMatter from = parent.front();
         FrontMatter front = new FrontMatter();
+        front.setDesign(design == null ? "" : design);
         front.setId(freeId(home, wishlist, parent.id()));
         front.setTitle(title);
         front.setParent(parent.id());

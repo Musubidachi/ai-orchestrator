@@ -2,6 +2,7 @@ package dev.fmangoni.forge.jobs.work;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import dev.fmangoni.forge.agent.Agents;
@@ -121,6 +122,21 @@ class EligibilityTest {
 
         parentIn("001", Phase.ACCEPTED);
         assertTrue(rules().parentAccepted(spec("001.1", "001")));
+    }
+
+    // ------------------------------------------------------- a fresh run
+
+    @Test
+    @DisplayName("a fresh run of an enhancement built to a design owes a comparison with it; any other owes none")
+    void aFreshRunInheritsTheDesign() {
+        // Start and the scheduler each kept their own builder, and only the design button's DONE
+        // path ever set this: an enhancement built to a picture was reviewed as if there were none.
+        Spec enhancement = spec("001.1", "001");
+        assertNull(rules().create(enhancement, new Assignment(List.of())).getPolishDesign());
+
+        enhancement.front().setDesign("Neon arcade");
+        assertEquals("Neon arcade", rules().create(enhancement, new Assignment(List.of())).getPolishDesign(),
+                "held up to the picture, as a project restyled while DONE is");
     }
 
     @Test

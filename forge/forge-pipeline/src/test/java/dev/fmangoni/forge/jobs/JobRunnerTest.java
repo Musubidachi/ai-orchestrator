@@ -63,6 +63,7 @@ import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -716,6 +717,7 @@ class JobRunnerTest {
                 enhancement.body());
         assertTrue(enhancement.body().contains("an animation, new motion"), enhancement.body());
         assertEquals(Phase.ACCEPTED, stateOf("001").getPhase());
+        assertEquals(Optional.of("Neon arcade"), enhancement.design(), "a pack drawn from a design is compared with it");
     }
 
     @Test
@@ -769,6 +771,37 @@ class JobRunnerTest {
         assertTrue(Files.readString(RunPaths.under(home.runs(), "001").repo()
                 .resolve("artifacts/polish-design.html")).contains("neon"),
                 "the enhancement runs in this repository, and finds the design there");
+        // A project restyled while DONE is reviewed against the picture because its state says so.
+        // An enhancement's state is made fresh, so the spec has to say it; EligibilityTest pins that
+        // a fresh run takes it from there.
+        assertEquals(Optional.of("Neon arcade"), enhancement.design());
+    }
+
+    @Test
+    @DisplayName("pictures the person attached to a design they built are what the result is compared with")
+    void attachedPicturesAreTheLook() throws IOException {
+        finished("001", Phase.ACCEPTED);
+        designsOffered("001");
+
+        jobs.buildDesign("001", "CODEX-1", "match these [image: .forge-images/garage.png]", "");
+
+        String body = Wishlist.load(home.wishlist()).byId("001.1").orElseThrow().body();
+        assertTrue(body.contains("[image: .forge-images/garage.png]"), body);
+        assertTrue(body.contains("where one disagrees with the design, the picture wins"), body);
+        assertTrue(body.contains("`artifacts/polish-after-<screen>.png`"),
+                "one screenshot per screen, or six of seven pictures have nothing to be compared with: " + body);
+    }
+
+    @Test
+    @DisplayName("a design built without pictures asks for the one screenshot it always did")
+    void noPicturesNoScreenPerPicture() throws IOException {
+        finished("001", Phase.ACCEPTED);
+        designsOffered("001");
+
+        jobs.buildDesign("001", "CODEX-1", "brighter", "");
+
+        String body = Wishlist.load(home.wishlist()).byId("001.1").orElseThrow().body();
+        assertFalse(body.contains("polish-after-<screen>"), body);
     }
 
     // ------------------------------------------------------- the quick review's cards

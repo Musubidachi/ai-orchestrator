@@ -217,15 +217,10 @@ public final class PipelineJobs {
         RunStore.save(RunPaths.under(home.runs(), state.getId()).stateFile(), state);
     }
 
+    /** The same fresh run the scheduler makes, so a run started by hand inherits what its spec says. */
     private RunState create(Spec spec, Wishlist wishlist) {
-        return RunState.builder()
-                .id(spec.id())
-                .title(spec.title())
-                .assignedTo(spec.assignedAgent()
-                        .orElseGet(() -> new Assignment(existingStates(wishlist), quota,
-                                VendorPolicy.load(home.root())).decide(spec)))
-                .createdAt(Instant.now())
-                .build();
+        return rules.eligibility().create(spec,
+                new Assignment(existingStates(wishlist), quota, VendorPolicy.load(home.root())));
     }
 
     private List<RunState> existingStates(Wishlist wishlist) {

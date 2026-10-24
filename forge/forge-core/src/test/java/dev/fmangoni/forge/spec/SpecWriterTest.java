@@ -89,6 +89,20 @@ class SpecWriterTest {
     }
 
     @Test
+    @DisplayName("the design an enhancement was built to survives the round trip, and stays out of every other spec")
+    void designRoundTrips() throws Exception {
+        Path plain = SpecWriter.write(dir, front("001", "Plain"), "Build it.");
+        String plainYaml = Files.readString(plain);
+        assertTrue(!plainYaml.contains("design:"), "written into a spec that never set it:\n" + plainYaml);
+        assertEquals(Optional.empty(), SpecLoader.load(plain).design());
+
+        FrontMatter front = front("001.1", "Plain visual update");
+        front.setDesign("Neon: arcade");
+
+        assertEquals(Optional.of("Neon: arcade"), SpecLoader.load(SpecWriter.write(dir, front, "Restyle it.")).design());
+    }
+
+    @Test
     @DisplayName("a title containing a colon does not corrupt the YAML")
     void quotesAwkwardTitles() {
         Path file = SpecWriter.write(dir, front("002", "Differ: compares two things"), "Build it.");
