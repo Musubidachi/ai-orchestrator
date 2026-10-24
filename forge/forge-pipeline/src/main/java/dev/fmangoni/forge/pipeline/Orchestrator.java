@@ -1,6 +1,7 @@
 package dev.fmangoni.forge.pipeline;
 
 import dev.fmangoni.forge.agent.Agents;
+import dev.fmangoni.forge.git.Git;
 import dev.fmangoni.forge.pipeline.run.RunContext;
 import dev.fmangoni.forge.pipeline.run.Workspace;
 import dev.fmangoni.forge.pipeline.step.GateStep;
@@ -102,8 +103,29 @@ public final class Orchestrator {
             RunStore.save(run.paths().stateFile(), run.state());
             notifyProgress();
         }
+        recordTip();
         notifyProgress();
         return run.state();
+    }
+
+    /**
+     * Where a finished project's work ends, read before whoever runs this lets the repository go.
+     *
+     * <p>Here rather than in a step, because a project reaches DONE from more than one of them; and
+     * here rather than in the job that runs it, because there are two of those, the dashboard's and
+     * the unattended {@code forge run}, and only the dashboard's used to record it. Both hold the
+     * repository's lock around this, so nothing else has committed since.
+     */
+    private void recordTip() {
+        RunState state = run.state();
+        if (state.getPhase() != Phase.DONE) {
+            return;
+        }
+        String head = new Git(run.paths().repo(), run.paths().gitLog()).head();
+        if (!head.equals(state.getFinishedCommit())) {
+            state.setFinishedCommit(head);
+            RunStore.save(run.paths().stateFile(), state);
+        }
     }
 
     /**

@@ -10,6 +10,6 @@
  *
  * <p><b>Start with:</b> {@code Orchestrator.advance}.
  *
- * <p>Depends on: agent, agent.model, pipeline.run, pipeline.step, pipeline.turn, project, spec, spec.model, spec.tier, state.
+ * <p>Depends on: agent, agent.model, git, pipeline.run, pipeline.step, pipeline.turn, project, spec, spec.model, spec.tier, state.
  */
 package dev.fmangoni.forge.pipeline;

@@ -3,7 +3,6 @@ package dev.fmangoni.forge.jobs.queue;
 import dev.fmangoni.forge.agent.Agents;
 import dev.fmangoni.forge.agent.ledger.QuotaLedger;
 import dev.fmangoni.forge.agent.policy.VendorPolicy;
-import dev.fmangoni.forge.git.Git;
 import dev.fmangoni.forge.git.RepoLock;
 import dev.fmangoni.forge.jobs.stop.Shutdown;
 import dev.fmangoni.forge.jobs.work.Assignment;
@@ -154,7 +153,6 @@ public final class PipelineJobs {
                         shutdown::isDraining)
                         .advance();
                 forgetErrors(paths, after);
-                recordTip(paths, after);
             }
         } catch (RuntimeException e) {
             if (worker.stopped) {
@@ -199,23 +197,6 @@ public final class PipelineJobs {
         } catch (RuntimeException unwritable) {
             // If even the state cannot be written, the loop this prevents is not the problem.
             System.err.println("[" + id + "] could not record the failure: " + unwritable);
-        }
-    }
-
-    /**
-     * Where a finished project's work ends, read before the lock is let go.
-     *
-     * <p>Here rather than in a step, because a project reaches DONE from more than one of them, and
-     * because only here is it certain that nothing else has committed since.
-     */
-    private void recordTip(RunPaths paths, RunState after) {
-        if (after.getPhase() != Phase.DONE) {
-            return;
-        }
-        String head = new Git(paths.repo(), paths.gitLog()).head();
-        if (!head.equals(after.getFinishedCommit())) {
-            after.setFinishedCommit(head);
-            RunStore.save(paths.stateFile(), after);
         }
     }
 
