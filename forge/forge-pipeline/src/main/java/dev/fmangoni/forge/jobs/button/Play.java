@@ -83,11 +83,16 @@ public final class Play {
      * hardened shell inherits that variable; a double-click never has it. Taking it out is what
      * makes Play show the same thing a double-click would, including for a run file that calls a
      * second script beside it.
+     *
+     * <p>In the classic console window, {@code conhost.exe}, named outright. Windows 11 hands every
+     * new console to Windows Terminal, which opened {@code run.bat} as a tab under the person's
+     * default profile: it looked like PowerShell, and closing it left Pink Slip's Vite server
+     * running on its port. Closing a classic window ends everything attached to it, server included.
      */
     private static void openInItsOwnWindow(Path repo) {
         try {
             ProcessBuilder builder = new ProcessBuilder(
-                    "cmd.exe", "/c", "start", "", "cmd.exe", "/c", ".\\" + RunFile.NAME)
+                    "cmd.exe", "/c", "start", "", "conhost.exe", "cmd.exe", "/c", ".\\" + RunFile.NAME)
                     .directory(repo.toFile())
                     .redirectErrorStream(true)
                     .redirectOutput(ProcessBuilder.Redirect.DISCARD);
