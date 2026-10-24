@@ -17,8 +17,9 @@ JDK and Maven, Node and npm, or Python:
   virtual environment and `pip install` when there is none.
 - Then start the real program, not a demo of it:
   - **A web app or a browser game:** start its server on 127.0.0.1 and open the page in the default
-    browser (`start "" http://127.0.0.1:<port>/`). The window stays open, and closing it is how the
-    server is stopped. Say so in a line of output.
+    browser (`start "" http://127.0.0.1:<port>/`). Start the server with `node` and the tool's own
+    entry point rather than through an npm script, so that both Ctrl+C and closing the window stop
+    it. The window stays open while it runs. Say so in a line of output.
   - **A desktop app:** open it.
   - **A command-line tool or a library:** run a worked example on sample input kept in the
     repository, say where the output went, and open it if it is something to look at.
@@ -45,7 +46,7 @@ title My Game
 
 where npm.cmd >nul 2>nul || (echo Node.js was not found. Install it from https://nodejs.org/ and run this again. & pause & exit /b 1)
 
-if not exist "node_modules\.bin\vite.cmd" (
+if not exist "node_modules\vite\bin\vite.js" (
     echo Installing dependencies - the first launch needs the npm registry...
     call npm.cmd ci --no-fund || goto failed
 )
@@ -56,8 +57,8 @@ if not exist "dist\index.html" (
 
 echo.
 echo My Game: http://127.0.0.1:4175/
-echo Close this window to stop the game server.
-call npm.cmd run preview -- --host 127.0.0.1 --port 4175 --strictPort --open || goto failed
+echo Press Ctrl+C, or close this window, to stop the game server.
+node "node_modules\vite\bin\vite.js" preview --host 127.0.0.1 --port 4175 --strictPort --open || goto failed
 exit /b 0
 
 :failed
@@ -66,6 +67,17 @@ echo That step failed; the messages above say why.
 pause
 exit /b 1
 ```
+
+Start the server with `node` and the tool's own entry point, never `call npm.cmd run preview`. Every
+batch file between the console and the server answers Ctrl+C for itself, with `Terminate batch job
+(Y/N)?`, and npm's shim adds two of them: `run.bat` → `npm.cmd` → the npm CLI → `cmd /d /s /c vite
+preview` → the server. The prompt is the nearest layer talking, not the server, and the server
+underneath it keeps running and keeps the port. That has happened here: a Vite preview still holding
+its port long after its window was answered and closed, so the next launch died on `--strictPort`
+with nothing on screen to blame. Running `node node_modules\vite\bin\vite.js` makes the server the
+batch file's own child, which Ctrl+C reaches and a closed window takes with it. It also means the
+flags are exactly the ones written here, rather than these plus whatever the `preview` script in
+`package.json` already passes — a `--port` appearing twice is read as the second one.
 
 ### Java with Maven: a desktop app, or a tool with a worked example
 
