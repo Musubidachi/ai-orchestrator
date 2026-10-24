@@ -28,10 +28,10 @@ public final class Executables {
         if (name == null || name.isBlank() || name.contains("/") || name.contains("\\")) {
             return Optional.empty();
         }
-        String path = environment.getOrDefault("PATH", environment.getOrDefault("Path", ""));
+        String path = variable(environment, "PATH").orElse("");
         boolean windows = System.getProperty("os.name", "").toLowerCase(Locale.ROOT).startsWith("windows");
         List<String> extensions = windows
-                ? List.of(environment.getOrDefault("PATHEXT", ".COM;.EXE;.BAT;.CMD").toLowerCase(Locale.ROOT).split(";"))
+                ? List.of(variable(environment, "PATHEXT").orElse(".COM;.EXE;.BAT;.CMD").toLowerCase(Locale.ROOT).split(";"))
                 : List.of("");
         for (String dir : path.split(File.pathSeparator)) {
             if (dir.isBlank()) {
@@ -45,5 +45,24 @@ public final class Executables {
             }
         }
         return Optional.empty();
+    }
+
+    /**
+     * An environment variable by name, in any case, as Windows itself reads it.
+     *
+     * <p>Java's map of the environment is case-sensitive, and the names in it are spelled however
+     * whatever started the process spelled them: a JVM started from Maven's test runner sees
+     * {@code PROGRAMFILES} and {@code PROGRAMW6432}, so looking for {@code ProgramFiles} found
+     * nothing and Forge said gh was not installed when it was.
+     */
+    public static Optional<String> variable(Map<String, String> environment, String name) {
+        String exact = environment.get(name);
+        if (exact != null) {
+            return Optional.of(exact);
+        }
+        return environment.entrySet().stream()
+                .filter(entry -> entry.getKey().equalsIgnoreCase(name))
+                .map(Map.Entry::getValue)
+                .findFirst();
     }
 }

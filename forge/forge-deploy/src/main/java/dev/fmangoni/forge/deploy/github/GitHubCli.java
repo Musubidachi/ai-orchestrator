@@ -47,7 +47,7 @@ public final class GitHubCli implements GitHubAccount {
             return onPath;
         }
         for (String base : List.of("ProgramFiles", "ProgramW6432", "LOCALAPPDATA")) {
-            String dir = environment.get(base);
+            String dir = Executables.variable(environment, base).orElse(null);
             if (dir == null || dir.isBlank()) {
                 continue;
             }
