@@ -55,13 +55,15 @@ public final class GateStep {
         }
         state.setLastFailure(result.firstFailure().orElse(null));
         state.setLastError(result.summary());
-        if (LookCheck.failed(state.getLastFailure())) {
+        if (LookCheck.failed(state.getLastFailure()) && state.getExtraKind() == null) {
             // Everything else passed: this check only runs on a gate that did. What differs is the
             // default look, against a reference kept outside the repository, where no agent can
             // reach it. So another session can only undo work that may have been asked for, or
             // change nothing: 003.4 added the navigation bar it was asked to, and spent its last
             // three sessions on this with no code changed. Whether the look was meant to change
-            // is the person's call.
+            // is the person's call. Not while an extra is being added: its brief is to leave the
+            // default look as it is, so a changed one is a slip the agent puts right, like any
+            // other failing check, and falls through to the repair below.
             park("only the default look differs from the one kept for it ("
                     + state.getLastFailure().command().substring(LookCheck.FAILURE.length())
                     + "): approve the new look if the change was meant, or send it back if it was not");

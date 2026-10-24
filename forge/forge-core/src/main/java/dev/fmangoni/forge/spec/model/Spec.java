@@ -91,6 +91,12 @@ public record Spec(Path source, FrontMatter front, String body) {
         return design == null || design.isBlank() ? Optional.empty() : Optional.of(design.trim());
     }
 
+    /** The kind of extra this enhancement adds beside its parent's look, when it adds one. */
+    public Optional<String> extra() {
+        String extra = front.getExtra();
+        return extra == null || extra.isBlank() ? Optional.empty() : Optional.of(extra.trim());
+    }
+
     /** The page of the served app to look at, always starting with a slash. */
     public String servePath() {
         String path = front.getServePath();

@@ -38,9 +38,11 @@ import dev.fmangoni.forge.spec.model.Spec;
 import dev.fmangoni.forge.spec.tier.ModelTiers;
 import dev.fmangoni.forge.state.RunState;
 import dev.fmangoni.forge.state.RunStore;
+import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -52,6 +54,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+import javax.imageio.ImageIO;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -599,6 +602,42 @@ class OrchestratorTest {
         assertTrue(state.getLastError().startsWith("only the default look differs from the one kept for it"),
                 state.getLastError());
         assertEquals(1, turns.get(), "held at once, not sent back to sessions that cannot reach the reference");
+    }
+
+    @Test
+    @DisplayName("while an extra is added, a changed default look is the agent's to put right, not the person's to approve")
+    void anExtraPutsTheLookBackItself() throws IOException {
+        // An extra's brief is to leave the default look as it is, so a change to it is a slip, and
+        // the gate's message says what to undo. Holding it for the person would offer to approve it.
+        Spec spec = spec("exit 0", 2, 12);
+        seedPlan();
+        BufferedImage look = new BufferedImage(8, 8, BufferedImage.TYPE_INT_RGB);
+        ImageIO.write(look, "png", paths.lookReference().toFile());
+        AtomicInteger turns = new AtomicInteger();
+        Agent builder = new StubAgent(AgentKind.CLAUDE, repo -> {
+            try {
+                Files.createDirectories(repo.resolve("artifacts"));
+                if (turns.incrementAndGet() == 1) {
+                    Files.writeString(repo.resolve(LookCheck.DEFAULT_LOOK), "the theme drawn over the default");
+                } else {
+                    Files.copy(paths.lookReference(), repo.resolve(LookCheck.DEFAULT_LOOK),
+                            StandardCopyOption.REPLACE_EXISTING);
+                }
+                writeOverview(repo);
+            } catch (IOException e) {
+                throw new IllegalStateException(e);
+            }
+        }, finished());
+        RunState fresh = freshState();
+        fresh.setExtraKind("theme");
+
+        RunState state = advance(spec, fresh, agentsWhere(builder,
+                new StubAgent(AgentKind.CODEX, OrchestratorTest::writesNothing, CLEAN_REVIEW)));
+
+        assertEquals(2, turns.get(), "sent back once, and the second session put the default look back");
+        assertEquals(Phase.DONE, state.getPhase(), String.valueOf(state.getLastError()));
+        // Recorded by the run itself, so the unattended forge run publishes what it finished too.
+        assertEquals(new Git(paths.repo(), paths.gitLog()).head(), state.getFinishedCommit());
     }
 
     @Test

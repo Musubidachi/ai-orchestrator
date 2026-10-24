@@ -780,6 +780,7 @@ class JobRunnerTest {
         assertTrue(request.contains("`artifacts/polish-design.html`"), request);
         assertEquals("Paper cut", stateOf("001").getPolishDesign(), "reviewed against the picture");
         assertTrue(Files.exists(paths.lookReference()), "an extra never lets the default look go");
+        assertEquals(DesignBoard.THEME, stateOf("001").getExtraKind(), "so a changed default look is the agent's to undo");
     }
 
     @Test
@@ -823,6 +824,7 @@ class JobRunnerTest {
         assertTrue(enhancement.body().contains("an animation, new motion"), enhancement.body());
         assertEquals(Phase.ACCEPTED, stateOf("001").getPhase());
         assertEquals(Optional.of("Neon arcade"), enhancement.design(), "a pack drawn from a design is compared with it");
+        assertEquals(Optional.of(DesignBoard.ANIMATION), enhancement.extra(), "and its gate holds the default look still");
     }
 
     @Test
@@ -880,6 +882,7 @@ class JobRunnerTest {
         // An enhancement's state is made fresh, so the spec has to say it; EligibilityTest pins that
         // a fresh run takes it from there.
         assertEquals(Optional.of("Neon arcade"), enhancement.design());
+        assertEquals(Optional.empty(), enhancement.extra(), "a new look is meant to change the default one");
     }
 
     @Test

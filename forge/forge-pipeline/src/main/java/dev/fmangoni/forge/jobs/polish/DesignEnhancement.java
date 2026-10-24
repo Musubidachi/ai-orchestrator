@@ -33,7 +33,7 @@ class DesignEnhancement {
     /** Writes the spec into the wishlist and returns it as loaded back, so what runs is what was written. */
     Spec write(ForgeHome home, Wishlist wishlist, Spec parent, DesignOption chosen, String note) {
         return write(home, wishlist, parent, parent.title() + " visual update", body(parent, chosen, note),
-                chosen == null ? "" : chosen.name());
+                chosen == null ? "" : chosen.name(), "");
     }
 
     /**
@@ -42,8 +42,10 @@ class DesignEnhancement {
      * @param name    what is added, such as "Pumpkin Patch theme", which titles the enhancement
      * @param request the {@link ExtraBrief} for it
      * @param design  the picked design the pack is drawn from, which its review compares it with
+     * @param kind    the kind of extra, such as "theme", which holds its gate to the default look
      */
-    Spec writeExtra(ForgeHome home, Wishlist wishlist, Spec parent, String name, String request, String design) {
+    Spec writeExtra(ForgeHome home, Wishlist wishlist, Spec parent, String name, String request, String design,
+                    String kind) {
         String body = """
                 ## Goal
                 Add "%s" to %s, beside the look it has now.
@@ -56,13 +58,15 @@ class DesignEnhancement {
                 ## Notes
                 %s
                 """.formatted(name, parent.title(), request);
-        return write(home, wishlist, parent, parent.title() + " — " + name, body, design);
+        return write(home, wishlist, parent, parent.title() + " — " + name, body, design, kind);
     }
 
-    private Spec write(ForgeHome home, Wishlist wishlist, Spec parent, String title, String body, String design) {
+    private Spec write(ForgeHome home, Wishlist wishlist, Spec parent, String title, String body, String design,
+                       String kind) {
         FrontMatter from = parent.front();
         FrontMatter front = new FrontMatter();
         front.setDesign(design == null ? "" : design);
+        front.setExtra(kind == null ? "" : kind);
         front.setId(freeId(home, wishlist, parent.id()));
         front.setTitle(title);
         front.setParent(parent.id());

@@ -138,6 +138,8 @@ final class SubmissionOutcome {
         }
         state.setPhase(Phase.ACCEPTED);
         state.setLastError(null);
+        // The extra is built. A later change to the look is the person's to approve, not the agent's to undo.
+        state.setExtraKind(null);
         // Accepting is the person's answer to whatever the hold was asking.
         state.setNeedsPerson(null);
         RunStore.save(submission.paths().stateFile(), state);

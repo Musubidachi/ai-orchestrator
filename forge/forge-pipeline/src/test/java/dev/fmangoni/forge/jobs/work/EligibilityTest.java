@@ -210,6 +210,16 @@ class EligibilityTest {
     }
 
     @Test
+    @DisplayName("a fresh run of an extra holds the default look still; any other may change it")
+    void aFreshRunInheritsTheExtra() {
+        Spec enhancement = spec("001.1", "001");
+        assertNull(rules().create(enhancement, new Assignment(List.of())).getExtraKind());
+
+        enhancement.front().setExtra("theme");
+        assertEquals("theme", rules().create(enhancement, new Assignment(List.of())).getExtraKind());
+    }
+
+    @Test
     @DisplayName("a project that is not an improvement has nothing to wait for")
     void plainProjectsAreNeverBlockedByAParent() {
         assertTrue(rules().parentAccepted(spec("001", null)));

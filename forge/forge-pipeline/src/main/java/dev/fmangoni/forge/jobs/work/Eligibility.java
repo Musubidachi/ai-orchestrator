@@ -253,6 +253,7 @@ public final class Eligibility {
                 .title(spec.title())
                 .assignedTo(assignment.decide(spec))
                 .polishDesign(spec.design().orElse(null))
+                .extraKind(spec.extra().orElse(null))
                 .createdAt(Instant.now())
                 .build();
     }

@@ -119,6 +119,17 @@ public class FrontMatter {
     @JsonInclude(JsonInclude.Include.NON_EMPTY)
     private String design = "";
 
+    /**
+     * The kind of extra an enhancement adds beside its parent's look (a theme, a variant, an
+     * animation); blank for any other spec.
+     *
+     * <p>Written by the design button, not by hand. An extra must leave the default look as it is,
+     * so a gate that finds the default look changed sends the agent back to put it right, instead
+     * of asking the person whether the new look was meant.
+     */
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
+    private String extra = "";
+
     /** How to publish the project, or null for one that is never deployed. See {@link DeploySettings}. */
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private DeploySettings deploy;

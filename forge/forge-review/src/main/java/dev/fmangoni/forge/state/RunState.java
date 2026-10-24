@@ -159,6 +159,15 @@ public class RunState {
      */
     private String polishDesign;
 
+    /**
+     * The kind of extra (theme, variant, animation) being added beside the default look, or null.
+     *
+     * <p>An extra must leave the default look as it is, so a gate stopped by the default look is
+     * the agent's to put right, as any failing check is. Without it, the gate holds for the person,
+     * who decides whether a changed look was meant. Cleared on approval.
+     */
+    private String extraKind;
+
     /** How the last polish's review was decided, in words for the dashboard, or null. */
     private String polishCheck;
 

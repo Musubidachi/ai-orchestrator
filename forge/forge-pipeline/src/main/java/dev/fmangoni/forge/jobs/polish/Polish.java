@@ -185,7 +185,7 @@ public final class Polish {
             Spec enhancement = kind.isBlank()
                     ? DesignEnhancement.write(projects.home(), project.wishlist(), project.spec(), chosen, note)
                     : DesignEnhancement.writeExtra(projects.home(), project.wishlist(), project.spec(),
-                            chosen.name() + " " + kind, request, chosen.name());
+                            chosen.name() + " " + kind, request, chosen.name(), kind);
             return pipeline.start(enhancement.id()) + ": added " + enhancement.id() + " \""
                     + enhancement.title() + "\", an enhancement with this design as its brief";
         }
@@ -201,6 +201,8 @@ public final class Polish {
         // Where the polish starts from, so its review can ask what it changed and nothing more.
         state.setPolishBase(headOf(paths));
         state.setPolishDesign(chosen == null ? null : chosen.name());
+        // An extra holds the default look still; anything else may change it on purpose.
+        state.setExtraKind(kind.isBlank() ? null : kind);
         state.setPolishCheck(null);
         RunStore.save(paths.stateFile(), state);
         return pipeline.start(id);
