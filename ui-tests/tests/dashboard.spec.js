@@ -1080,6 +1080,66 @@ test("a project stopped only by its default look shows the kept look beside the 
   await expect.poll(() => approved).toEqual({ id: "003" });
 });
 
+test("a shelved project says where it went, and offers only to bring it back", async ({ page }) => {
+  await page.route("**/api/jobs", async (route) => {
+    const response = await route.fetch();
+    const jobs = await response.json();
+    jobs.filter(j => j.id === "003").forEach(j => {
+      j.shelvedBranch = "shelf/003";
+      j.shelvedUrl = "https://github.com/someone/gamma-project";
+      j.shelvedAt = new Date().toISOString();
+      j.githubOn = true;
+    });
+    await route.fulfill({ response, json: jobs });
+  });
+  // Stubbed and read back: a real resume clones from GitHub.
+  let resumed = null;
+  await page.route("**/api/jobs/unshelve", async (route) => {
+    resumed = route.request().postDataJSON();
+    await route.fulfill({ status: 200, contentType: "application/json",
+      body: JSON.stringify({ result: "bringing 003 back from GitHub" }) });
+  });
+  await page.reload();
+
+  const gamma = await open(page, "003");
+  const line = gamma.locator(".shelfline");
+  await expect(line).toContainText("Shelved on GitHub as shelf/003");
+  await expect(line.locator("a")).toHaveAttribute("href", "https://github.com/someone/gamma-project/tree/shelf/003");
+  await expect(gamma.locator(".shelve")).toBeHidden();
+  await expect(gamma.locator(".act-btn"), "nothing that needs the repository is offered").toBeHidden();
+  await expect(gamma.locator(".unshelve")).toBeVisible();
+
+  page.once("dialog", dialog => dialog.accept());
+  await gamma.locator(".unshelve").click();
+  await expect.poll(() => resumed).toEqual({ id: "003" });
+});
+
+test("with publishing on, a project can be shelved once it has said what will be deleted", async ({ page }) => {
+  await page.route("**/api/jobs", async (route) => {
+    const response = await route.fetch();
+    const jobs = await response.json();
+    jobs.filter(j => j.id === "003").forEach(j => { j.githubOn = true; });
+    await route.fulfill({ response, json: jobs });
+  });
+  // Stubbed and read back: a real shelf pushes to GitHub and deletes the fixture's run folder.
+  let shelved = null;
+  await page.route("**/api/jobs/shelve", async (route) => {
+    shelved = route.request().postDataJSON();
+    await route.fulfill({ status: 200, contentType: "application/json",
+      body: JSON.stringify({ result: "shelving 003 on GitHub" }) });
+  });
+  await page.reload();
+
+  const gamma = await open(page, "003");
+  let said = "";
+  page.once("dialog", dialog => { said = dialog.message(); dialog.accept(); });
+  await gamma.locator(".shelve").click();
+
+  await expect.poll(() => shelved).toEqual({ id: "003" });
+  expect(said).toContain("deleted from this machine");
+  expect(said).toContain("shelf/003");
+});
+
 test("a project parked on a clip asks about it, and can be checked again without a session", async ({ page }) => {
   // 003 the way it really parked: one feature approved under two names, the clip made under one.
   // The only way to settle it was a form row folded away under "all ruled on", which nothing

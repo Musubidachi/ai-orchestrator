@@ -286,6 +286,26 @@ class JobRunnerTest {
     }
 
     @Test
+    @DisplayName("a shelved family is never started or reopened, which would build it again from nothing")
+    void aShelvedFamilyIsLeftAlone() throws IOException {
+        finished("001", Phase.DONE);
+        assertTrue(jobs.shelve("001").startsWith("shelving goes through GitHub, and publishing to GitHub is switched off"),
+                "like everything that reaches GitHub, it needs publishing on");
+        Files.writeString(RunPaths.under(home.runs(), "001").root().resolve("shelved.json"), """
+                {"family":"001","repository":"fabrizio/alpha","url":"https://github.com/fabrizio/alpha",
+                 "branch":"shelf/001","commit":"c","head":"h","localBranch":"main","versions":["001"],
+                 "shelvedAt":"2026-10-24T00:00:00Z"}
+                """);
+
+        assertEquals("shelved on GitHub as shelf/001: resume it to work on it here", jobs.start("001"),
+                "a finished project included: Start is refused before anything else is asked");
+        assertEquals("shelved on GitHub: resume it to work on it here", jobs.reopen("001"));
+        assertEquals("shelved on GitHub: resume it to work on it here", jobs.recheck("001"));
+        assertEquals(Phase.DONE, stateOf("001").getPhase(), "and its state was not touched");
+        assertEquals("shelf/001", statusOf("001").outward().getShelvedBranch());
+    }
+
+    @Test
     @DisplayName("approving a project never reaches GitHub unless publishing is switched on")
     void publishingIsOffWithoutTheSwitch() {
         // gh is logged in on the machine these tests run on. Without the switch being off by

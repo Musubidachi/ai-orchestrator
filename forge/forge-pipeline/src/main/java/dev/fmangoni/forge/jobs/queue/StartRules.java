@@ -74,6 +74,12 @@ public final class StartRules {
      * working tree at the same time, so improvements to a project queue behind each other.
      */
     public String blockedReason(Spec spec, Wishlist wishlist) {
+        // Before anything else, finished projects included: with its repository gone, a shelved
+        // family would be built again from nothing by whatever started it.
+        String shelved = eligibility().shelvedWait(spec);
+        if (shelved != null) {
+            return shelved;
+        }
         if (finished(spec)) {
             return null;
         }

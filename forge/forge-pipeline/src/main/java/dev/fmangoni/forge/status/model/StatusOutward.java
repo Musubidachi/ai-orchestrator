@@ -4,6 +4,7 @@ import dev.fmangoni.forge.deploy.Deployer;
 import dev.fmangoni.forge.deploy.Deployment;
 import dev.fmangoni.forge.deploy.github.Publication;
 import dev.fmangoni.forge.deploy.github.PublishedBranch;
+import dev.fmangoni.forge.deploy.shelf.Shelver;
 import dev.fmangoni.forge.design.DesignOption;
 import dev.fmangoni.forge.design.DesignStudio;
 import dev.fmangoni.forge.gate.RunFile;
@@ -73,6 +74,14 @@ public class StatusOutward {
 
     /** Why the last try did not publish, in a sentence, or blank. */
     private final String githubDetail;
+
+    /** Where the family is shelved on GitHub, such as {@code shelf/003}; blank when it is here. */
+    private final String shelvedBranch;
+
+    /** The repository it is shelved in, and when. */
+    private final String shelvedUrl;
+
+    private final String shelvedAt;
 
     /** {@code none}, {@code ready}, {@code problems} or {@code unavailable}. */
     private final String marketingState;
@@ -169,6 +178,23 @@ public class StatusOutward {
                 .build();
     }
 
+    /**
+     * This group with where the family is shelved, when it is.
+     *
+     * <p>An unreadable mark is shown as shelved, because Start refuses it too: a card offering to
+     * work on a project whose repository may well be gone would be the worse mistake.
+     */
+    public StatusOutward withShelf(RunPaths paths, String id) {
+        try {
+            return Shelver.markOf(paths.root().getParent(), id)
+                    .map(mark -> toBuilder().shelvedBranch(mark.branch()).shelvedUrl(mark.url())
+                            .shelvedAt(mark.shelvedAt() == null ? "" : mark.shelvedAt().toString()).build())
+                    .orElse(this);
+        } catch (UncheckedIOException e) {
+            return toBuilder().shelvedBranch("(its shelf mark cannot be read)").build();
+        }
+    }
+
     /** Every field named: a positional list this long is how a count arrives as a state. */
     public static StatusOutward none() {
         return builder()
@@ -189,6 +215,9 @@ public class StatusOutward {
                 .githubBranch("")
                 .githubCommit("")
                 .githubDetail("")
+                .shelvedBranch("")
+                .shelvedUrl("")
+                .shelvedAt("")
                 .marketingState("none")
                 .marketingProblems(0)
                 .playable(false)

@@ -10,6 +10,7 @@ import dev.fmangoni.forge.jobs.button.Play;
 import dev.fmangoni.forge.jobs.button.SecurityRescan;
 import dev.fmangoni.forge.jobs.button.WalkthroughJob;
 import dev.fmangoni.forge.jobs.publish.PublishJob;
+import dev.fmangoni.forge.jobs.publish.ShelfJob;
 import dev.fmangoni.forge.jobs.polish.Polish;
 import dev.fmangoni.forge.jobs.polish.PolishView;
 import dev.fmangoni.forge.jobs.queue.JobQueue;
@@ -73,6 +74,7 @@ public final class JobRunner {
     private final Reopening reopening;
     private final DeployJob deploys;
     private final PublishJob publishes;
+    private final ShelfJob shelves;
     private final MarketingJob marketing;
     private final SecurityRescan rescans;
     private final WalkthroughJob walkthroughs;
@@ -109,6 +111,7 @@ public final class JobRunner {
         this.reopening = new Reopening(projects, pool, pipeline);
         this.deploys = new DeployJob(projects, pool, shutdown);
         this.publishes = new PublishJob(projects, pool, shutdown);
+        this.shelves = new ShelfJob(projects, pool, shutdown);
         this.marketing = new MarketingJob(projects, pool, shutdown, agents);
         this.rescans = new SecurityRescan(projects, pool, shutdown, agents);
         this.walkthroughs = new WalkthroughJob(projects, pool);
@@ -289,6 +292,16 @@ public final class JobRunner {
     /** See {@link DeployJob}. */
     public synchronized String deploy(String id) {
         return deploys.start(id);
+    }
+
+    /** See {@link ShelfJob}: the whole family to GitHub, and deleted here. */
+    public synchronized String shelve(String id) {
+        return shelves.shelve(id);
+    }
+
+    /** See {@link ShelfJob}: the whole family back from GitHub, to carry on here. */
+    public synchronized String unshelve(String id) {
+        return shelves.resume(id);
     }
 
     /** See {@link Reopening#approveLook}. */

@@ -1127,6 +1127,7 @@ const DETAIL = `
   </div>
   <div class="deployline" hidden></div>
   <div class="githubline" hidden></div>
+  <div class="shelfline" hidden></div>
   <div class="groups">
     <div class="grp"><div class="grp-h">Look</div>
       <button class="readaloud" hidden></button>
@@ -1142,6 +1143,8 @@ const DETAIL = `
       <a class="polish btn" target="_blank" hidden></a>
       <button class="deploy" hidden></button>
       <button class="publish" hidden></button>
+      <button class="shelve" hidden></button>
+      <button class="unshelve" hidden></button>
       <button class="kit" hidden></button>
     </div>
   </div>
@@ -1781,6 +1784,46 @@ function fillDetail(card, d, j) {
   notes.title = j.compactions
     ? `Restarted from these notes ${j.compactions} time(s)`
     : "What the agent would hand to a successor";
+
+  // Shelving: the whole family to a branch on GitHub and off this machine, and back again. Offered
+  // only with publishing on and nothing of it running, since it deletes the files a run works in.
+  // While shelved, Resume is the one thing on the card: everything else needs the repository.
+  const shelfLine = q(".shelfline");
+  const shelve = q(".shelve");
+  const unshelve = q(".unshelve");
+  const shelved = !!j.shelvedBranch;
+  const family = j.id.split(".")[0];
+  shelfLine.hidden = !shelved;
+  unshelve.hidden = !shelved || j.running;
+  shelve.hidden = shelved || j.running || !j.githubOn || j.phase === "NEW";
+  if (shelved) {
+    d.querySelectorAll(".groups button, .groups a, .move-acts button, .move-acts a").forEach(control => {
+      if (control !== unshelve) control.hidden = true;
+    });
+    const branchPath = j.shelvedBranch.split("/").map(encodeURIComponent).join("/");
+    const where = j.shelvedUrl
+      ? `<a href="${esc(j.shelvedUrl)}/tree/${branchPath}" target="_blank" rel="noopener">${esc(j.shelvedBranch)}</a>`
+      : esc(j.shelvedBranch);
+    shelfLine.innerHTML = `Shelved on GitHub as ${where}${j.shelvedAt ? " " + esc(ago(j.shelvedAt)) : ""}. `
+      + "Its files are not on this machine: Resume from GitHub brings them back.";
+  }
+  shelve.textContent = "Shelve on GitHub";
+  shelve.title = `Every version of ${family} goes to a private branch, shelf/${family}, and is then deleted here`;
+  shelve.onclick = () => {
+    const ok = confirm(`Shelve ${family} on GitHub?\n\nEvery version of ${family} goes to a private branch, `
+      + `shelf/${family}, with everything Forge keeps for it: its history and uncommitted changes, logs, `
+      + "reviews, attached pictures, and anything else in its run folders, art and images included.\n\n"
+      + "Once GitHub has it, all of that is deleted from this machine. Resume from GitHub brings it back.");
+    if (ok) jobAction(j.id, "/api/jobs/shelve");
+  };
+  unshelve.textContent = "Resume from GitHub";
+  unshelve.className = "unshelve primary";
+  unshelve.title = `Brings every version of ${family} back as it was shelved, then takes shelf/${family} off GitHub`;
+  unshelve.onclick = () => {
+    const ok = confirm(`Bring ${family} back from GitHub?\n\nEverything comes back as it was shelved, `
+      + `and shelf/${family} is then taken off GitHub.`);
+    if (ok) jobAction(j.id, "/api/jobs/unshelve");
+  };
 
   // A heading over nothing is noise: each group shows only while it has something to press.
   d.querySelectorAll(".grp").forEach(group => {

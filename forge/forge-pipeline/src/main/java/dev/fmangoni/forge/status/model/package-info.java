@@ -12,6 +12,6 @@
  *
  * <p><b>Start with:</b> {@code StatusProgress.of}, {@code StatusBudget.of} and the other groups.
  *
- * <p>Depends on: deploy, deploy.github, design, feature, gate, marketing, plan, project, review, review.decision, review.model, security.model, spec.model, state, status.read.
+ * <p>Depends on: deploy, deploy.github, deploy.shelf, design, feature, gate, marketing, plan, project, review, review.decision, review.model, security.model, spec.model, state, status.read.
  */
 package dev.fmangoni.forge.status.model;

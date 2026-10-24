@@ -1,5 +1,6 @@
 package dev.fmangoni.forge.jobs.button;
 
+import dev.fmangoni.forge.deploy.shelf.Shelver;
 import dev.fmangoni.forge.gate.LookCheck;
 import dev.fmangoni.forge.jobs.queue.PipelineJobs;
 import dev.fmangoni.forge.jobs.work.JobPool;
@@ -15,6 +16,7 @@ import dev.fmangoni.forge.review.model.Finding;
 import dev.fmangoni.forge.review.model.Review;
 import dev.fmangoni.forge.state.RunState;
 import dev.fmangoni.forge.state.RunStore;
+import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -54,6 +56,10 @@ public final class Reopening {
         Optional<Project> found = projects.find(id);
         if (found.isEmpty()) {
             return Projects.unknown(id);
+        }
+        String shelved = shelved(id);
+        if (shelved != null) {
+            return shelved;
         }
         RunPaths paths = found.get().paths();
         RunState state = RunStore.load(paths.stateFile()).orElse(null);
@@ -242,6 +248,21 @@ public final class Reopening {
         }
     }
 
+    /**
+     * Why a shelved family's state may not be touched, or null.
+     *
+     * <p>Checked before the state is: every button here changes it and then starts the pipeline, and
+     * a shelved family has no repository for the pipeline to start in.
+     */
+    private String shelved(String id) {
+        try {
+            return Shelver.markOf(projects.home().runs(), id).isPresent()
+                    ? "shelved on GitHub: resume it to work on it here" : null;
+        } catch (UncheckedIOException e) {
+            return "its shelf mark cannot be read: " + e.getMessage();
+        }
+    }
+
     /** Loads a project's state and applies an action to it, or explains why it could not. */
     private String withState(String id, BiFunction<RunPaths, RunState, String> action) {
         if (pool.isRunning(id)) {
@@ -250,6 +271,10 @@ public final class Reopening {
         Optional<Project> found = projects.find(id);
         if (found.isEmpty()) {
             return Projects.unknown(id);
+        }
+        String shelved = shelved(id);
+        if (shelved != null) {
+            return shelved;
         }
         RunPaths paths = found.get().paths();
         RunState state = RunStore.load(paths.stateFile()).orElse(null);

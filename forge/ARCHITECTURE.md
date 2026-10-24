@@ -14,7 +14,7 @@ refuses an upward import before any test runs. Each module has a `CLAUDE.md` say
 | `forge-pipeline` | brief, pipeline, status, jobs | forge-report |
 | `forge-report` | report | forge-marketing |
 | `forge-marketing` | marketing | forge-deploy |
-| `forge-deploy` | deploy, deploy.github | forge-review |
+| `forge-deploy` | deploy, deploy.github, deploy.shelf | forge-review |
 | `forge-review` | review, feature, gate, state | forge-security |
 | `forge-security` | security | forge-core |
 | `forge-core` | json, process, agent, plan, project, git, spec | Jackson |

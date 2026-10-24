@@ -179,6 +179,29 @@ public final class Publisher {
         }
     }
 
+    /**
+     * The family's repository, made now if it has none, with nothing pushed to it.
+     *
+     * <p>For a shelf, which needs somewhere to go before anything was approved. The same refusals as
+     * publishing: a name already on GitHub is someone else's, and gh must be logged in.
+     *
+     * @throws IllegalStateException saying why there is no repository
+     */
+    public Publication ensureRepository() {
+        Optional<Publication> record = Publication.load(file);
+        if (record.map(Publication::established).orElse(false)) {
+            return record.get();
+        }
+        if (github.login().isEmpty()) {
+            throw new IllegalStateException("gh is not logged in: run gh auth login yourself, then try again");
+        }
+        RunState first = RunStore.survey(initial.stateFile()).orElseThrow(() ->
+                new IllegalStateException(family + " has not begun, so there is nothing to put on GitHub"));
+        Publication made = establish(first.getTitle(), Instant.now());
+        made.save(file);
+        return made;
+    }
+
     /** Pushes one version to its branch and records it, unless GitHub has it there already; the problem, or null. */
     private String pushOnce(String id, String title, String commit) {
         Publication record = Publication.load(file).orElseThrow();

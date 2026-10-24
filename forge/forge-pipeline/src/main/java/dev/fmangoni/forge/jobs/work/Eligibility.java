@@ -6,6 +6,7 @@ import dev.fmangoni.forge.agent.model.AgentKind;
 import dev.fmangoni.forge.deploy.github.Branches;
 import dev.fmangoni.forge.deploy.github.Publication;
 import dev.fmangoni.forge.deploy.github.Publisher;
+import dev.fmangoni.forge.deploy.shelf.Shelver;
 import dev.fmangoni.forge.project.Phase;
 import dev.fmangoni.forge.project.RunPaths;
 import dev.fmangoni.forge.spec.Wishlist;
@@ -86,6 +87,22 @@ public final class Eligibility {
                 .flatMap(parent -> RunStore.survey(RunPaths.under(runsDir, parent).stateFile()))
                 .map(state -> state.getPhase() == Phase.ACCEPTED)
                 .orElse(false);
+    }
+
+    /**
+     * Why nothing of a family may run while it is shelved on GitHub, or null.
+     *
+     * <p>Its repository is not here, so any start would build it again from nothing. An unreadable
+     * mark is a reason too: not being able to tell is never taken as "not shelved".
+     */
+    public String shelvedWait(Spec spec) {
+        try {
+            return Shelver.markOf(runsDir, spec.id())
+                    .map(mark -> "shelved on GitHub as " + mark.branch() + ": resume it to work on it here")
+                    .orElse(null);
+        } catch (UncheckedIOException e) {
+            return "its shelf mark cannot be read: " + e.getMessage();
+        }
     }
 
     /**

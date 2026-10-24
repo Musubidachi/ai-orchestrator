@@ -12,6 +12,7 @@ are not synchronized themselves.
 | starting a project's pipeline, cool-off | `PipelineJobs` |
 | button jobs | `DeployJob`, `MarketingJob`, `SecurityRescan` (via `ButtonJob`) |
 | publishing to GitHub: on approval (from `JobRunner.decide`) and on Publish; off unless `publishing.json` says on | `PublishJob` (`jobs.publish`) |
+| shelving a family on GitHub and resuming it; never while any of it runs | `ShelfJob` (`jobs.publish`) |
 | reopen, re-review, fix blocking findings, check a parked project's gate again | `Reopening` |
 | Suggest Updated Design: asking the vendors for looks anywhere it has run, from nothing or for more like one on the board (`DesignBoard.LIKED`); building the pick now (DONE), as an enhancement (ACCEPTED, `DesignEnhancement`), or keeping it, with its note, for later; extras (theme, variants, animation) added beside the look as a pack instead, briefed by `ExtraBrief` | `Polish` (`jobs.polish`) |
 | opening a project's `run.bat` | `Play` (not a job: no worker, no lock) |

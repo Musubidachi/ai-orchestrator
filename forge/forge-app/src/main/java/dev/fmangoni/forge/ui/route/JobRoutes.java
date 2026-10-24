@@ -61,6 +61,9 @@ public final class JobRoutes {
         endpoints.write("/api/jobs/deploy", action(JobRunner::deploy));
         // Approving a version publishes it; this is Publish pressed by hand, to try again.
         endpoints.write("/api/jobs/publish", action(JobRunner::publish));
+        // The whole family to GitHub and deleted here, and back again; each only on a click.
+        endpoints.write("/api/jobs/shelve", action(JobRunner::shelve));
+        endpoints.write("/api/jobs/unshelve", action(JobRunner::unshelve));
         endpoints.write("/api/jobs/marketing", action(JobRunner::marketing));
         endpoints.write("/api/jobs/security", action(JobRunner::rescan));
         // Opens the project's run.bat in a window of its own: a write, because it starts something.

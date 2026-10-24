@@ -1,5 +1,6 @@
 /**
- * Publishing to GitHub as a job: when a version is approved, and when a person presses Publish.
+ * Publishing to GitHub as a job: when a version is approved, when a person presses Publish, and
+ * shelving a family there and back when a person presses Shelve or Resume.
  *
  * <p><b>Belongs here:</b> {@code PublishJob}, which checks it may run and hands the work to
  * forge-deploy's {@code Publisher} on a worker, under the repository's lock.
@@ -9,6 +10,6 @@
  *
  * <p><b>Start with:</b> {@code PublishJob.start}.
  *
- * <p>Depends on: deploy.github, jobs.button, jobs.stop, jobs.work, project.
+ * <p>Depends on: deploy.github, deploy.shelf, jobs.button, jobs.stop, jobs.work, project.
  */
 package dev.fmangoni.forge.jobs.publish;

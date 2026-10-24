@@ -21,16 +21,16 @@ import java.util.Set;
  * <p>Only the account is pretend. What is pushed into one of these is pushed by the real git, so a
  * test that reads a branch back here has seen a real push land.
  */
-final class FakeGitHub implements GitHubAccount {
+public final class FakeGitHub implements GitHubAccount {
 
-    final List<String> created = new ArrayList<>();
-    final Set<String> existing = new HashSet<>();
+    public final List<String> created = new ArrayList<>();
+    public final Set<String> existing = new HashSet<>();
 
     private final Path home;
     private final String login;
 
     /** @param login the account, or null for a CLI that is not logged in */
-    FakeGitHub(Path home, String login) {
+    public FakeGitHub(Path home, String login) {
         this.home = home;
         this.login = login;
     }
@@ -67,7 +67,7 @@ final class FakeGitHub implements GitHubAccount {
     }
 
     /** Each branch the repository has, and the commit it is at. */
-    Map<String, String> branches(String name) {
+    public Map<String, String> branches(String name) {
         Map<String, String> branches = new LinkedHashMap<>();
         if (!Files.isDirectory(bare(name))) {
             return branches;

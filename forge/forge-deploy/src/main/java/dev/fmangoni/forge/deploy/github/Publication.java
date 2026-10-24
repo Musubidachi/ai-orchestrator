@@ -70,7 +70,7 @@ public record Publication(String repository, String url, Instant establishedAt, 
     }
 
     /** The address git pushes to. */
-    String remote() {
+    public String remote() {
         return url.endsWith(".git") ? url : url + ".git";
     }
 
