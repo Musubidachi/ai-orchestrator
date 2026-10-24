@@ -262,6 +262,20 @@ class JobRunnerTest {
     }
 
     @Test
+    @DisplayName("approving a project never reaches GitHub unless publishing is switched on")
+    void publishingIsOffWithoutTheSwitch() {
+        // gh is logged in on the machine these tests run on. Without the switch being off by
+        // default, every accepting test here would make a repository on the person's account.
+        spec("001", "Alpha", 1, "claude", null);
+        runIn("001", Phase.DONE, AgentKind.CLAUDE, "abc123");
+        reviewed("001", new Review());
+
+        assertEquals("accepted", jobs.decide("001", List.of(ok("unproven-0", "the draw branch is untested"))));
+        assertTrue(jobs.publish("001").startsWith("publishing to GitHub is switched off"), jobs.publish("001"));
+        assertFalse(Files.exists(RunPaths.under(home.runs(), "001").githubFile()), "nothing was even tried");
+    }
+
+    @Test
     @DisplayName("a note on an item left standing is kept, not discarded with the verdict")
     void notesOnStandingItemsAreKept() {
         spec("001", "Alpha", 1, "claude", null);
@@ -1601,6 +1615,31 @@ class JobRunnerTest {
 
         // The job thread still writes the report after it deregisters; let it finish before the
         // temporary directory is deleted out from under it.
+        Thread.sleep(1500);
+    }
+
+    @Test
+    @DisplayName("a project that finishes records where its work ends, for its branch to point at")
+    void aFinishedProjectRecordsItsTip() throws Exception {
+        // A family's projects take turns in one repository, so the newest commit there can be a
+        // later enhancement's. The only moment a project's own last commit is certain is this one.
+        spec("001", "Alpha", 1, "claude", null);
+        RecordingBuilder builder = new RecordingBuilder();
+        builder.firstTurn.countDown();
+        Map<AgentKind, Agent> map = new EnumMap<>(AgentKind.class);
+        map.put(AgentKind.CLAUDE, builder);
+        map.put(AgentKind.CODEX, new CleanReviewer(AgentKind.CODEX));
+        JobRunner runner = new JobRunner(home, new Agents(map), 4, quota);
+
+        runner.start("001");
+        RunPaths paths = RunPaths.under(home.runs(), "001");
+        for (int i = 0; i < 400 && RunStore.survey(paths.stateFile()).map(RunState::getPhase).orElse(null) != Phase.DONE; i++) {
+            Thread.sleep(50);
+        }
+        awaitIdle(runner, "001");
+
+        assertEquals(Phase.DONE, stateOf("001").getPhase(), String.valueOf(stateOf("001").getLastError()));
+        assertEquals(new Git(paths.repo(), paths.gitLog()).head(), stateOf("001").getFinishedCommit());
         Thread.sleep(1500);
     }
 

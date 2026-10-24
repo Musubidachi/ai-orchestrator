@@ -1,5 +1,6 @@
 package dev.fmangoni.forge.jobs;
 
+import dev.fmangoni.forge.deploy.github.Publisher;
 import dev.fmangoni.forge.jobs.button.DeployJob;
 import dev.fmangoni.forge.jobs.queue.JobQueue;
 import dev.fmangoni.forge.jobs.queue.StartRules;
@@ -66,6 +67,7 @@ final class StatusBoard {
         JobStatus status = JobStatus.of(state, paths, spec.maxRepairRounds(), running, parent,
                 spec.priority(), place, blocked, rules.reviewerWait(state));
         String deployBlocked = running ? "it is running" : DeployJob.deployerFor(spec, paths).blockedReason(state);
-        return status.withOutward(status.outward().withMarketing(paths).withDeploy(spec, paths, deployBlocked));
+        return status.withOutward(status.outward().withMarketing(paths).withDeploy(spec, paths, deployBlocked)
+                .withGitHub(paths, state.getId(), Publisher.enabled(projects.home().root())));
     }
 }

@@ -36,7 +36,7 @@ public class ButtonJob {
     }
 
     /** Runs {@code body} holding the repository lock, or says it was skipped when another process has it. */
-    void locked(String id, String what, RunPaths paths, Runnable body) {
+    public void locked(String id, String what, RunPaths paths, Runnable body) {
         Optional<RepoLock> lock = RepoLock.tryAcquire(paths);
         if (lock.isEmpty()) {
             System.out.println("[" + id + "] " + what + " skipped: another Forge process is in this repository");

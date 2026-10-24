@@ -1120,6 +1120,7 @@ const DETAIL = `
     <div class="plan-sum"></div>
   </div>
   <div class="deployline" hidden></div>
+  <div class="githubline" hidden></div>
   <div class="groups">
     <div class="grp"><div class="grp-h">Look</div>
       <button class="readaloud" hidden></button>
@@ -1134,6 +1135,7 @@ const DETAIL = `
     <div class="grp"><div class="grp-h">Improve and ship</div>
       <a class="polish btn" target="_blank" hidden></a>
       <button class="deploy" hidden></button>
+      <button class="publish" hidden></button>
       <button class="kit" hidden></button>
     </div>
   </div>
@@ -1697,6 +1699,34 @@ function fillDetail(card, d, j) {
         + (j.deployState !== "deployed" && j.deployDetail ? `<br>Last attempt: ${esc(j.deployDetail)}` : "")
       : `Last deploy attempt: ${esc(j.deployDetail || j.deployState)}`;
   }
+
+  // GitHub. Approving a version publishes it, so this is mostly a line saying where it went; the
+  // button is for trying again, and for versions approved before publishing existed. What is on
+  // GitHub is said even with publishing switched off, since it stays true; the button needs it on.
+  const publish = q(".publish");
+  const ghLine = q(".githubline");
+  const accepted = j.phase === "ACCEPTED";
+  const onGitHub = !!j.githubBranch;
+  const tried = j.githubState && j.githubState !== "none";
+  ghLine.hidden = !onGitHub && !(j.githubOn && accepted && tried);
+  publish.hidden = !j.githubOn || !accepted || (onGitHub && j.githubState === "published");
+  const branchUrl = j.githubUrl && onGitHub
+    ? `${j.githubUrl}/tree/${encodeURIComponent(j.githubBranch)}` : j.githubUrl;
+  const where = onGitHub
+    ? `<a href="${esc(branchUrl)}" target="_blank" rel="noopener">${esc(j.githubBranch)}</a>` : "";
+  ghLine.innerHTML = onGitHub
+    ? `On GitHub: ${where} at ${esc(j.githubCommit.slice(0, 7))}`
+      + (j.githubState !== "published" && j.githubDetail ? `<br>Last attempt: ${esc(j.githubDetail)}` : "")
+    : `Not on GitHub: ${esc(j.githubDetail || j.githubState)}`;
+  publish.textContent = onGitHub ? "Publish Again" : "Publish to GitHub";
+  publish.title = "Every approved version goes to this project's private repository: "
+    + "the first on main, each enhancement on a branch of its own";
+  publish.onclick = () => {
+    const ok = confirm(`Publish ${j.title} to GitHub?\n\nEvery approved version goes to a private repository `
+      + "on the account gh is logged into: the first version on main, each enhancement on a branch of "
+      + "its own. Nothing is ever force-pushed.");
+    if (ok) jobAction(j.id, "/api/jobs/publish");
+  };
 
   // The report opens inside the details. Rendered in an iframe because it is a whole document
   // with its own stylesheet -- inlining it would let the two sets of CSS collide.

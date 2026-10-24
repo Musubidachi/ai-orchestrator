@@ -190,6 +190,18 @@ test("the card separates time worked from time elapsed", async ({ page }) => {
   await expect(page.locator("#jobs")).not.toContainText("working for");
 });
 
+test("a version on GitHub says which branch and commit, and Publish waits for publishing to be on", async ({ page }) => {
+  await page.goto("/");
+  const gamma = await open(page, "003");
+
+  const line = gamma.locator(".githubline");
+  await expect(line).toBeVisible();
+  await expect(line).toContainText("On GitHub: main at 1234567");
+  await expect(line.locator("a")).toHaveAttribute("href", "https://github.com/someone/gamma-project/tree/main");
+  // This root has no publishing.json, so nothing here can push anywhere, and nothing offers to.
+  await expect(gamma.locator(".publish")).toBeHidden();
+});
+
 test("the whole board's token spend is shown, and what no model is named for is said so", async ({ page }) => {
   // The question the dashboard could not answer before: what has this machine spent in total.
   // Per vendor and per window it could (see #usageBar below), but a window resets and remembers

@@ -124,6 +124,57 @@ class EligibilityTest {
         assertTrue(rules().parentAccepted(spec("001.1", "001")));
     }
 
+    // ------------------------------------------------------- one enhancement at a time, on GitHub
+
+    /** Publishing switched on in this home. Safe here: deciding who may begin never calls gh. */
+    private void publishing() throws IOException {
+        Files.writeString(root.resolve("publishing.json"), "{\"github\": true}");
+    }
+
+    private void established(String family) throws IOException {
+        Files.writeString(RunPaths.under(runs, family).githubFile(), """
+                {"repository":"fabrizio/game","url":"https://github.com/fabrizio/game",
+                 "establishedAt":"2026-10-23T00:00:00Z","branches":[],"outcome":"published","detail":""}
+                """);
+    }
+
+    @Test
+    @DisplayName("with publishing off, an enhancement waits for nothing new")
+    void publishingOffChangesNothing() {
+        parentIn("003", Phase.ACCEPTED);
+        parentIn("003.4", Phase.GATING);
+
+        assertNull(rules().familyWait(spec("003.3", "003")));
+    }
+
+    @Test
+    @DisplayName("with publishing on, an enhancement begins only once the family's repository is on GitHub")
+    void beginningWaitsForTheRepository() throws IOException {
+        publishing();
+        parentIn("003", Phase.ACCEPTED);
+
+        assertEquals("waiting for 003's repository on GitHub, which approving 003 makes",
+                rules().familyWait(spec("003.1", "003")));
+        established("003");
+        assertNull(rules().familyWait(spec("003.1", "003")));
+    }
+
+    @Test
+    @DisplayName("and only once the most recent version is approved, while one already under way carries on")
+    void oneEnhancementAtATime() throws IOException {
+        publishing();
+        parentIn("003", Phase.ACCEPTED);
+        established("003");
+        parentIn("003.4", Phase.GATING);
+
+        assertEquals("waiting for 003.4 to be approved: each enhancement begins from the most recent approved version",
+                rules().familyWait(spec("003.3", "003")));
+        assertNull(rules().familyWait(spec("003.4", "003")), "begun before the rule, it is not stopped half-way");
+
+        parentIn("003.4", Phase.ACCEPTED);
+        assertNull(rules().familyWait(spec("003.3", "003")));
+    }
+
     // ------------------------------------------------------- a fresh run
 
     @Test

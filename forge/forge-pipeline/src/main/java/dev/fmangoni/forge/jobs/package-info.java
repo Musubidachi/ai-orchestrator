@@ -11,6 +11,6 @@
  *
  * <p><b>Start with:</b> {@code JobRunner}.
  *
- * <p>Depends on: agent, agent.ledger, jobs.button, jobs.polish, jobs.queue, jobs.stop, jobs.submit, jobs.work, project, report.deck, review.decision.model, spec, spec.model, state, status.
+ * <p>Depends on: agent, agent.ledger, deploy.github, jobs.button, jobs.polish, jobs.publish, jobs.queue, jobs.stop, jobs.submit, jobs.work, project, report.deck, review.decision.model, spec, spec.model, state, status.
  */
 package dev.fmangoni.forge.jobs;

@@ -3,15 +3,20 @@ package dev.fmangoni.forge.jobs.work;
 import dev.fmangoni.forge.agent.Agents;
 import dev.fmangoni.forge.agent.ledger.QuotaLedger;
 import dev.fmangoni.forge.agent.model.AgentKind;
+import dev.fmangoni.forge.deploy.github.Branches;
+import dev.fmangoni.forge.deploy.github.Publication;
+import dev.fmangoni.forge.deploy.github.Publisher;
 import dev.fmangoni.forge.project.Phase;
 import dev.fmangoni.forge.project.RunPaths;
 import dev.fmangoni.forge.spec.Wishlist;
 import dev.fmangoni.forge.spec.model.Spec;
 import dev.fmangoni.forge.state.RunState;
 import dev.fmangoni.forge.state.RunStore;
+import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * The questions both schedulers ask before starting a project, answered once.
@@ -81,6 +86,45 @@ public final class Eligibility {
                 .flatMap(parent -> RunStore.survey(RunPaths.under(runsDir, parent).stateFile()))
                 .map(state -> state.getPhase() == Phase.ACCEPTED)
                 .orElse(false);
+    }
+
+    /**
+     * Why an enhancement may not begin yet, when its family publishes to GitHub, or null.
+     *
+     * <p>The person's rule: an enhancement begins only once the family's repository is there and
+     * the most recent version is approved, and its branch is made from that version. So versions go
+     * one at a time, each built on the last one approved, which is what lets each branch be cut from
+     * the one line of history. One already under way carries on; only beginning waits. With
+     * publishing off, nothing changes.
+     */
+    public String familyWait(Spec spec) {
+        if (!spec.isImprovement() || !Publisher.enabled(runsDir.getParent())) {
+            return null;
+        }
+        boolean underWay = RunStore.survey(RunPaths.under(runsDir, spec.id()).stateFile())
+                .map(state -> state.getPhase() != Phase.NEW).orElse(false);
+        if (underWay) {
+            return null;
+        }
+        String family = Branches.familyOf(spec.id());
+        Optional<Publication> record;
+        try {
+            record = Publication.load(RunPaths.under(runsDir, family).githubFile());
+        } catch (UncheckedIOException e) {
+            return "waiting for " + family + "'s GitHub record, which cannot be read: " + e.getCause().getMessage();
+        }
+        if (record.map(Publication::established).orElse(false)) {
+            for (RunState version : Publisher.begun(runsDir, family)) {
+                if (!version.getId().equals(spec.id()) && version.getPhase() != Phase.ACCEPTED) {
+                    return "waiting for " + version.getId() + " to be approved: each enhancement begins"
+                            + " from the most recent approved version";
+                }
+            }
+            return null;
+        }
+        String why = record.map(Publication::detail).filter(detail -> !detail.isBlank()).orElse("");
+        return "waiting for " + family + "'s repository on GitHub"
+                + (why.isEmpty() ? ", which approving " + family + " makes" : ": " + why);
     }
 
     /**

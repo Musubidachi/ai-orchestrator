@@ -83,6 +83,10 @@ public final class StartRules {
         if (!eligibility().parentAccepted(spec)) {
             return "waiting for " + spec.parentId().orElse("?") + " to be accepted first";
         }
+        String familyWait = eligibility().familyWait(spec);
+        if (familyWait != null) {
+            return familyWait;
+        }
         String vendorWait = vendorBlockedReason(spec, wishlist);
         if (vendorWait != null) {
             return vendorWait;

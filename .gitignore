@@ -52,6 +52,9 @@ node_modules/
 /usage.json
 /vendors.json
 /models.json
+# This machine's switch for publishing to GitHub. Per account, like models.json: a clone
+# must start with it off, never inherit someone else's "on".
+/publishing.json
 /index.html
 /idea-generator.json
 

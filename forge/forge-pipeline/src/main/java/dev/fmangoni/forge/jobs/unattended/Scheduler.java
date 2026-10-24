@@ -133,7 +133,7 @@ public final class Scheduler {
         List<String> claimedRepos = new ArrayList<>();
 
         for (Spec spec : Ranking.runOrder(wishlist)) {
-            if (wishlist.isOrphan(spec) || !rules.parentAccepted(spec)) {
+            if (wishlist.isOrphan(spec) || !rules.parentAccepted(spec) || rules.familyWait(spec) != null) {
                 continue;
             }
             // One job per repository per pass: improvements to a project share its working tree,

@@ -38,6 +38,16 @@ public record RunPaths(Path root, Path repo) {
         return repo.resolveSibling("look-reference.png");
     }
 
+    /**
+     * Where the family's repository on GitHub is recorded, and what has been pushed to it.
+     *
+     * <p>Beside the repository, like {@link #lookReference()}, because every project of a family
+     * works in the one repository and publishes to the one place.
+     */
+    public Path githubFile() {
+        return repo.resolveSibling("github.json");
+    }
+
     /** Agent transcripts, gate output, and the generated acceptance scripts. */
     public Path logs() {
         return root.resolve("logs");

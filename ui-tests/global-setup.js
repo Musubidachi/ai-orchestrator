@@ -87,6 +87,20 @@ ${title}.
     comments: [{ text: "worth remembering anyway", at: null }],
   }], null, 2));
 
+  // Already on GitHub, so its card says where. Publishing itself stays switched off in this root
+  // (there is no publishing.json): gh is logged in on the machines these tests run on, and an
+  // accepting test must never reach a real account.
+  fs.writeFileSync(path.join(done, "github.json"), JSON.stringify({
+    repository: "someone/gamma-project",
+    url: "https://github.com/someone/gamma-project",
+    establishedAt: "2026-10-20T00:00:00Z",
+    branches: [{ project: "003", branch: "main", commit: "1234567890abcdef1234567890abcdef12345678",
+      pushedAt: "2026-10-20T00:00:00Z" }],
+    outcome: "published",
+    detail: "",
+    attemptedAt: "2026-10-20T00:00:00Z",
+  }, null, 2));
+
   fs.writeFileSync(path.join(done, "state.json"), JSON.stringify({
     id: "003", title: "Gamma Project", phase: "DONE", assignedTo: "CLAUDE",
     sessions: 2, repairRounds: 0, blockingFindings: [],

@@ -4,12 +4,7 @@ import dev.fmangoni.forge.git.Git;
 import dev.fmangoni.forge.process.CliRunner;
 import dev.fmangoni.forge.process.ProcResult;
 import dev.fmangoni.forge.process.local.ShellScript;
-import dev.fmangoni.forge.project.Phase;
 import dev.fmangoni.forge.project.RunPaths;
-import dev.fmangoni.forge.review.decision.DecisionStore;
-import dev.fmangoni.forge.review.decision.model.Decision;
-import dev.fmangoni.forge.review.decision.model.ReviewItem;
-import dev.fmangoni.forge.security.model.SecurityReport;
 import dev.fmangoni.forge.spec.model.DeploySettings;
 import dev.fmangoni.forge.spec.model.MonetizationSettings;
 import dev.fmangoni.forge.spec.model.Spec;
@@ -31,7 +26,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 /**
  * Publishes an accepted project by running the deploy command its spec names — only when asked.
@@ -79,19 +73,9 @@ public final class Deployer {
         if (spec.deploy().isEmpty()) {
             return "the spec has no deploy command";
         }
-        if (state == null || state.getPhase() != Phase.ACCEPTED) {
-            return "only an accepted project can be deployed";
-        }
-        if (state.getLastFailure() != null) {
-            return "its last gate did not pass";
-        }
-        SecurityReport security = SecurityReport.load(paths.securityFile());
-        if (security == null) {
-            return "run the security check before deploying it";
-        }
-        String unresolved = unresolvedSecurity(security);
-        if (unresolved != null) {
-            return unresolved;
+        String unready = Readiness.blockedReason(state, paths, "deployed", "deploying");
+        if (unready != null) {
+            return unready;
         }
         List<String> missing = spec.deploy().get().getRequires().stream()
                 .filter(name -> !Executables.onPath(name, environment))
@@ -99,28 +83,6 @@ public final class Deployer {
         if (!missing.isEmpty()) {
             return String.join(", ", missing) + (missing.size() == 1 ? " is" : " are")
                     + " not installed or not on PATH — install it and log in yourself";
-        }
-        return null;
-    }
-
-    /**
-     * Security findings that still stand in the way: unruled, or sent back.
-     *
-     * <p>A ruling saved on an accepted project's report counts. Submissions are written before any
-     * refusal, so a person can rule on a finding a later check turned up without reopening anything.
-     */
-    private String unresolvedSecurity(SecurityReport security) {
-        Map<String, Decision> ruled = DecisionStore.load(paths.decisionsFile()).stream()
-                .collect(Collectors.toMap(Decision::getItemId, d -> d, (a, b) -> b));
-        List<ReviewItem> items = ReviewItem.of(null, null, security);
-        long unruled = items.stream().filter(item -> !ruled.containsKey(item.id())).count();
-        long sentBack = items.stream().filter(item -> ruled.containsKey(item.id())
-                && ruled.get(item.id()).wantsChanges()).count();
-        if (unruled > 0) {
-            return unruled + " security finding(s) need a ruling on the report first";
-        }
-        if (sentBack > 0) {
-            return sentBack + " security finding(s) were sent back and have not been fixed";
         }
         return null;
     }

@@ -2,6 +2,8 @@ package dev.fmangoni.forge.status.model;
 
 import dev.fmangoni.forge.deploy.Deployer;
 import dev.fmangoni.forge.deploy.Deployment;
+import dev.fmangoni.forge.deploy.github.Publication;
+import dev.fmangoni.forge.deploy.github.PublishedBranch;
 import dev.fmangoni.forge.design.DesignOption;
 import dev.fmangoni.forge.design.DesignStudio;
 import dev.fmangoni.forge.gate.RunFile;
@@ -9,7 +11,9 @@ import dev.fmangoni.forge.marketing.KitStatus;
 import dev.fmangoni.forge.project.RunPaths;
 import dev.fmangoni.forge.security.model.SecurityReport;
 import dev.fmangoni.forge.spec.model.Spec;
+import java.io.UncheckedIOException;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.Builder;
 import lombok.Value;
@@ -52,6 +56,23 @@ public class StatusOutward {
 
     /** What the last attempt said, when it did not deploy. */
     private final String deployDetail;
+
+    /** Whether this Forge publishes to GitHub at all, which is what offers the Publish button. */
+    private final boolean githubOn;
+
+    /** {@code none} (never tried), or the last try's outcome: {@code published}, {@code failed} or {@code refused}. */
+    private final String githubState;
+
+    /** The family's repository on GitHub, once there is one. */
+    private final String githubUrl;
+
+    /** This version's branch there, and the commit it is at; blank until it has been pushed. */
+    private final String githubBranch;
+
+    private final String githubCommit;
+
+    /** Why the last try did not publish, in a sentence, or blank. */
+    private final String githubDetail;
 
     /** {@code none}, {@code ready}, {@code problems} or {@code unavailable}. */
     private final String marketingState;
@@ -118,6 +139,36 @@ public class StatusOutward {
                 .build();
     }
 
+    /**
+     * This group with where the version stands on GitHub.
+     *
+     * <p>Read from the family's record, which every version of it shares, and this version's own
+     * branch in it. Shown whether or not publishing is on now: what is on GitHub stays true after
+     * it is switched off. An unreadable record is shown as a failure rather than as nothing.
+     */
+    public StatusOutward withGitHub(RunPaths paths, String id, boolean enabled) {
+        Optional<Publication> found;
+        try {
+            found = Publication.load(paths.githubFile());
+        } catch (UncheckedIOException e) {
+            return toBuilder().githubOn(enabled).githubState(Publication.FAILED)
+                    .githubDetail(paths.githubFile() + " cannot be read: " + e.getCause().getMessage()).build();
+        }
+        if (found.isEmpty()) {
+            return toBuilder().githubOn(enabled).githubState("none").build();
+        }
+        Publication record = found.get();
+        Optional<PublishedBranch> mine = record.branchOf(id);
+        return toBuilder()
+                .githubOn(enabled)
+                .githubState(record.outcome())
+                .githubUrl(record.url() == null ? "" : record.url())
+                .githubBranch(mine.map(PublishedBranch::branch).orElse(""))
+                .githubCommit(mine.map(PublishedBranch::commit).orElse(""))
+                .githubDetail(record.detail())
+                .build();
+    }
+
     /** Every field named: a positional list this long is how a count arrives as a state. */
     public static StatusOutward none() {
         return builder()
@@ -132,6 +183,12 @@ public class StatusOutward {
                 .deployStale(false)
                 .deployBlockedReason("")
                 .deployDetail("")
+                .githubOn(false)
+                .githubState("none")
+                .githubUrl("")
+                .githubBranch("")
+                .githubCommit("")
+                .githubDetail("")
                 .marketingState("none")
                 .marketingProblems(0)
                 .playable(false)

@@ -10,6 +10,6 @@
  *
  * <p><b>Start with:</b> {@code JobPool.submit}, {@code Projects.find}.
  *
- * <p>Depends on: agent, agent.ledger, agent.model, agent.policy, process, project, report, review, spec, spec.model, state.
+ * <p>Depends on: agent, agent.ledger, agent.model, agent.policy, deploy.github, process, project, report, review, spec, spec.model, state.
  */
 package dev.fmangoni.forge.jobs.work;

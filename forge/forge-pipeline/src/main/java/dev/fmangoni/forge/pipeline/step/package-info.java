@@ -10,6 +10,6 @@
  * <p><b>Start with:</b> {@code ScaffoldStep}, {@code PlanStep}, {@code GateStep}, {@code
  * SecurityStep}, {@code ReviewStep}.
  *
- * <p>Depends on: agent.model, brief, feature, gate, pipeline.run, pipeline.turn, plan, project, review, review.decision, review.decision.model, review.feature, review.model, security, security.model, security.osv, spec.model, state.
+ * <p>Depends on: agent.model, brief, deploy.github, feature, gate, pipeline.run, pipeline.turn, plan, project, review, review.decision, review.decision.model, review.feature, review.model, security, security.model, security.osv, spec.model, state.
  */
 package dev.fmangoni.forge.pipeline.step;

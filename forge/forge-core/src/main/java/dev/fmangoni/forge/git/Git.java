@@ -268,6 +268,73 @@ public final class Git {
                 : List.of();
     }
 
+    /** Every commit HEAD was built from, oldest first. */
+    public List<Commit> history() {
+        // A space is a safe separator: a commit id never contains one, and the subject is the rest.
+        return run("log", "--reverse", "--format=%H %s", "HEAD").stdout().lines()
+                .filter(line -> line.length() >= 41 && line.charAt(40) == ' ')
+                .map(line -> new Commit(line.substring(0, 40), line.substring(41)))
+                .toList();
+    }
+
+    /** Whether {@code ancestor} is {@code commit} itself or one of the commits it was built on. */
+    public boolean isAncestor(String ancestor, String commit) {
+        ProcResult result = attempt(List.of("merge-base", "--is-ancestor", ancestor, commit));
+        if (result.exitCode() == 0 || result.exitCode() == 1) {
+            return result.exitCode() == 0;
+        }
+        // Anything else is git saying it could not answer, which is not the same as "no".
+        throw new IllegalStateException("git merge-base failed: " + result.combined());
+    }
+
+    /** The commit {@code commit} was made on top of. */
+    public String parentOf(String commit) {
+        return run("rev-parse", commit + "^").stdout().strip();
+    }
+
+    /** The branch checked out, or empty when HEAD is not on one. */
+    public Optional<String> currentBranch() {
+        ProcResult result = attempt(List.of("symbolic-ref", "--quiet", "--short", "HEAD"));
+        return result.ok() ? Optional.of(result.stdout().strip()) : Optional.empty();
+    }
+
+    public boolean branchExists(String name) {
+        return attempt(List.of("rev-parse", "--verify", "--quiet", "refs/heads/" + name)).ok();
+    }
+
+    /** The commit a branch points at. */
+    public String tipOf(String branch) {
+        return run("rev-parse", "refs/heads/" + branch).stdout().strip();
+    }
+
+    /**
+     * Points a branch at a commit, making it if it is new.
+     *
+     * <p>Never the branch checked out: git refuses that, and this does not ask it to try harder.
+     * Moving a branch loses nothing as long as another branch still holds what it pointed at, which
+     * is for the caller to have made sure of.
+     */
+    public void setBranch(String name, String commit) {
+        run("branch", "-f", name, commit);
+    }
+
+    /** Checks a branch out. Git refuses when that would overwrite uncommitted work. */
+    public void checkout(String branch) {
+        run("checkout", "-q", branch);
+    }
+
+    /**
+     * Forge's guard settings in front of a git command run somewhere other than this class.
+     *
+     * <p>For forge-deploy, which pushes: this package never does. The repository is as untrusted
+     * there as it is here, so the same two settings go first.
+     */
+    public static List<String> untrusted(List<String> args) {
+        List<String> guarded = new ArrayList<>(UNTRUSTED_REPOSITORY);
+        guarded.addAll(args);
+        return guarded;
+    }
+
     private ProcResult run(String... args) {
         ProcResult result = attempt(List.of(args));
         if (!result.ok()) {
@@ -278,8 +345,6 @@ public final class Git {
     }
 
     private ProcResult attempt(List<String> args) {
-        List<String> guarded = new ArrayList<>(UNTRUSTED_REPOSITORY);
-        guarded.addAll(args);
-        return CliRunner.run(GIT, guarded, repo, null, TIMEOUT, logFile);
+        return CliRunner.run(GIT, untrusted(args), repo, null, TIMEOUT, logFile);
     }
 }

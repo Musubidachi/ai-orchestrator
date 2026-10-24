@@ -6,6 +6,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Whether a program can be run by name, looked up the way the shell would.
@@ -13,14 +14,19 @@ import java.util.Map;
  * <p>Checked before Deploy is offered, so the button says "wrangler is not installed" instead of
  * failing a minute into a deploy with a shell error. Only looks: nothing is ever installed.
  */
-final class Executables {
+public final class Executables {
 
     private Executables() {
     }
 
     static boolean onPath(String name, Map<String, String> environment) {
+        return find(name, environment).isPresent();
+    }
+
+    /** Where {@code name} would run from, by the PATH in {@code environment}, if anywhere. */
+    public static Optional<Path> find(String name, Map<String, String> environment) {
         if (name == null || name.isBlank() || name.contains("/") || name.contains("\\")) {
-            return false;
+            return Optional.empty();
         }
         String path = environment.getOrDefault("PATH", environment.getOrDefault("Path", ""));
         boolean windows = System.getProperty("os.name", "").toLowerCase(Locale.ROOT).startsWith("windows");
@@ -34,10 +40,10 @@ final class Executables {
             for (String extension : extensions) {
                 Path candidate = Path.of(dir.strip(), name + (name.toLowerCase(Locale.ROOT).endsWith(extension) ? "" : extension));
                 if (Files.isRegularFile(candidate) && (windows || Files.isExecutable(candidate))) {
-                    return true;
+                    return Optional.of(candidate);
                 }
             }
         }
-        return false;
+        return Optional.empty();
     }
 }

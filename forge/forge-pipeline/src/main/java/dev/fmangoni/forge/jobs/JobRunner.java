@@ -9,6 +9,7 @@ import dev.fmangoni.forge.jobs.button.Narration;
 import dev.fmangoni.forge.jobs.button.Play;
 import dev.fmangoni.forge.jobs.button.SecurityRescan;
 import dev.fmangoni.forge.jobs.button.WalkthroughJob;
+import dev.fmangoni.forge.jobs.publish.PublishJob;
 import dev.fmangoni.forge.jobs.polish.Polish;
 import dev.fmangoni.forge.jobs.polish.PolishView;
 import dev.fmangoni.forge.jobs.queue.JobQueue;
@@ -24,12 +25,14 @@ import dev.fmangoni.forge.jobs.work.LockedElsewhere;
 import dev.fmangoni.forge.jobs.work.Projects;
 import dev.fmangoni.forge.jobs.work.ReportRefresh;
 import dev.fmangoni.forge.project.ForgeHome;
+import dev.fmangoni.forge.project.Phase;
 import dev.fmangoni.forge.project.RunPaths;
 import dev.fmangoni.forge.report.deck.DeckView;
 import dev.fmangoni.forge.review.decision.model.Decision;
 import dev.fmangoni.forge.spec.Wishlist;
 import dev.fmangoni.forge.spec.model.Spec;
 import dev.fmangoni.forge.state.RunState;
+import dev.fmangoni.forge.state.RunStore;
 import dev.fmangoni.forge.status.JobStatus;
 import java.time.Duration;
 import java.util.List;
@@ -69,6 +72,7 @@ public final class JobRunner {
     private final PipelineJobs pipeline;
     private final Reopening reopening;
     private final DeployJob deploys;
+    private final PublishJob publishes;
     private final MarketingJob marketing;
     private final SecurityRescan rescans;
     private final WalkthroughJob walkthroughs;
@@ -104,6 +108,7 @@ public final class JobRunner {
                 this::afterJob);
         this.reopening = new Reopening(projects, pool, pipeline);
         this.deploys = new DeployJob(projects, pool, shutdown);
+        this.publishes = new PublishJob(projects, pool, shutdown);
         this.marketing = new MarketingJob(projects, pool, shutdown, agents);
         this.rescans = new SecurityRescan(projects, pool, shutdown, agents);
         this.walkthroughs = new WalkthroughJob(projects, pool);
@@ -262,16 +267,31 @@ public final class JobRunner {
 
     /** Records what you decided about each outstanding item, and does whatever follows. See {@link Submissions}. */
     public synchronized String decide(String id, List<Decision> decisions) {
-        return submissions.decide(id, decisions, List.of());
+        return decide(id, decisions, List.of());
     }
 
     public synchronized String decide(String id, List<Decision> decisions, List<Decision> features) {
-        return submissions.decide(id, decisions, features);
+        boolean wasApproved = phaseOf(id) == Phase.ACCEPTED;
+        String result = submissions.decide(id, decisions, features);
+        // Approving a version is what puts it on GitHub: the person asked for those to be one act.
+        if (!wasApproved && phaseOf(id) == Phase.ACCEPTED && publishes.enabled()) {
+            return result + "; " + publishes.start(id);
+        }
+        return result;
     }
 
     /** See {@link DeployJob}. */
     public synchronized String deploy(String id) {
         return deploys.start(id);
+    }
+
+    /** See {@link PublishJob}: Publish, pressed to try again or to put up versions approved before it existed. */
+    public synchronized String publish(String id) {
+        return publishes.start(id);
+    }
+
+    private Phase phaseOf(String id) {
+        return RunStore.survey(RunPaths.under(home.runs(), id).stateFile()).map(RunState::getPhase).orElse(null);
     }
 
     /** See {@link MarketingJob}. */

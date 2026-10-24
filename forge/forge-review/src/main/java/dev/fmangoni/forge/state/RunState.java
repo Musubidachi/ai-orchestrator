@@ -50,6 +50,16 @@ public class RunState {
     /** Commit of the scaffold, before the agent touched anything. The review diffs against this. */
     private String baselineCommit;
 
+    /**
+     * The commit this project's own work ends at, which its branch on GitHub points to.
+     *
+     * <p>Taken when a run ends at DONE, while the repository's lock still keeps every other project
+     * out. The projects of a family take turns in one repository, so the newest commit there can
+     * belong to a later enhancement; this one cannot. Null for a project that finished before it
+     * was recorded, whose tip forge-deploy reads back out of the history instead.
+     */
+    private String finishedCommit;
+
     /** Repair rounds spent since the project last started afresh: reopening or polishing resets it. */
     private int repairRounds;
 
