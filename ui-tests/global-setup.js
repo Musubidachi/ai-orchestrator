@@ -154,6 +154,9 @@ ${title}.
   // exactly as the other tests expect; only its report page is used.
   const held = path.join(root, "runs", "004");
   fs.mkdirSync(held, { recursive: true });
+  // A project that has begun has a repository: without one Forge reads it as no longer on this
+  // machine, which is a card of its own.
+  fs.mkdirSync(path.join(held, "repo", ".git"), { recursive: true });
   const blocking = {
     severity: "blocking", file: "src/Docx.java", summary: "text around tables comes out of order",
     detail: "paragraphs() skips table cells and appends them at the end",

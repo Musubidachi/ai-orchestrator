@@ -10,6 +10,6 @@
  * <p><b>Start with:</b> {@code DeployJob.start}, {@code MarketingJob.start}, {@code
  * SecurityRescan.start}, {@code Reopening}.
  *
- * <p>Depends on: agent, deploy, deploy.shelf, gate, git, jobs.queue, jobs.stop, jobs.work, marketing, pipeline.run, pipeline.step, project, review, review.decision.model, review.model, security, security.osv, spec.model, state, walkthrough.
+ * <p>Depends on: agent, deploy, gate, git, jobs.queue, jobs.stop, jobs.work, marketing, pipeline.run, pipeline.step, project, review, review.decision.model, review.model, security, security.osv, spec.model, state, walkthrough.
  */
 package dev.fmangoni.forge.jobs.button;

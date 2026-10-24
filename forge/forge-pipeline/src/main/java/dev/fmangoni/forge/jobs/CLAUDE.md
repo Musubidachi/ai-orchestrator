@@ -39,6 +39,10 @@ are not synchronized themselves.
   phase counts before the flag is written. Draining also stops each orchestrator between steps,
   so no new turn starts in the gap the shutdown is waiting for.
 - **A submission is saved before anything can refuse it**, and features alone never accept.
+- **Nothing runs for a project whose repository is not on this machine**: shelved on GitHub, or
+  begun with its repository gone (`Eligibility.notHere`). Start, the scheduler and every reopening
+  button ask it first, before even a finished project's early return, because a start would work in
+  an empty folder or build the project again from nothing. The card says which, in its own group.
 
 ## Tests
 

@@ -133,7 +133,7 @@ public final class Scheduler {
         List<String> claimedRepos = new ArrayList<>();
 
         for (Spec spec : Ranking.runOrder(wishlist)) {
-            if (wishlist.isOrphan(spec) || rules.shelvedWait(spec) != null || !rules.parentAccepted(spec)
+            if (wishlist.isOrphan(spec) || rules.notHere(spec) != null || !rules.parentAccepted(spec)
                     || rules.familyWait(spec) != null) {
                 continue;
             }

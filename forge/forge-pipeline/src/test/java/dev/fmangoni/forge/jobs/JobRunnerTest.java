@@ -60,6 +60,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
@@ -168,6 +169,23 @@ class JobRunnerTest {
         state.setPhase(phase);
         state.setAssignedTo(assigned);
         RunStore.save(paths.stateFile(), state);
+        hasRepository(id, phase);
+    }
+
+    /**
+     * The repository a project that has begun has: made at its scaffold, before it leaves NEW, in
+     * its family's run folder. Without it Forge rightly reads the project as no longer here.
+     */
+    private void hasRepository(String id, Phase phase) {
+        if (phase == Phase.NEW) {
+            return;
+        }
+        String family = id.contains(".") ? id.substring(0, id.indexOf('.')) : id;
+        try {
+            Files.createDirectories(RunPaths.under(home.runs(), family).repo().resolve(".git"));
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     private RunState stateOf(String id) {
@@ -299,10 +317,39 @@ class JobRunnerTest {
 
         assertEquals("shelved on GitHub as shelf/001: resume it to work on it here", jobs.start("001"),
                 "a finished project included: Start is refused before anything else is asked");
-        assertEquals("shelved on GitHub: resume it to work on it here", jobs.reopen("001"));
-        assertEquals("shelved on GitHub: resume it to work on it here", jobs.recheck("001"));
+        assertEquals("shelved on GitHub as shelf/001: resume it to work on it here", jobs.reopen("001"));
+        assertEquals("shelved on GitHub as shelf/001: resume it to work on it here", jobs.recheck("001"));
         assertEquals(Phase.DONE, stateOf("001").getPhase(), "and its state was not touched");
         assertEquals("shelf/001", statusOf("001").outward().getShelvedBranch());
+    }
+
+    @Test
+    @DisplayName("a project whose repository is gone is never worked on, and says so, and where it is published")
+    void aMissingRepositoryIsSaid() throws IOException {
+        // Deleted by hand, moved, or half-deleted by a shelf: a start would work in an empty folder,
+        // or build the project again from nothing.
+        finished("001", Phase.PARKED);
+        Path repo = RunPaths.under(home.runs(), "001").repo();
+        try (Stream<Path> files = Files.walk(repo)) {
+            for (Path path : files.sorted(Comparator.reverseOrder()).toList()) {
+                Files.delete(path);
+            }
+        }
+        String gone = "its repository is not on this machine (runs/001/repo is missing), "
+                + "so nothing here can work on it until it is back";
+
+        assertEquals(gone, jobs.start("001"));
+        assertEquals(gone, jobs.reopen("001"));
+        assertEquals(gone, jobs.recheck("001"));
+        assertEquals(Phase.PARKED, stateOf("001").getPhase(), "and its state was not touched");
+        assertTrue(statusOf("001").outward().isRepoMissing());
+
+        Files.writeString(RunPaths.under(home.runs(), "001").githubFile(), """
+                {"repository":"fabrizio/alpha","url":"https://github.com/fabrizio/alpha",
+                 "establishedAt":"2026-10-24T00:00:00Z","branches":[],"outcome":"published","detail":""}
+                """);
+        assertEquals("its repository is not on this machine (runs/001/repo is missing): its approved versions "
+                + "are on GitHub at https://github.com/fabrizio/alpha", jobs.start("001"));
     }
 
     @Test
@@ -1045,6 +1092,7 @@ class JobRunnerTest {
         state.setLastFailure(new CommandResult("recordings: 1 feature(s) unfilmed", 1,
                 "Report customization — no recording was produced", false, Duration.ZERO, ""));
         RunStore.save(paths.stateFile(), state);
+        hasRepository(id, Phase.PARKED);
         DecisionStore.save(paths.featuresFile(), List.of(approve("Report customization"),
                 approve("Report export"), approve("Monthly summary")));
         Clips.write(paths.repo().resolve(new Feature("Report export", "").recordingPath(".webm")));
@@ -1981,6 +2029,7 @@ class JobRunnerTest {
         state.setAssignedTo(AgentKind.CLAUDE);
         state.setRepairRounds(6);
         RunStore.save(paths.stateFile(), state);
+        hasRepository("001", Phase.PARKED);
         // Blocked on quota so the reopened project records its new phase and then waits.
         quota.record(AgentKind.CLAUDE, Instant.now().plus(2, ChronoUnit.HOURS), "hit your limit");
 
@@ -2032,6 +2081,7 @@ class JobRunnerTest {
         state.setBaselineCommit(baseline);
         state.setReviewRepairUsed(true);
         RunStore.save(paths.stateFile(), state);
+        hasRepository(id, phase);
     }
 
     @Test
@@ -2242,6 +2292,7 @@ class JobRunnerTest {
         state.setAssignedTo(AgentKind.CLAUDE);
         state.setBaselineCommit("abc123");
         RunStore.save(paths.stateFile(), state);
+        hasRepository("001", Phase.SUSPENDED);
 
         quota.record(AgentKind.CODEX, Instant.now().plus(2, ChronoUnit.HOURS), "out");
 

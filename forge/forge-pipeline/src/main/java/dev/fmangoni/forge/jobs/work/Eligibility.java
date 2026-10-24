@@ -14,6 +14,7 @@ import dev.fmangoni.forge.spec.model.Spec;
 import dev.fmangoni.forge.state.RunState;
 import dev.fmangoni.forge.state.RunStore;
 import java.io.UncheckedIOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
@@ -89,20 +90,51 @@ public final class Eligibility {
                 .orElse(false);
     }
 
+    /** See {@link #notHere(Path, Spec)}. */
+    public String notHere(Spec spec) {
+        return notHere(runsDir, spec);
+    }
+
     /**
-     * Why nothing of a family may run while it is shelved on GitHub, or null.
+     * Why nothing may run for a project whose repository is not on this machine, or null.
      *
-     * <p>Its repository is not here, so any start would build it again from nothing. An unreadable
-     * mark is a reason too: not being able to tell is never taken as "not shelved".
+     * <p>Shelved on GitHub, or simply gone: deleted by hand, moved, or left half-deleted by a shelf
+     * that could not remove every file. Either way a start would work in an empty folder, or build
+     * the project again from nothing, so nothing starts and the card says why. Gone means begun and
+     * gone: a project that has not started yet has no repository, and that is how it should be. So
+     * the repository is owed once this version or its family's first has begun; an improvement whose
+     * family never started is waiting for something else, and should say what. An unreadable shelf
+     * mark is a reason too: not being able to tell is never taken as "here".
      */
-    public String shelvedWait(Spec spec) {
+    public static String notHere(Path runsDir, Spec spec) {
         try {
-            return Shelver.markOf(runsDir, spec.id())
-                    .map(mark -> "shelved on GitHub as " + mark.branch() + ": resume it to work on it here")
-                    .orElse(null);
+            Optional<String> shelved = Shelver.markOf(runsDir, spec.id())
+                    .map(mark -> "shelved on GitHub as " + mark.branch() + ": resume it to work on it here");
+            if (shelved.isPresent()) {
+                return shelved.get();
+            }
         } catch (UncheckedIOException e) {
             return "its shelf mark cannot be read: " + e.getMessage();
         }
+        String family = Branches.familyOf(spec.id());
+        Path repo = RunPaths.under(runsDir, family).repo();
+        if (!(begun(runsDir, spec.id()) || begun(runsDir, family)) || Files.isDirectory(repo.resolve(".git"))) {
+            return null;
+        }
+        String where = "its repository is not on this machine (runs/" + family + "/repo is missing)";
+        try {
+            return Publication.load(RunPaths.under(runsDir, family).githubFile())
+                    .filter(Publication::established)
+                    .map(record -> where + ": its approved versions are on GitHub at " + record.url())
+                    .orElse(where + ", so nothing here can work on it until it is back");
+        } catch (UncheckedIOException e) {
+            return where;
+        }
+    }
+
+    private static boolean begun(Path runsDir, String id) {
+        return RunStore.survey(RunPaths.under(runsDir, id).stateFile())
+                .map(state -> state.getPhase() != Phase.NEW).orElse(false);
     }
 
     /**

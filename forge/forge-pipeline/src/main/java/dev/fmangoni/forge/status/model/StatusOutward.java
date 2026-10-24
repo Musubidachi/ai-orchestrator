@@ -9,10 +9,13 @@ import dev.fmangoni.forge.design.DesignOption;
 import dev.fmangoni.forge.design.DesignStudio;
 import dev.fmangoni.forge.gate.RunFile;
 import dev.fmangoni.forge.marketing.KitStatus;
+import dev.fmangoni.forge.project.Phase;
 import dev.fmangoni.forge.project.RunPaths;
 import dev.fmangoni.forge.security.model.SecurityReport;
 import dev.fmangoni.forge.spec.model.Spec;
+import dev.fmangoni.forge.state.RunState;
 import java.io.UncheckedIOException;
+import java.nio.file.Files;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -82,6 +85,12 @@ public class StatusOutward {
     private final String shelvedUrl;
 
     private final String shelvedAt;
+
+    /**
+     * Whether the project has begun but its repository is not on this machine, and it is not
+     * shelved: deleted by hand, moved, or left behind by a shelf that could not delete everything.
+     */
+    private final boolean repoMissing;
 
     /** {@code none}, {@code ready}, {@code problems} or {@code unavailable}. */
     private final String marketingState;
@@ -195,6 +204,16 @@ public class StatusOutward {
         }
     }
 
+    /**
+     * This group with whether the repository is here, read after {@link #withShelf}: a shelved
+     * family's repository is away on purpose, and its card says that instead.
+     */
+    public StatusOutward withPresence(RunPaths paths, RunState state) {
+        boolean begun = state.getPhase() != Phase.NEW;
+        boolean missing = begun && shelvedBranch.isBlank() && !Files.isDirectory(paths.repo().resolve(".git"));
+        return missing ? toBuilder().repoMissing(true).build() : this;
+    }
+
     /** Every field named: a positional list this long is how a count arrives as a state. */
     public static StatusOutward none() {
         return builder()
@@ -218,6 +237,7 @@ public class StatusOutward {
                 .shelvedBranch("")
                 .shelvedUrl("")
                 .shelvedAt("")
+                .repoMissing(false)
                 .marketingState("none")
                 .marketingProblems(0)
                 .playable(false)

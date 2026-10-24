@@ -175,6 +175,25 @@ class EligibilityTest {
         assertNull(rules().familyWait(spec("003.3", "003")));
     }
 
+    // ------------------------------------------------------- the repository not here
+
+    @Test
+    @DisplayName("a project that has begun without its repository is not here; one never started has none to miss")
+    void aMissingRepositoryIsNotHere() throws IOException {
+        parentIn("003", Phase.ACCEPTED);
+        String gone = "its repository is not on this machine (runs/003/repo is missing), "
+                + "so nothing here can work on it until it is back";
+
+        assertEquals(gone, rules().notHere(spec("003", null)));
+        assertEquals(gone, rules().notHere(spec("003.4", "003")), "an enhancement works in its family's");
+        assertNull(rules().notHere(spec("009", null)), "never started, so it has no repository yet");
+        assertNull(rules().notHere(spec("009.1", "009")),
+                "nor has its family: it is waiting for something else, and should say what");
+
+        Files.createDirectories(RunPaths.under(runs, "003").repo().resolve(".git"));
+        assertNull(rules().notHere(spec("003", null)));
+    }
+
     // ------------------------------------------------------- a fresh run
 
     @Test

@@ -1101,6 +1101,10 @@ test("a shelved project says where it went, and offers only to bring it back", a
   });
   await page.reload();
 
+  // Seen without opening anything: its own group, and a pill that says it.
+  await expect(page.locator("#row-003 .stage .pill")).toHaveText("On GitHub only");
+  await expect(page.locator(".grouphead .gt", { hasText: "Not on this machine" })).toBeVisible();
+
   const gamma = await open(page, "003");
   const line = gamma.locator(".shelfline");
   await expect(line).toContainText("Shelved on GitHub as shelf/003");
@@ -1112,6 +1116,30 @@ test("a shelved project says where it went, and offers only to bring it back", a
   page.once("dialog", dialog => dialog.accept());
   await gamma.locator(".unshelve").click();
   await expect.poll(() => resumed).toEqual({ id: "003" });
+});
+
+test("a project whose repository is gone says so at a glance, offers nothing that needs it, and says where it is published", async ({ page }) => {
+  await page.route("**/api/jobs", async (route) => {
+    const response = await route.fetch();
+    const jobs = await response.json();
+    jobs.filter(j => j.id === "003").forEach(j => {
+      j.repoMissing = true;
+      j.githubUrl = "https://github.com/someone/gamma-project";
+    });
+    await route.fulfill({ response, json: jobs });
+  });
+  await page.reload();
+
+  await expect(page.locator("#row-003 .stage .pill")).toHaveText("Repository missing");
+  await expect(page.locator(".grouphead .gt", { hasText: "Not on this machine" })).toBeVisible();
+
+  const gamma = await open(page, "003");
+  const line = gamma.locator(".shelfline");
+  await expect(line).toContainText("Its repository is not on this machine: runs/003/repo is missing");
+  await expect(line.locator("a")).toHaveAttribute("href", "https://github.com/someone/gamma-project");
+  await expect(gamma.locator(".act-btn"), "nothing that needs the repository is offered").toBeHidden();
+  await expect(gamma.locator(".shelve")).toBeHidden();
+  await expect(gamma.locator(".unshelve"), "and no pretend way back: it is not a shelf").toBeHidden();
 });
 
 test("with publishing on, a project can be shelved once it has said what will be deleted", async ({ page }) => {

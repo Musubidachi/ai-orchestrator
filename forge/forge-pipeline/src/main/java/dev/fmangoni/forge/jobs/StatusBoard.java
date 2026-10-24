@@ -69,6 +69,7 @@ final class StatusBoard {
         String deployBlocked = running ? "it is running" : DeployJob.deployerFor(spec, paths).blockedReason(state);
         return status.withOutward(status.outward().withMarketing(paths).withDeploy(spec, paths, deployBlocked)
                 .withGitHub(paths, state.getId(), Publisher.enabled(projects.home().root()))
-                .withShelf(paths, state.getId()));
+                .withShelf(paths, state.getId())
+                .withPresence(paths, state));
     }
 }

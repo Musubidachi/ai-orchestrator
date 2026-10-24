@@ -339,7 +339,8 @@
     #jobs[data-filter=you] .job:not([data-kinds~=you]),
     #jobs[data-filter=waiting] .job:not([data-kinds~=waiting]),
     #jobs[data-filter=working] .job:not([data-kinds~=working]),
-    #jobs[data-filter=accepted] .job:not([data-kinds~=accepted]){display:none}
+    #jobs[data-filter=accepted] .job:not([data-kinds~=accepted]),
+    #jobs[data-filter=away] .job:not([data-kinds~=away]){display:none}
   }
 </style>
 </head>
@@ -1192,8 +1193,16 @@ function needsYou(j) {
  * The table's grouping: what each project is waiting for. Five projects all stuck behind one
  * vendor's quota read as one heading, rather than as the same sentence on five rows.
  */
+/* Shelved on GitHub, or begun with its repository gone: either way, not something to work on here. */
+function notHere(j) {
+  return !!j.shelvedBranch || !!j.repoMissing;
+}
+
 function groupOf(j) {
   if (j.running) return {key: "working", title: "Working", tone: "pass"};
+  // Before "needs you": a shelved project is DONE or ACCEPTED as far as its state goes, and would
+  // otherwise sit among the things waiting on you with nothing here to act on.
+  if (notHere(j)) return {key: "away", title: "Not on this machine", tone: "wait"};
   if (needsYou(j)) return {key: "you", title: "Needs you", tone: "fail"};
   if (j.phase === "ACCEPTED") return {key: "accepted", title: "Accepted", tone: "todo"};
   // Before anything about suspension: a suspended project the queue could start now has nothing
@@ -1211,18 +1220,20 @@ function groupOf(j) {
 
 function groupOrder(key) {
   return key === "you" ? 0 : key === "working" ? 1 : key.startsWith("wait:") ? 2
-    : key === "queued" ? 3 : key === "paused" ? 4 : key === "new" ? 5 : 6;
+    : key === "queued" ? 3 : key === "paused" ? 4 : key === "new" ? 5 : key === "away" ? 6 : 7;
 }
 
 /* Which phone filter a group answers to. */
 function kindOf(key) {
   return key.startsWith("wait:") ? "waiting"
-    : ["you", "working", "accepted"].includes(key) ? key : "other";
+    : ["you", "working", "accepted", "away"].includes(key) ? key : "other";
 }
 
 /* The short word on a project's line, and its colour. */
 function stageOf(j) {
   if (j.running) return {text: "Working", tone: "pass"};
+  if (j.shelvedBranch) return {text: "On GitHub only", tone: "todo"};
+  if (j.repoMissing) return {text: "Repository missing", tone: "fail"};
   if (heldForYou(j)) return {text: "Held for you", tone: "fail"};
   switch (j.phase) {
     case "DONE": return {text: "Finished", tone: "accent"};
@@ -1792,14 +1803,27 @@ function fillDetail(card, d, j) {
   const shelve = q(".shelve");
   const unshelve = q(".unshelve");
   const shelved = !!j.shelvedBranch;
+  const missing = !!j.repoMissing;
   const family = j.id.split(".")[0];
-  shelfLine.hidden = !shelved;
+  shelfLine.hidden = !shelved && !missing;
   unshelve.hidden = !shelved || j.running;
-  shelve.hidden = shelved || j.running || !j.githubOn || j.phase === "NEW";
-  if (shelved) {
+  shelve.hidden = shelved || missing || j.running || !j.githubOn || j.phase === "NEW";
+  if (shelved || missing) {
     d.querySelectorAll(".groups button, .groups a, .move-acts button, .move-acts a").forEach(control => {
       if (control !== unshelve) control.hidden = true;
     });
+  }
+  if (missing) {
+    // Not offered a way back: rebuilding from what was published is not the same as resuming, and a
+    // button that pretended otherwise would be worse than saying where the published work is.
+    const published = j.githubUrl
+      ? ` Its approved versions are on GitHub: <a href="${esc(j.githubUrl)}" target="_blank" rel="noopener">`
+        + `${esc(j.githubUrl.replace("https://github.com/", ""))}</a>.`
+      : "";
+    shelfLine.innerHTML = `Its repository is not on this machine: runs/${esc(family)}/repo is missing, `
+      + `so nothing here will run until it is back.${published}`;
+  }
+  if (shelved) {
     const branchPath = j.shelvedBranch.split("/").map(encodeURIComponent).join("/");
     const where = j.shelvedUrl
       ? `<a href="${esc(j.shelvedUrl)}/tree/${branchPath}" target="_blank" rel="noopener">${esc(j.shelvedBranch)}</a>`
@@ -2017,7 +2041,7 @@ function layout(jobs) {
 }
 
 const TILES = [["all", "all"], ["you", "needs you"], ["waiting", "waiting"],
-               ["working", "working"], ["accepted", "accepted"]];
+               ["working", "working"], ["accepted", "accepted"], ["away", "not here"]];
 
 /* The phone's filters, with a count on each. The stylesheet applies them only on a narrow screen. */
 function tiles(groups, total) {
