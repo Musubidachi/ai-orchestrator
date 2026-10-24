@@ -31,6 +31,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -55,6 +56,7 @@ class UiServerTest {
     private String wired;
     private Path runs;
     private QuotaLedger quota;
+    private JobRunner runner;
 
     private final HttpClient http = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(5)).build();
@@ -82,10 +84,26 @@ class UiServerTest {
                 new EnumMap<>(AgentKind.class);
         Files.writeString(root.resolve("house-rules.md"), "# House rules\n");
         quota = new QuotaLedger(root.resolve("quota.json"));
-        JobRunner runner = new JobRunner(
+        runner = new JobRunner(
                 new ForgeHome(root),
                 new Agents(map), 4, quota);
         wired = new UiServer(wishlist, runs, 0, null, runner, quota).start();
+    }
+
+    /**
+     * Waits for any job a test started to finish, before the temporary directory is deleted.
+     *
+     * <p>An answer reaching the test is not its job finishing. A walkthrough answers at once and
+     * records its {@code .wav} on a worker, a speech subprocess of a few seconds, which then rewrites
+     * the report. Under load that was sometimes still writing into {@code runs\001} when JUnit came
+     * to delete it, and a test whose every assertion had passed failed in its teardown.
+     */
+    @AfterEach
+    void awaitJobs() throws InterruptedException {
+        for (int i = 0; i < 1200 && !runner.settled(); i++) {
+            Thread.sleep(50);
+        }
+        assertTrue(runner.settled(), "a job was still running a minute after the test ended");
     }
 
     private HttpResponse<String> get(String path) throws Exception {

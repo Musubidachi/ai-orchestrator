@@ -137,8 +137,14 @@ public final class JobRunner {
         return queue.reviewsFirst(wishlist);
     }
 
-    /** Whether every job has finished, including the writing it does after leaving the queue. */
-    boolean settled() {
+    /**
+     * Whether every job has finished, including the writing it does after leaving the queue.
+     *
+     * <p>Public for whoever has to wait for quiet, such as a test about to delete the directory the
+     * jobs write into. A project stops showing as running before its report is rewritten, so
+     * waiting on that is not enough.
+     */
+    public boolean settled() {
         return pool.settled();
     }
 
