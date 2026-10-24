@@ -40,7 +40,7 @@ class RunFileBriefTest {
     @Test
     @DisplayName("once the file is there, the note is gone and the brief is exactly what it was")
     void nothingOnceItExists() throws IOException {
-        Files.writeString(repo.resolve(RunFile.NAME), "@echo off\ncall npm run dev\n");
+        Files.writeString(repo.resolve(RunFile.NAME), "@echo off\nnode node_modules/vite/bin/vite.js\n");
 
         assertEquals("", RunFileBrief.ifOwed(repo));
     }

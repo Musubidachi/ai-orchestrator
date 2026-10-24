@@ -38,7 +38,7 @@ class GateTest {
             cd /d "%~dp0"
             if not exist node_modules call npm ci || goto :failed
             start "" http://127.0.0.1:5173/
-            call npm run dev
+            node node_modules/vite/bin/vite.js --host 127.0.0.1 --port 5173 --strictPort
             exit /b 0
             :failed
             echo Could not install.
@@ -251,11 +251,50 @@ class GateTest {
     }
 
     @Test
+    @DisplayName("a run file that starts its server through npm is refused: closing the window would leave it running")
+    void aServerStartedThroughNpmIsRefused() throws IOException {
+        // 003's: Ctrl+C was answered by a batch file in between, and Vite kept the port after the
+        // window closed. The skill said not to, but only for run files written after it.
+        Files.writeString(repo.resolve(RunFile.NAME), """
+                @echo off
+                if not exist node_modules call npm.cmd ci --no-fund || goto failed
+                if not exist dist\\index.html call npm.cmd run build || goto failed
+                call npm.cmd run preview -- --host 127.0.0.1 --port 4791 --strictPort --open
+                """);
+
+        GateResult result = run(List.of("echo built"), List.of());
+
+        assertFalse(result.passed());
+        String output = result.firstFailure().orElseThrow().output();
+        assertTrue(output.contains("starts its server through a package manager, on line 4"), output);
+        assertTrue(output.contains("node \"node_modules\\vite\\bin\\vite.js\" preview"), "says what to write instead: " + output);
+    }
+
+    @Test
+    @DisplayName("only a server started through a package manager is refused: installing, building and talking about it are not")
+    void onlyServersThroughAPackageManagerAreRefused() {
+        for (String server : List.of(
+                "call npm run dev", "npm.cmd run preview -- --port 4175", "@call npm start", "npm run-script serve",
+                "pnpm dev", "yarn run start", "call yarn.cmd preview", "npx vite --port 5173", "npx -y serve dist",
+                "npx http-server dist", "start \"\" cmd /c npm run dev", "cmd /c \"npm run watch\"")) {
+            assertTrue(RunFile.startsAServerThroughAPackageManager(server), server);
+        }
+        for (String fine : List.of(
+                "call npm.cmd ci --no-fund", "call npm install", "call npm run build", "npm run test",
+                "npx vite build", "npx playwright install chromium",
+                "node \"node_modules\\vite\\bin\\vite.js\" preview --host 127.0.0.1 --port 4175",
+                "rem never call npm run preview here", ":: npm run dev used to be here",
+                "echo Or run npm start yourself.", "set SCRIPT=npm-start.log")) {
+            assertFalse(RunFile.startsAServerThroughAPackageManager(fine), fine);
+        }
+    }
+
+    @Test
     @DisplayName("a run file saved in the Windows ANSI code page is read, not refused as unreadable")
     void aRunFileInTheAnsiCodePageIsRead() throws IOException {
         // What PowerShell's Set-Content writes. The em dash is the single byte 0x97, which is not
         // UTF-8, and reading the file as UTF-8 threw: the gate then said every line was a comment.
-        Files.write(repo.resolve(RunFile.NAME), "@echo off\r\nrem Timesheet Report \u2014 starts the game\r\ncall npm run dev\r\n"
+        Files.write(repo.resolve(RunFile.NAME), "@echo off\r\nrem Timesheet Report \u2014 starts the game\r\nnode node_modules/vite/bin/vite.js\r\n"
                 .getBytes("windows-1252"));
 
         assertTrue(run(List.of("echo built"), List.of()).passed());

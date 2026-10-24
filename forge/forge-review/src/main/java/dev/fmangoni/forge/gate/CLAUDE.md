@@ -22,9 +22,14 @@ evidence the spec names.
   pressed Approve New Look, which sets the old one aside as `look-reference.before-<id>.png`
   (`LookCheck.retire`). A gate stopped only by this check is held for the person at once
   (`GateStep`): no agent can reach the reference, so another session could only undo work that
-  may have been asked for, or change nothing.
-- **Every project owes a `run.bat`** (`RunFile`). The gate checks it exists and starts something. It
-  never runs it: it opens a window and does not exit. Whether it works is for the person.
+  may have been asked for, or change nothing. Except while an extra is being added
+  (`RunState.extraKind`): its brief is to leave the default look as it is, so a changed one goes
+  back to the agent like any other failing check.
+- **Every project owes a `run.bat`** (`RunFile`). The gate checks it exists, starts something, and
+  does not start a server through npm, npx, yarn or pnpm: every batch file in between answers
+  Ctrl+C for itself, so the server outlived its window and kept its port (003). Installing and
+  building through npm are fine. It never runs the file: it opens a window and does not exit.
+  Whether it works is for the person.
 
 ## Tests
 
