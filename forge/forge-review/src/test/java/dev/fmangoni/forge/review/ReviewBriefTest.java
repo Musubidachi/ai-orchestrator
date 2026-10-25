@@ -65,4 +65,18 @@ class ReviewBriefTest {
         assertTrue(brief.startsWith("Review this change. Do not modify any files, and do not run any commands"),
                 "still read-only: " + brief);
     }
+
+    @Test
+    @DisplayName("built to the person's own pictures with no design picked, each picture is compared with its own screen")
+    void ownPicturesWithNoPickedDesign() {
+        // Twin Thrones: every screen built from a mockup, with no vendor's redrawing in between.
+        String brief = brief(ReviewBrief.OWN_PICTURES, PICTURES);
+
+        assertTrue(brief.contains("This change builds screens to the person's own pictures"), brief);
+        assertTrue(brief.contains("`artifacts/polish-after-<screen>.png`"), brief);
+        assertTrue(brief.contains("the stand-in itself is not a defect"), "art drawn later is not raised: " + brief);
+        assertTrue(brief.contains("\"compared_with_design\": true"), brief);
+        assertFalse(brief.contains(ReviewBrief.PICKED_DESIGN), "there is no picked design to open: " + brief);
+        assertTrue(brief.contains("except to open the files named"), "allowed to open the pictures: " + brief);
+    }
 }

@@ -148,7 +148,52 @@ public class ReviewBrief {
         if (design == null || design.isBlank()) {
             return "";
         }
+        if (OWN_PICTURES.equals(design)) {
+            return picturesSection();
+        }
         return designSection(design, ownPictures(spec));
+    }
+
+    /**
+     * The design a spec names, {@code design: attached pictures}, when the look is the person's own
+     * pictures and no design was picked: a game built screen by screen from a set of mockups. Held to
+     * them as a picked design is, but with no vendor's redrawing in between.
+     */
+    public final String OWN_PICTURES = "attached pictures";
+
+    /** The comparison for a version built to the person's own pictures, one screen at a time. */
+    private String picturesSection() {
+        return """
+
+                ## The look it was asked for
+
+                This change builds screens to the person's own pictures, named in the spec below as \
+                `[image: <path>]`; each is at that path in the repository. They are the look being \
+                asked for. For each picture, the builder saved a screenshot of the same screen in the \
+                same state, `artifacts/polish-after-<screen>.png`. Open every picture and its \
+                screenshot — reading these files is allowed — and compare them the way the person will \
+                when they open the program on their phone.
+
+                The artwork is part of the look: characters, creatures, buildings, scenery, icons and \
+                illustrations must be drawn at the picture's level of detail, not replaced with \
+                simpler shapes. So are its badges, labels, ribbons and decorations, the shapes of its \
+                panels and buttons, its colours and its type. Raise each thing a picture shows that \
+                the result leaves out or visibly simplifies as blocking, with `stakes` "cosmetic", \
+                and say in `plain` what the person would see missing. Where the spec says some \
+                artwork is drawn later and a stand-in holds its place for now, the stand-in itself is \
+                not a defect, but its place, size and framing are compared like everything else. \
+                Something a picture shows that the program does not actually have is not a defect, \
+                and nor are small differences of spacing or wording. Motion a still picture implies \
+                is not asked for unless the spec asks for it.
+
+                A picture with no screenshot of its screen, or a screenshot that shows some other \
+                screen or state, is blocking: without it, nobody has looked.
+
+                Say in your reply whether you did this: add `"compared_with_design": true` beside \
+                `findings` once you have opened every picture and screenshot and compared them, and \
+                `"compared_with_design": false` if you could not open them. A review that did not \
+                compare is not accepted as one, so do not write true without having looked.
+                """;
     }
 
     /**

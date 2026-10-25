@@ -53,6 +53,8 @@ front of every implementation turn, which is what makes the cheaper rung reasona
   a review leaves nothing standing, so every review in its repair loop compares with the picture.
   The reviewer must reply `"compared_with_design": true`; one that does not is passed over for the
   next reviewer, and if none compares, the project is held for the person, never DONE.
+  A spec naming `design: attached pictures` (`ReviewBrief.OWN_PICTURES`) is held to the person's own
+  pictures the same way, with no design picked: each picture against its own screen's screenshot.
 - **A clip moving between names parks.** When a gate finds a clip that was missing now made and one
   that was made now missing (`MissingClips.moved`), it is one feature approved under two names, and
   another session would only move it back.
