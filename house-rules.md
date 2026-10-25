@@ -60,6 +60,17 @@ pointed at a port nobody launched). Forge runs acceptance with `CI=true`, so a s
 usual way starts its own; one that reuses whatever is already listening may be testing another
 project, or your own build from an hour ago.
 
+**A port in use is never a reason to stop what holds it.** The person you are building for plays the
+program while you work: their `run.bat` server holds its port for as long as their window is open.
+A process you did not start is not yours, whatever port it holds and whatever its command line looks
+like, and stopping it shuts the game in front of them. That has happened here: an agent found the
+person's game on the port its tests wanted, read that the process had started before its own work,
+and stopped it anyway. When a port you want is busy, use another one.
+
+So the test suite never uses the port `run.bat` serves on. Let it take a free port of its own (port 0,
+or one found free when the suite starts) and pass that to the tests, so the suite and the person's
+game can run at the same time.
+
 ## Security
 
 After the acceptance commands pass, Forge checks the project for security problems: credentials

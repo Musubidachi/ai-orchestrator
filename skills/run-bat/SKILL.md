@@ -28,7 +28,9 @@ JDK and Maven, Node and npm, or Python:
 
 Pick a port no other project uses by default (not 4173, which every Vite project's tests reach for),
 and pass `--strictPort` or its equivalent so a busy port is an error you can read, not a silent
-move to another one the browser was not opened on.
+move to another one the browser was not opened on. This port belongs to the person's `run.bat` and
+nothing else: the test suite takes a free port of its own, so the person can play while you test,
+and a server already on this port is theirs, never yours to stop.
 
 ## Templates
 
