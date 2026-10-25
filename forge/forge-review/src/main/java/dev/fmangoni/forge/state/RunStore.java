@@ -8,8 +8,10 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import lombok.experimental.UtilityClass;
 
 /**
@@ -38,15 +40,28 @@ public class RunStore {
         }
     }
 
-    /** For callers that only look: an unreadable file is reported and left out, not thrown. */
+    /**
+     * For callers that only look: an unreadable file is reported and left out, not thrown.
+     *
+     * <p>Reported once until it changes. The dashboard surveys every project every few seconds, and
+     * one damaged file filled the log with the same two lines hundreds of times a minute, burying
+     * everything else. The card says it too, for as long as it lasts.
+     */
     public Optional<RunState> survey(Path file) {
         try {
-            return load(file);
+            Optional<RunState> state = load(file);
+            REPORTED.remove(file);
+            return state;
         } catch (UnreadableState e) {
-            System.err.println(e.getMessage());
+            if (!e.getMessage().equals(REPORTED.put(file, e.getMessage()))) {
+                System.err.println(e.getMessage());
+            }
             return Optional.empty();
         }
     }
+
+    /** The last unreadable-file report per file, so the same one is not printed again. */
+    private final Map<Path, String> REPORTED = new ConcurrentHashMap<>();
 
     /**
      * The state to work from once a repository's lock is held.
