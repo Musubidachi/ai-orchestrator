@@ -22,8 +22,13 @@ import lombok.experimental.UtilityClass;
 @UtilityClass
 public class OwnedFiles {
 
-    /** Written by Forge itself, never by the version's own work: the brief, and what the gate saves. */
-    private final List<String> FORGES = List.of("IMPROVEMENT.md", "SPEC.md", "artifacts/**");
+    /**
+     * Written by Forge itself, never by the version's own work: the brief, the house rules it rewrites
+     * before every turn under both names the agents read, the scaffold's ignore file, and what the
+     * gate saves.
+     */
+    private final List<String> FORGES = List.of("IMPROVEMENT.md", "SPEC.md", "CLAUDE.md", "AGENTS.md", ".gitignore",
+            "artifacts/**");
 
     /**
      * The failure to report when the version changed files it does not own, or empty when it did not.

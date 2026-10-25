@@ -54,6 +54,8 @@ class OwnedFilesTest {
         write("e2e/market.spec.ts", "test('market', () => {});\n");
         write("artifacts/market.png", "a screenshot the gate saved");
         write("IMPROVEMENT.md", "Build the market screen, as it now reads.\n");
+        write("CLAUDE.md", "The house rules, as Forge rewrote them before this turn.\n");
+        write("AGENTS.md", "The house rules, as Forge rewrote them before this turn.\n");
         git.commitAll("Continue (session 1)");
 
         assertEquals(Optional.empty(), OwnedFiles.check(repo, log, baseline, MARKET));
