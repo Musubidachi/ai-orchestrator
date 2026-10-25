@@ -42,6 +42,11 @@ public record Spec(Path source, FrontMatter front, String body) {
         return front.getEvidence();
     }
 
+    /** The folders this version may change, as globs from the repository root; empty for no limit. */
+    public List<String> owns() {
+        return front.getOwns() == null ? List.of() : front.getOwns();
+    }
+
     /** The model this spec asks of a vendor, or empty to leave the CLI's default alone. */
     public String modelFor(AgentKind kind) {
         // Exhaustive, with no default branch. The previous ternary answered "Codex" for every

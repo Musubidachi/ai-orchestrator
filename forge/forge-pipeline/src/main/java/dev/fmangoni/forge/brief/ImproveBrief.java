@@ -38,6 +38,32 @@ public class ImproveBrief {
 
                 Improvement: %s
 
-                %s%s""".formatted(spec.title(), TimeContract.resuming(previous), TimeContract.of(cap));
+                %s%s%s""".formatted(spec.title(), owned(spec), TimeContract.resuming(previous), TimeContract.of(cap));
+    }
+
+    /**
+     * The folders this version may change, said before it starts rather than learned from the gate.
+     *
+     * <p>Empty when the spec owns nothing, which is every project not built one feature per version.
+     */
+    String owned(Spec spec) {
+        if (spec.owns().isEmpty()) {
+            return "";
+        }
+        StringBuilder folders = new StringBuilder();
+        for (String glob : spec.owns()) {
+            folders.append("- ").append(glob).append('\n');
+        }
+        return """
+                This version owns these folders, and may change nothing outside them:
+
+                %s
+                The gate checks every file changed since this version began, and fails it for any \
+                file outside them, however small the change. Other features own the rest of the \
+                code, shared parts included. If this feature cannot be built without changing a file \
+                outside its folders, do not change it: stop, and say in your handoff which file and \
+                why, so the version that owns it can be asked.
+
+                """.formatted(folders);
     }
 }

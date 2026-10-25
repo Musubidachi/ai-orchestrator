@@ -64,6 +64,15 @@ public class FrontMatter {
     /** Globs copied into the run's evidence directory after a passing gate. */
     private List<String> evidence = List.of();
 
+    /**
+     * The folders this version may change, as globs from the repository root; empty for no limit.
+     *
+     * <p>For a family built one feature per version, where no feature may change another's code. The
+     * gate fails a version that changed anything outside them since it began ({@code gate.OwnedFiles}).
+     */
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
+    private List<String> owns = List.of();
+
     private int maxRepairRounds = 4;
 
     /**

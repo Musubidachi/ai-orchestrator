@@ -30,7 +30,12 @@ evidence the spec names.
   Ctrl+C for itself, so the server outlived its window and kept its port (003). Installing and
   building through npm are fine. It never runs the file: it opens a window and does not exit.
   Whether it works is for the person.
+- **A version that owns folders changes nothing outside them** (`OwnedFiles`, from `GateStep` on a
+  gate that passed). The spec's `owns:` globs; every file changed since the version's baseline
+  must match one, apart from what Forge writes itself (`IMPROVEMENT.md`, `SPEC.md`, `artifacts/`).
+  A range that cannot be read fails rather than passes. A spec without `owns` is not checked. For a
+  family built one feature per version, where no feature may change another's code.
 
 ## Tests
 
-`GateTest`, `EvidenceCollectorTest`.
+`GateTest`, `EvidenceCollectorTest`, `OwnedFilesTest`.

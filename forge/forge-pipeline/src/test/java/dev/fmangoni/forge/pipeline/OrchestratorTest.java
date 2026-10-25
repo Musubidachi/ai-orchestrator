@@ -641,6 +641,30 @@ class OrchestratorTest {
     }
 
     @Test
+    @DisplayName("a version that changes files outside the folders it owns does not pass, however green its commands")
+    void filesOutsideTheOwnedFoldersFailTheGate() throws IOException {
+        Spec spec = spec("exit 0", 1, 12);
+        spec.front().setOwns(List.of("src/screens/market/**"));
+        seedPlan();
+        Agent builder = new StubAgent(AgentKind.CLAUDE, repo -> {
+            try {
+                Files.createDirectories(repo.resolve("artifacts"));
+                Files.writeString(repo.resolve("shared.css"), "body { color: gold; }\n");
+                writeOverview(repo);
+            } catch (IOException e) {
+                throw new IllegalStateException(e);
+            }
+        }, finished());
+
+        RunState state = advance(spec, freshState(), agentsWhere(builder,
+                new StubAgent(AgentKind.CODEX, OrchestratorTest::writesNothing, CLEAN_REVIEW)));
+
+        assertEquals(Phase.PARKED, state.getPhase(), "the acceptance command passed every time");
+        assertTrue(state.getLastFailure().command().startsWith("owned folders: "), state.getLastFailure().command());
+        assertTrue(state.getLastFailure().output().contains("  - shared.css"), state.getLastFailure().output());
+    }
+
+    @Test
     @DisplayName("an agent that claims success but fails the gate is PARKED, not DONE")
     void agentSelfReportCannotPassTheGate() throws IOException {
         Spec spec = spec("exit 1", 2);

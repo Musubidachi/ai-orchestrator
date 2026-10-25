@@ -10,6 +10,6 @@
  *
  * <p><b>Start with:</b> {@code Gate.run}, {@code GateResult}, {@code CommandResult}.
  *
- * <p>Depends on: feature, process, process.local.
+ * <p>Depends on: feature, git, process, process.local.
  */
 package dev.fmangoni.forge.gate;

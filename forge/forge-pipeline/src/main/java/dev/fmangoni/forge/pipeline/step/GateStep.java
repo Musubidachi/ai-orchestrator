@@ -8,6 +8,7 @@ import dev.fmangoni.forge.gate.CommandResult;
 import dev.fmangoni.forge.gate.Gate;
 import dev.fmangoni.forge.gate.GateResult;
 import dev.fmangoni.forge.gate.LookCheck;
+import dev.fmangoni.forge.gate.OwnedFiles;
 import dev.fmangoni.forge.pipeline.run.RunContext;
 import dev.fmangoni.forge.plan.Plan;
 import dev.fmangoni.forge.project.Phase;
@@ -35,7 +36,7 @@ public final class GateStep {
     public void run() {
         RunState state = run.state();
         List<Feature> owed = owedRecordings();
-        GateResult result = withDefaultLook(newGate().run(run.acceptance(), run.evidence(), overview(), owed));
+        GateResult result = withOwnedFiles(withDefaultLook(newGate().run(run.acceptance(), run.evidence(), overview(), owed)));
         // Recorded whether it passed or failed: a command that got slower is worth knowing about
         // even on a run that went green, and especially on one that did not.
         Timings.record(state, result.commands());
@@ -113,6 +114,26 @@ public final class GateStep {
                 .map(changed -> {
                     List<CommandResult> commands = new ArrayList<>(result.commands());
                     commands.add(changed);
+                    return new GateResult(commands, result.evidence());
+                })
+                .orElse(result);
+    }
+
+    /**
+     * The gate's verdict, held to the folders the spec says this version owns ({@link OwnedFiles}).
+     *
+     * <p>Only on a gate that passed, like the look: a failing one already has a reason to give, and
+     * the repair it leads to may well be what puts a stray file back.
+     */
+    private GateResult withOwnedFiles(GateResult result) {
+        if (!result.passed()) {
+            return result;
+        }
+        return OwnedFiles.check(run.paths().repo(), run.paths().gitLog(), run.state().getBaselineCommit(),
+                        run.spec().owns())
+                .map(outside -> {
+                    List<CommandResult> commands = new ArrayList<>(result.commands());
+                    commands.add(outside);
                     return new GateResult(commands, result.evidence());
                 })
                 .orElse(result);
