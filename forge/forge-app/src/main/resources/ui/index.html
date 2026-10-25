@@ -173,6 +173,12 @@
   .lrow:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
   .lrow[aria-current=true]{background:var(--sel);box-shadow:inset 0 0 0 1px var(--selline)}
   .lrow .rank{color:var(--muted);font-weight:700;font-variant-numeric:tabular-nums}
+  .job.folded .lrow{display:none}
+  .foldline{order:var(--od);width:100%;padding:.55rem .75rem .55rem 4.1rem;border:0;
+        border-bottom:1px solid var(--line2);border-radius:0;background:transparent;color:var(--muted);
+        text-align:left;font-size:.8rem;font-weight:400;cursor:pointer}
+  .foldline:hover{background:var(--card);color:var(--fg)}
+  .foldline:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
   .lrow[aria-current=true] .rank{color:var(--accent)}
   .lrow .main{min-width:0}
   .child .lrow .main{padding-left:1rem}
@@ -341,6 +347,8 @@
     #jobs[data-filter=working] .job:not([data-kinds~=working]),
     #jobs[data-filter=accepted] .job:not([data-kinds~=accepted]),
     #jobs[data-filter=away] .job:not([data-kinds~=away]){display:none}
+    .foldline{order:var(--om);padding:.7rem 1rem;border:1px dashed var(--line);border-radius:1rem}
+    #jobs:not([data-filter=all]):not([data-filter=waiting]) .foldline{display:none}
   }
 </style>
 </head>
@@ -1208,6 +1216,9 @@ function groupOf(j) {
   // Before anything about suspension: a suspended project the queue could start now has nothing
   // left to wait for, whatever its stored retry time says.
   if (j.queuePosition > 0 && !j.blockedReason) return {key: "queued", title: "Queued", tone: "todo"};
+  // One group for every version waiting on an earlier one, however many there are: a family of 38
+  // versions built one at a time made 37 headings of one line each, all saying the same thing.
+  if (waitsItsTurn(j)) return {key: "turn", title: "Waiting their turn", tone: "todo"};
   if (j.phase === "SUSPENDED" || j.blockedReason) {
     const review = (j.lastError || "").startsWith("waiting to be reviewed");
     const what = review ? "Waiting for review" : j.blockedReason ? "Waiting" : "Waiting for quota";
@@ -1218,15 +1229,77 @@ function groupOf(j) {
   return {key: "paused", title: "Paused", tone: "todo"};
 }
 
+/* Waiting only for an earlier version of its own family to be approved: its turn will come. */
+function waitsItsTurn(j) {
+  return !j.running && /^waiting for \S+ to be (accepted first|approved)/.test(j.blockedReason || "");
+}
+
 function groupOrder(key) {
   return key === "you" ? 0 : key === "working" ? 1 : key.startsWith("wait:") ? 2
-    : key === "queued" ? 3 : key === "paused" ? 4 : key === "new" ? 5 : key === "away" ? 6 : 7;
+    : key === "queued" ? 3 : key === "paused" ? 4 : key === "new" ? 5 : key === "turn" ? 6
+    : key === "away" ? 7 : 8;
 }
 
 /* Which phone filter a group answers to. */
 function kindOf(key) {
-  return key.startsWith("wait:") ? "waiting"
+  return key.startsWith("wait:") || key === "turn" ? "waiting"
     : ["you", "working", "accepted", "away"].includes(key) ? key : "other";
+}
+
+/* Families whose waiting versions were unfolded, and the line that folds or unfolds each. */
+const openFamilies = new Set();
+const foldLines = new Map();
+
+/*
+ * Shows the next version of each family waiting its turn, and folds the rest behind one line.
+ *
+ * A family queued thirty-seven deep is one thing to know about, not thirty-seven: which comes next,
+ * and how many after it. The folded lines are only hidden, so a chosen one keeps its details open.
+ */
+function foldTurns(g, jobs, at, live) {
+  const families = new Map();
+  g.jobs.forEach(j => {
+    const family = j.id.split(".")[0];
+    if (!families.has(family)) families.set(family, []);
+    families.get(family).push(j);
+  });
+  families.forEach((members, family) => {
+    const rest = members.slice(1);
+    const open = openFamilies.has(family);
+    members.forEach((j, i) => {
+      document.getElementById("job-" + j.id).classList.toggle("folded", i > 0 && !open);
+    });
+    const firstRow = document.getElementById("job-" + members[0].id).querySelector(".lrow");
+    firstRow.style.setProperty("--od", at++);
+    if (rest.length === 0) return;
+    let line = foldLines.get(family);
+    if (!line) {
+      line = document.createElement("button");
+      line.type = "button";
+      line.className = "foldline";
+      line.dataset.family = family;
+      line.onclick = () => {
+        if (openFamilies.has(family)) openFamilies.delete(family); else openFamilies.add(family);
+        loadJobs();
+      };
+      foldLines.set(family, line);
+      $("jobs").append(line);
+    }
+    const root = jobs.find(x => x.id === family);
+    const name = root ? root.title : family;
+    line.textContent = open
+      ? `Hide the ${rest.length} later ${name} versions`
+      : `and ${rest.length} more ${name} ${rest.length === 1 ? "version" : "versions"} after it — show`;
+    line.setAttribute("aria-expanded", open ? "true" : "false");
+    line.style.setProperty("--od", at++);
+    const firstIndex = jobs.findIndex(x => x.id === members[0].id);
+    line.style.setProperty("--om", 3 * firstIndex + 2);
+    live.add(family);
+    rest.forEach(j => {
+      document.getElementById("job-" + j.id).querySelector(".lrow").style.setProperty("--od", at++);
+    });
+  });
+  return at;
 }
 
 /* The short word on a project's line, and its colour. */
@@ -2002,6 +2075,8 @@ function layout(jobs) {
 
   let at = 0;
   const live = new Set();
+  const liveFolds = new Set();
+  jobs.forEach(j => document.getElementById("job-" + j.id).classList.remove("folded"));
   groups.forEach(g => {
     let head = heads.get(g.key);
     if (!head) {
@@ -2020,15 +2095,20 @@ function layout(jobs) {
       card.querySelector(".lrow").style.setProperty("--od", at++);
       card.dataset.kinds = kindOf(g.key);
     });
+    if (g.key === "turn") at = foldTurns(g, jobs, at, liveFolds);
   });
   heads.forEach((head, key) => {
     if (!live.has(key)) { head.remove(); heads.delete(key); }
   });
+  foldLines.forEach((line, family) => {
+    if (!liveFolds.has(family)) { line.remove(); foldLines.delete(family); }
+  });
 
+  // Three places per project in the phone's ranked list: its line, its details, and a fold line.
   jobs.forEach((j, i) => {
     const card = document.getElementById("job-" + j.id);
-    card.querySelector(".lrow").style.setProperty("--om", 2 * i);
-    card.querySelector(".detail").style.setProperty("--om", 2 * i + 1);
+    card.querySelector(".lrow").style.setProperty("--om", 3 * i);
+    card.querySelector(".detail").style.setProperty("--om", 3 * i + 1);
   });
 
   // First choice: what was open last time. Otherwise whatever heads the table, which is a project

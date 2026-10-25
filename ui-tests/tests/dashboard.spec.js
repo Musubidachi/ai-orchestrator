@@ -69,6 +69,40 @@ test("the table groups projects by what they wait on, with the chosen one beside
   await expect(page.locator("#tiles")).toBeHidden();
 });
 
+test("a family's versions waiting their turn are one group, the next shown and the rest folded", async ({ page }) => {
+  // Twin Thrones queued thirty-seven versions one behind the other, and each made a heading of its
+  // own: "waiting for 008.3 to be accepted first · 1", thirty-seven times down the page.
+  await page.route("**/api/jobs", async (route) => {
+    const response = await route.fetch();
+    const jobs = await response.json();
+    const base = jobs.find(j => j.id === "001");
+    for (let n = 1; n <= 4; n++) {
+      const after = n === 1 ? "001" : `001.${n - 1}`;
+      jobs.push({ ...base, id: `001.${n}`, title: `Alpha step ${n}`, parentId: after, phase: "NEW",
+        running: false, queuePosition: 0, blockedReason: `waiting for ${after} to be accepted first` });
+    }
+    await route.fulfill({ response, json: jobs });
+  });
+  await page.reload();
+  const row = (id) => page.locator(`[id="row-${id}"]`);
+  await expect(row("001.1")).toBeVisible();
+
+  const heads = await headings(page);
+  expect(heads.filter(h => h === "Waiting their turn")).toHaveLength(1);
+  expect(heads.some(h => h.includes("accepted first"))).toBe(false);
+
+  await expect(row("001.2")).toBeHidden();
+  await expect(row("001.4")).toBeHidden();
+  const fold = page.locator('.foldline[data-family="001"]');
+  await expect(fold).toHaveText(/^and 3 more .+ versions after it/);
+
+  await fold.click();
+  await expect(row("001.4")).toBeVisible();
+  await expect(fold).toHaveText(/^Hide the 3 later/);
+  await fold.click();
+  await expect(row("001.2")).toBeHidden();
+});
+
 test.describe("on a phone", () => {
   test.use({ viewport: { width: 412, height: 915 } });
 
