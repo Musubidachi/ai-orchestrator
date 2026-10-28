@@ -294,9 +294,12 @@ public class ReviewBrief {
                     fixed from the file it is in, as it stands now: those files are given in full \
                     below, because the diff may be cut short before reaching them. Report every one in `rechecks`, by its id, with status \
                     `fixed`, `still_present` or `withdrawn` (withdrawn means you now think the \
-                    original finding was wrong — say why). If one is still present, say in `note` \
-                    specifically why the change does not answer it; that sentence is what the \
-                    builder is given next. Do not raise any of these again in `findings`.
+                    original finding was wrong — say why). Every ruling needs a `note`. For \
+                    `fixed`, quote the line or lines that fix it, with the file; a ruling of \
+                    `fixed` that does not say where the fix is is not accepted. If one is still \
+                    present, say in `note` specifically why the change does not answer it; that \
+                    sentence is what the builder is given next. Do not raise any of these again in \
+                    `findings`.
 
                     Where the builder says `disputed`, it is defending its code rather than \
                     changing it, and the test it names is its evidence; that test's file is among \
@@ -326,7 +329,9 @@ public class ReviewBrief {
 
                     Reply with both lists in one object:
 
-                    {"rechecks":[{"id":"blocking-1a2b3c4d","status":"still_present","note":"why"}], \
+                    {"rechecks":[{"id":"blocking-1a2b3c4d","status":"fixed","note":"src/Docx.java: \
+                    `cells.sort(byColumn)` now orders them"}, \
+                    {"id":"blocking-5e6f7a8b","status":"still_present","note":"why"}], \
                     "findings":[...]}
                     """);
         }

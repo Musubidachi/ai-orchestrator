@@ -11,6 +11,8 @@ import dev.fmangoni.forge.agent.model.AgentResult;
 import dev.fmangoni.forge.agent.model.AgentTask;
 import dev.fmangoni.forge.plan.Plan;
 import dev.fmangoni.forge.plan.PlanFeature;
+import dev.fmangoni.forge.spec.model.FrontMatter;
+import dev.fmangoni.forge.spec.model.Spec;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -31,6 +33,17 @@ import org.junit.jupiter.api.io.TempDir;
  * refusal stops the pass rather than being recorded once per claim.
  */
 class FeatureReviewTest {
+
+    static final Spec RACER = spec("Racer", null);
+
+    /** A spec with this title; a parent makes it an enhancement of that project. */
+    static Spec spec(String title, String parent) {
+        FrontMatter front = new FrontMatter();
+        front.setId(parent == null ? "003" : parent + ".1");
+        front.setTitle(title);
+        front.setParent(parent);
+        return new Spec(Path.of(front.getId() + ".md"), front, "the spec");
+    }
 
     @TempDir
     Path root;
@@ -87,7 +100,7 @@ class FeatureReviewTest {
     @DisplayName("each claim is asked about once, read-only, on the model it was given")
     void oneReadOnlyCallPerClaim() {
         List<FeatureCheck> checks = review(task -> says("{\"verdict\":\"holds\",\"why\":\"Report.java\"}"))
-                .run("Racer", List.of(feature("Report export"), feature("Monthly summary")));
+                .run(RACER,List.of(feature("Report export"), feature("Monthly summary")));
 
         assertEquals(2, seen.size());
         assertTrue(seen.stream().allMatch(AgentTask::readOnly),
@@ -105,7 +118,7 @@ class FeatureReviewTest {
     void unprovenIsReported() {
         List<FeatureCheck> checks = review(task ->
                 says("Here you go:\n```json\n{\"verdict\":\"unproven\",\"why\":\"Report.java only has a stub\"}\n```"))
-                .run("Racer", List.of(feature("Report export")));
+                .run(RACER,List.of(feature("Report export")));
 
         assertTrue(checks.get(0).unproven());
         assertEquals("Report.java only has a stub", checks.get(0).getWhy());
@@ -115,7 +128,7 @@ class FeatureReviewTest {
     @DisplayName("one refusal stops the pass: the rest are unchecked, not asked again")
     void aRefusalStopsThePass() {
         List<FeatureCheck> checks = review(task -> rateLimited())
-                .run("Racer", List.of(feature("one"), feature("two"), feature("three")));
+                .run(RACER,List.of(feature("one"), feature("two"), feature("three")));
 
         assertEquals(1, seen.size(), "the other two would have been refused the same way");
         assertEquals(3, checks.size(), "every claim is still accounted for");
@@ -127,11 +140,36 @@ class FeatureReviewTest {
     @DisplayName("a reply that is not JSON, or a verdict nobody recognises, is unchecked rather than a pass")
     void unreadableRepliesAreNotAPass() {
         assertEquals(FeatureCheck.UNCHECKED,
-                review(task -> says("looks fine to me")).run("Racer", List.of(feature("one"))).get(0).getVerdict());
+                review(task -> says("looks fine to me")).run(RACER,List.of(feature("one"))).get(0).getVerdict());
         assertEquals(FeatureCheck.UNCHECKED,
                 review(task -> says("{\"verdict\":\"probably\",\"why\":\"\"}"))
-                        .run("Racer", List.of(feature("one"))).get(0).getVerdict(),
+                        .run(RACER,List.of(feature("one"))).get(0).getVerdict(),
                 "an unknown verdict must not be read as the feature holding up");
+    }
+
+    @Test
+    @DisplayName("an empty reply is no answer, and does not stop the pass the way a refusal does")
+    void anEmptyReplyIsNoAnswer() {
+        List<FeatureCheck> checks = review(task -> says(task.brief().contains("Report export") ? "" : "{\"verdict\":\"holds\",\"why\":\"x\"}"))
+                .run(RACER, List.of(feature("Report export"), feature("Monthly summary")));
+
+        assertEquals(2, seen.size(), "Antigravity ends quietly after a refused command; the next claim is still asked");
+        assertFalse(checks.get(0).answered());
+        assertTrue(checks.get(0).getWhy().contains("ended without answering"), checks.get(0).getWhy());
+        assertTrue(checks.get(1).answered());
+    }
+
+    @Test
+    @DisplayName("an enhancement's claims are judged against IMPROVEMENT.md, not the original's non-goals")
+    void anEnhancementIsJudgedByWhatItAsked() {
+        review(task -> says("{\"verdict\":\"holds\",\"why\":\"x\"}"))
+                .run(spec("Racer: shop", "003"), List.of(feature("Report export")));
+        review(task -> says("{\"verdict\":\"holds\",\"why\":\"x\"}"))
+                .run(RACER, List.of(feature("Drag race")));
+
+        assertTrue(seen.get(0).brief().contains("IMPROVEMENT.md wins"), seen.get(0).brief());
+        assertFalse(seen.get(1).brief().contains("IMPROVEMENT.md"), "a first build has no IMPROVEMENT.md");
+        assertTrue(seen.get(1).brief().contains("do not run any command"));
     }
 
     @Test
@@ -143,7 +181,7 @@ class FeatureReviewTest {
         }
 
         List<FeatureCheck> checks = review(task -> says("{\"verdict\":\"holds\",\"why\":\"x\"}"))
-                .run("Racer", many);
+                .run(RACER,many);
 
         assertEquals(12, seen.size());
         assertEquals(20, checks.size());

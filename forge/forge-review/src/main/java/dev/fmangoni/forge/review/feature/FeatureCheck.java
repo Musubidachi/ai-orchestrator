@@ -38,6 +38,11 @@ public class FeatureCheck {
         return UNPROVEN.equals(verdict);
     }
 
+    /** Whether a reviewer gave a verdict on it, either way; anything else is owed to the next one. */
+    public boolean answered() {
+        return HOLDS.equals(verdict) || unproven();
+    }
+
     public static FeatureCheck unchecked(String feature, String why) {
         return new FeatureCheck(feature, UNCHECKED, why);
     }

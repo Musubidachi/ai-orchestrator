@@ -8,6 +8,7 @@ import dev.fmangoni.forge.json.Json;
 import dev.fmangoni.forge.json.JsonText;
 import dev.fmangoni.forge.plan.Plan;
 import dev.fmangoni.forge.plan.PlanFeature;
+import dev.fmangoni.forge.spec.model.Spec;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -37,7 +38,7 @@ public final class FeatureReview {
      * <p>A handoff listing thirty features is itself a problem, and paying a call for each is not
      * the way to find that out. The rest are reported unchecked, which says so on the report.
      */
-    private static final int MAX_FEATURES = 12;
+    static final int MAX_FEATURES = 12;
 
     private static final ObjectMapper MAPPER = Json.mapper();
 
@@ -61,7 +62,7 @@ public final class FeatureReview {
                 .toList();
     }
 
-    public List<FeatureCheck> run(String specTitle, List<PlanFeature> features) {
+    public List<FeatureCheck> run(Spec spec, List<PlanFeature> features) {
         List<FeatureCheck> checks = new ArrayList<>();
         String stopped = null;
         for (PlanFeature feature : features) {
@@ -77,7 +78,7 @@ public final class FeatureReview {
                         "not checked: only the first " + MAX_FEATURES + " claims are"));
                 continue;
             }
-            FeatureCheck check = check(specTitle, feature);
+            FeatureCheck check = check(spec, feature);
             checks.add(check);
             stopped = blockedReason(check);
         }
@@ -89,12 +90,18 @@ public final class FeatureReview {
         return check.getWhy().startsWith(reviewer.kind() + " was unavailable") ? check.getWhy() : null;
     }
 
-    private FeatureCheck check(String specTitle, PlanFeature feature) {
+    private FeatureCheck check(Spec spec, PlanFeature feature) {
         AgentResult result = reviewer.run(
-                AgentTask.readOnly(repo, FeatureBrief.of(feature, specTitle), CAP, logDir).using(model));
+                AgentTask.readOnly(repo, FeatureBrief.of(feature, spec), CAP, logDir).using(model));
 
         if (result.blockedExternally()) {
             return FeatureCheck.unchecked(feature.getName(), reviewer.kind() + " was unavailable: " + result.outcome());
+        }
+        if (result.finalMessage() == null || result.finalMessage().isBlank()) {
+            // Antigravity does this after a refused command: the session ends, successfully, with
+            // nothing said. Three of 003.3's four checks went that way. Not a refusal of the vendor,
+            // so the pass goes on; FeaturePass asks the next reviewer about this one.
+            return FeatureCheck.unchecked(feature.getName(), reviewer.kind() + " ended without answering");
         }
         String json = JsonText.firstObject(result.finalMessage());
         if (json == null) {

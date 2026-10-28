@@ -7,13 +7,17 @@ Judging a project: the gate (Forge runs the acceptance commands itself), the cro
 **May use:** forge-security, forge-core. Maven refuses anything higher; `LayersTest` holds the direction between packages inside.
 
 **Rules:** The gate decides done; nothing an agent says reaches its verdict. See `gate/CLAUDE.md`.
-The cross-review is two passes by one reviewer: `FeatureReview` asks its cheapest model about each
+The cross-review is two passes: `FeatureReview` asks a reviewer's cheapest model about each
 claimed feature, then `ReviewStage` reviews the change once on its best model, holding what that
-pass could not find. A refusal stops the cheap pass rather than repeating it per feature, and an
-unchecked claim never reads as one that held up.
+pass could not find. A refusal stops one reviewer's cheap pass rather than repeating it per feature;
+`FeaturePass` hands every claim that reviewer left unanswered (refused, empty, not JSON) to the next
+reviewer, and an unchecked claim never reads as one that held up. On an enhancement the cheap pass
+is told that IMPROVEMENT.md wins over SPEC.md's non-goals.
 
 A review after a repair is also a recheck: `ReviewRound` hands the reviewer the previous blocking
 findings by id, with the builder's answer to each, and the reply's `rechecks` say which are fixed.
+A `fixed` or `withdrawn` ruling must carry a note saying where the fix is or why the finding was
+wrong (`Recheck.unexplained`); a reply with one that does not is treated as unreadable.
 A finding's id is `ReviewItem.idOf` — the same one the review form rules on — so a person's ruling,
 the history, and the reviewer's verdict all name the same thing.
 

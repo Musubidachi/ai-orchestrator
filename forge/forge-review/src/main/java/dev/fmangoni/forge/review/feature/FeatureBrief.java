@@ -1,6 +1,7 @@
 package dev.fmangoni.forge.review.feature;
 
 import dev.fmangoni.forge.plan.PlanFeature;
+import dev.fmangoni.forge.spec.model.Spec;
 import lombok.experimental.UtilityClass;
 
 /**
@@ -15,7 +16,7 @@ import lombok.experimental.UtilityClass;
 @UtilityClass
 class FeatureBrief {
 
-    String of(PlanFeature feature, String specTitle) {
+    String of(PlanFeature feature, Spec spec) {
         return """
                 In this repository, check one claim and answer in JSON.
 
@@ -23,10 +24,11 @@ class FeatureBrief {
 
                   Feature: %s
                   What it should show: %s
-
-                Read the code that would implement it. You may open files; do not change anything \
-                and do not run commands — this session is read-only, and refused tool calls are \
-                expected.
+                %s
+                Read the code that would implement it. Open files with your file-reading and search \
+                tools only. Do not change anything and do not run any command, not even to list or \
+                search: this session is read-only, a command is refused, and a refusal can end the \
+                session before you have answered.
 
                 Answer only this question: is the feature really there, in the code, doing what the \
                 claim says? Not whether it is written well, and not whether you would have built it \
@@ -41,7 +43,27 @@ class FeatureBrief {
                 only a stub, a placeholder or a hard-coded value pretending to be the real thing. \
                 In either case name the file you looked at in "why", so the next reader can start \
                 where you stopped.
-                """.formatted(specTitle, feature.getName(), blankIfNull(feature.getDemo()));
+                """.formatted(spec.title(), feature.getName(), blankIfNull(feature.getDemo()), whatWasAsked(spec));
+    }
+
+    /**
+     * Which file says what was asked for.
+     *
+     * <p>An enhancement's repository holds the original {@code SPEC.md} as well as the change in
+     * {@code IMPROVEMENT.md}, and the original's non-goals often rule out exactly what the change
+     * adds. A checker that read only {@code SPEC.md} called 003.3's main new feature out of scope, because
+     * the racing game it improved had said "no cash economy".
+     */
+    private String whatWasAsked(Spec spec) {
+        if (!spec.isImprovement()) {
+            return "";
+        }
+        return """
+
+                This project is a change to an earlier one. What was asked for is in IMPROVEMENT.md; \
+                SPEC.md describes the project it changes. Where they differ, IMPROVEMENT.md wins: a \
+                feature SPEC.md's non-goals rule out may be exactly what IMPROVEMENT.md asks for.
+                """;
     }
 
     private String blankIfNull(String demo) {

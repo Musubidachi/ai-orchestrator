@@ -36,4 +36,15 @@ public class Recheck {
         String said = status == null ? "" : status.strip().toLowerCase();
         return said.equals("fixed") || said.equals("withdrawn");
     }
+
+    /**
+     * Whether it lets a finding go without saying why.
+     *
+     * <p>A finding cost the builder a turn; letting it go has to point at something, the line that
+     * fixes it or the reason it was wrong. 003.3's last recheck ruled both of its findings fixed in
+     * under three seconds with no note on either, and nothing anyone could check behind it.
+     */
+    public boolean unexplained() {
+        return settled() && (note == null || note.isBlank());
+    }
 }

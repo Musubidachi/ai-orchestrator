@@ -63,7 +63,8 @@ front of every implementation turn, which is what makes the cheaper rung reasona
 - **One repair turn** for serious security findings; after that a person decides.
 - **Every blocking review finding must be fixed** (`run.ReviewLoop`). Findings carry ids; the next
   review rules on each (`fixed`, `still_present`, `withdrawn`) before raising anything new, and one
-  it does not settle is carried with its attempts. Two attempts per finding and four repair turns
+  it does not settle is carried with its attempts. A `fixed` or `withdrawn` with no note settles
+  nothing: the next reviewer is asked, and if none explains, the project is held for a person. Two attempts per finding and four repair turns
   per loop, then the project is held for a person — never DONE with a blocker on it. A hold stops
   the orchestrator's loop whatever the phase. The builder may defend its code instead of changing
   it (`disputed`, with a test as evidence); the recheck is shown that test's file and rules on the

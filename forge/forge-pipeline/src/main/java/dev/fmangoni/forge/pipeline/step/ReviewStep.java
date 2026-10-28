@@ -17,6 +17,7 @@ import dev.fmangoni.forge.review.ReviewStore;
 import dev.fmangoni.forge.review.decision.ReviewHistory;
 import dev.fmangoni.forge.review.decision.model.ReviewItem;
 import dev.fmangoni.forge.review.feature.FeatureCheck;
+import dev.fmangoni.forge.review.feature.FeaturePass;
 import dev.fmangoni.forge.review.feature.FeatureReview;
 import dev.fmangoni.forge.review.model.Finding;
 import dev.fmangoni.forge.review.model.Review;
@@ -32,11 +33,11 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * The cross-review, in two passes by the same reviewer.
+ * The cross-review, in two passes.
  *
- * <p>The cheapest model it has reads the code once per claimed feature and says which claims it
- * cannot find; the best model it has then reviews the whole change once, with those claims in
- * front of it. The expensive judgement is made once, and the legwork before it is not made
+ * <p>A reviewer's cheapest model reads the code once per claimed feature and says which claims it
+ * cannot find, passing any it could not answer to the next reviewer; one best model then reviews
+ * the whole change once, with those claims in front of it. The expensive judgement is made once, and the legwork before it is not made
  * expensive — which is the whole point of the split.
  */
 public final class ReviewStep {
@@ -270,18 +271,15 @@ public final class ReviewStep {
      */
     private Review firstUsableReview(String diff, ReviewRound round) {
         RunPaths paths = run.paths();
-        List<PlanFeature> claimed = FeatureReview.claimedBy(run.state().getPlan());
+        List<AgentKind> reviewers = run.agents().reviewersFor(run.state().getAssignedTo());
+        // The cheapest models read for each claimed feature first, each reviewer taking what the one
+        // before left unanswered; then one best model reviews the change, holding what they could
+        // not find.
+        List<FeatureCheck> checks = featureChecks(reviewers);
         Review review = null;
         Review unreadable = null;
-        for (AgentKind kind : run.agents().reviewersFor(run.state().getAssignedTo())) {
+        for (AgentKind kind : reviewers) {
             Agent reviewer = run.agents().get(kind);
-            // Two passes by the same reviewer: its cheapest model reads for each claimed feature,
-            // then its best model reviews the change once, holding what that pass could not find.
-            List<FeatureCheck> checks = claimed.isEmpty()
-                    ? List.of()
-                    : new FeatureReview(reviewer, paths.repo(), paths.logs(),
-                            run.models().featureReview(kind))
-                            .run(run.spec().title(), claimed);
             review = new ReviewStage(reviewer, paths.repo(), paths.logs(), paths.reviewFile(),
                     run.models().bigReview(kind))
                     .review(run.spec(), diff, checks, round, run.state().getPolishDesign());
@@ -292,6 +290,13 @@ public final class ReviewStep {
                 // As good as unread for this purpose: the next reviewer may manage what this one did not.
                 review.setParseError("did not compare the result with the design \""
                         + run.state().getPolishDesign() + "\" it was built to");
+                ReviewStore.save(paths.reviewFile(), review);
+            }
+            if (review.getParseError() == null && !review.unexplainedRulings().isEmpty()) {
+                // A ruling nobody can check is no ruling: ask the next reviewer, and if none says
+                // why, the recheck is unread and a person decides.
+                review.setParseError("let " + String.join(", ", review.unexplainedRulings())
+                        + " go without saying where the fix is or why the finding was wrong");
                 ReviewStore.save(paths.reviewFile(), review);
             }
             if (review.getParseError() == null) {
@@ -311,6 +316,20 @@ public final class ReviewStep {
             review = Review.unavailable("no other model is installed, so nothing can review this", null);
         }
         return review;
+    }
+
+    /** The cheap pass over every claimed feature, across the reviewers in the order they are asked. */
+    private List<FeatureCheck> featureChecks(List<AgentKind> reviewers) {
+        List<PlanFeature> claimed = FeatureReview.claimedBy(run.state().getPlan());
+        if (claimed.isEmpty()) {
+            return List.of();
+        }
+        RunPaths paths = run.paths();
+        List<FeatureReview> passes = reviewers.stream()
+                .map(kind -> new FeatureReview(run.agents().get(kind), paths.repo(), paths.logs(),
+                        run.models().featureReview(kind)))
+                .toList();
+        return new FeaturePass(passes).run(run.spec(), claimed);
     }
 
     /**

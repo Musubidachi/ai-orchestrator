@@ -1,6 +1,7 @@
 package dev.fmangoni.forge.pipeline;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -318,6 +319,18 @@ class ReviewLoopTest {
         assertEquals(Phase.REVIEWING, state.getPhase());
         assertTrue(state.getNeedsPerson().contains("could not be read"), state.getNeedsPerson());
         assertEquals(1, state.getBlockingFindings().size(), "the finding is still owed its answer");
+    }
+
+    @Test
+    @DisplayName("a finding ruled fixed without saying where is not let go; with nobody else to ask, a person decides")
+    void anUnexplainedFixHolds() throws IOException {
+        // 003.3's recheck ruled both findings fixed in under three seconds, with no note on either.
+        RunState state = run(review(A), recheck(A_ID, "fixed", "", ""));
+
+        assertNotEquals(Phase.DONE, state.getPhase());
+        assertTrue(state.getNeedsPerson().contains("without saying where the fix is"), state.getNeedsPerson());
+        assertEquals(1, state.getBlockingFindings().size(), "the finding is still owed its answer");
+        assertTrue(reviewed.get(1).contains("Every ruling needs a `note`"), "the reviewer was told");
     }
 
     @Test

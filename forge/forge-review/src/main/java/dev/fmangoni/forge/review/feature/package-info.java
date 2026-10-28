@@ -6,11 +6,12 @@
  * put to the same model about a visual polish, whether it changed anything besides appearance
  * ({@code ScopeCheck}).
  *
- * <p><b>Not here:</b> The expensive review that follows it. A refusal stops the pass rather than
- * being asked again per claim, and an unchecked claim never counts as one that held.
+ * <p><b>Not here:</b> The expensive review that follows it. A refusal stops one reviewer's pass
+ * rather than being asked again per claim; what it left unanswered goes to the next reviewer
+ * ({@code FeaturePass}). An unchecked claim never counts as one that held.
  *
- * <p><b>Start with:</b> {@code FeatureReview.run}, {@code FeatureCheck}.
+ * <p><b>Start with:</b> {@code FeaturePass.run}, {@code FeatureReview.run}, {@code FeatureCheck}.
  *
- * <p>Depends on: agent.model, json, plan.
+ * <p>Depends on: agent.model, json, plan, spec.model.
  */
 package dev.fmangoni.forge.review.feature;

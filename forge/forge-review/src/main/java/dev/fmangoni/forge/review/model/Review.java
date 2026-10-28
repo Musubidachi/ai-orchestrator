@@ -93,6 +93,11 @@ public class Review {
         return blocking().isEmpty();
     }
 
+    /** The ids of findings this review let go without saying why ({@link Recheck#unexplained}). */
+    public List<String> unexplainedRulings() {
+        return rechecks == null ? List.of() : rechecks.stream().filter(Recheck::unexplained).map(Recheck::getId).toList();
+    }
+
     public static Review failed(String reason) {
         Review review = new Review();
         review.setParseError(reason);
