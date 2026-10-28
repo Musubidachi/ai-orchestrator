@@ -27,6 +27,9 @@ public record SecurityFinding(String layer, String severity, String title, Strin
      */
     public static final String SECRETS_LAYER = "secrets";
 
+    /** The session audit's layer name: a high finding there needs a ruling, though nothing can repair it. */
+    public static final String SESSIONS_LAYER = "agent sessions";
+
     public static final String CRITICAL = "critical";
     public static final String HIGH = "high";
     public static final String MEDIUM = "medium";

@@ -175,14 +175,37 @@ public final class ReviewStep {
             }
         }
         Map<String, String> answers = new HashMap<>();
+        Map<String, List<String>> defences = new LinkedHashMap<>();
         if (state.getPlan() != null && state.getPlan().getReviewFindings() != null) {
             for (FindingAnswer answer : state.getPlan().getReviewFindings()) {
                 answers.put(answer.getId(), answer.said());
+                defences.putAll(defence(answer));
             }
         }
         List<String> ruledFine = ReviewHistory.ruledFine(
                 ReviewHistory.load(run.paths().reviewHistoryFile()));
-        return new ReviewRound(previous, answers, ruledFine, filesOf(previous));
+        return new ReviewRound(previous, answers, ruledFine, filesOf(previous, defences));
+    }
+
+    /**
+     * The file holding the test a builder disputed a finding with, and the test's name to show it
+     * around.
+     *
+     * <p>A dispute is the builder defending its code with a test, and the reviewer rules on it. It
+     * was told "the next reviewer reads your test" and was never shown it: the recheck held only the
+     * files the findings named, and the diff is cut before a late test file. A defence nobody reads
+     * loses by default. {@code e2e/market.spec.ts > sells}, {@code src/FooTest.java::bar} and
+     * {@code src/a.test.ts:42} all name a file and, after it, the test.
+     */
+    private static Map<String, List<String>> defence(FindingAnswer answer) {
+        String test = answer.getTest() == null ? "" : answer.getTest().strip();
+        if (!"disputed".equalsIgnoreCase(answer.getAction()) || test.isEmpty()) {
+            return Map.of();
+        }
+        String[] parts = test.split("::|#| > ", 2);
+        String file = parts[0].strip().replaceFirst(":\\d+$", "");
+        String name = parts.length > 1 ? parts[1].strip() : "";
+        return file.isEmpty() ? Map.of() : Map.of(file, List.of(name));
     }
 
     /** The most of one finding's file a recheck is shown, and of all of them together. */
@@ -199,7 +222,7 @@ public final class ReviewStep {
      * shown around what its findings name ({@link FileExcerpt}), not from the top. A path that is
      * missing or leads outside the repository is left out.
      */
-    private Map<String, String> filesOf(List<Finding> findings) {
+    private Map<String, String> filesOf(List<Finding> findings, Map<String, List<String>> defences) {
         Path repo = run.paths().repo().normalize();
         Map<String, List<String>> about = new LinkedHashMap<>();
         for (Finding finding : findings) {
@@ -211,6 +234,7 @@ public final class ReviewStep {
                 words.add(finding.getStillPresent());
             }
         }
+        defences.forEach((file, words) -> about.computeIfAbsent(file, n -> new ArrayList<>()).addAll(words));
         Map<String, String> files = new LinkedHashMap<>();
         int total = 0;
         for (Map.Entry<String, List<String>> entry : about.entrySet()) {

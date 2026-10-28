@@ -61,13 +61,19 @@ public class SecurityReport {
      * What a person has to rule on before accepting.
      *
      * <p>Serious findings, plus any critical or high secret — including one only in history, which
-     * no repair turn can fix because the key has to be revoked by whoever owns it.
+     * no repair turn can fix because the key has to be revoked by whoever owns it — and anything
+     * high an agent did in its session, which is past repairing for the same reason.
      */
     @JsonIgnore
     public List<SecurityFinding> forRuling() {
         return findings().stream()
-                .filter(f -> f.serious() || (SecurityFinding.SECRETS_LAYER.equals(f.layer()) && f.rank() <= 1))
+                .filter(f -> f.serious() || (unrepairable(f) && f.rank() <= 1))
                 .toList();
+    }
+
+    private static boolean unrepairable(SecurityFinding finding) {
+        return SecurityFinding.SECRETS_LAYER.equals(finding.layer())
+                || SecurityFinding.SESSIONS_LAYER.equals(finding.layer());
     }
 
     /** Findings per severity, for a card: {@code {"high": 2, "low": 5}}. */

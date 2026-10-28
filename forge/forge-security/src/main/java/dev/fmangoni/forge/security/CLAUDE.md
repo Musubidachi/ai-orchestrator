@@ -20,6 +20,15 @@ Runs every layer over the project at HEAD and keeps one `SecurityReport` per com
 - **One repair turn, then a person decides.** The pipeline runs `brief.SecurityRepairBrief` once.
   Never loop it.
 - A missing scanner is `not installed`, never a pass and never an install.
+- **The session audit judges what agents did, not the code** (`session.SessionAudit`). It reads
+  every command run and file written from the vendors' logs and flags what the house rules forbid:
+  pushing, publishing, installing, system settings, agent settings and credentials, writing or
+  deleting outside the project, and stopping processes by name or by port. Stopping a process by
+  number is high only when the number came from an earlier port lookup's output (the kill that
+  closed a person's game on 4317); stopping the server it just started is not flagged. Its findings
+  are never serious, since nothing can repair a session, but a high one needs a ruling, named by
+  its command or folder so the name is the same on every check. Calibrate any new rule against
+  every run's logs before adding it: `git stash push` once read as a push.
 
 ## Adding a layer
 

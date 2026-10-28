@@ -11,6 +11,6 @@
  *
  * <p><b>Start with:</b> {@code SecurityCheck.run}.
  *
- * <p>Depends on: agent, agent.model, git, process.local, project, security.ai, security.layer, security.model, security.osv, spec.model.
+ * <p>Depends on: agent, agent.model, git, process.local, project, security.ai, security.layer, security.model, security.osv, security.session, spec.model.
  */
 package dev.fmangoni.forge.security;

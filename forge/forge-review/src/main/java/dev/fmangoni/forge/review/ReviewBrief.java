@@ -298,6 +298,14 @@ public class ReviewBrief {
                     specifically why the change does not answer it; that sentence is what the \
                     builder is given next. Do not raise any of these again in `findings`.
 
+                    Where the builder says `disputed`, it is defending its code rather than \
+                    changing it, and the test it names is its evidence; that test's file is among \
+                    those below. Rule on the defence, not on your first impression: if the test \
+                    exercises exactly what the finding said was broken and shows it right, \
+                    withdraw the finding and say what convinced you. If it does not, keep it \
+                    `still_present` and say in `note` precisely what the test misses, such as the \
+                    input it never tries, so the builder can answer that or fix it.
+
                     """);
             for (Finding finding : round.previous()) {
                 out.append("- id `").append(finding.getId()).append("`: ");

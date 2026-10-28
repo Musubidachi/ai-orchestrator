@@ -16,8 +16,10 @@ import dev.fmangoni.forge.security.model.LayerRun;
 import dev.fmangoni.forge.security.model.SecurityFinding;
 import dev.fmangoni.forge.security.model.SecurityReport;
 import dev.fmangoni.forge.security.osv.OsvClient;
+import dev.fmangoni.forge.security.session.SessionAudit;
 import dev.fmangoni.forge.spec.model.Spec;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -69,6 +71,9 @@ public final class SecurityCheck {
                     () -> new SecurityReview(agents, paths.repo(), paths.logs()).run(spec, builder, diff, scanned));
         }
         layers.add(ai);
+        layers.add(guarded(SessionAudit.LAYER, () -> new SessionAudit(paths.logs(),
+                List.of(paths.repo(), paths.designDir(), paths.marketingDir()),
+                Path.of(System.getProperty("java.io.tmpdir"))).run()));
 
         SecurityReport report = new SecurityReport(head, tree, layers);
         report.save(paths.securityFile());

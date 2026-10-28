@@ -65,7 +65,9 @@ front of every implementation turn, which is what makes the cheaper rung reasona
   review rules on each (`fixed`, `still_present`, `withdrawn`) before raising anything new, and one
   it does not settle is carried with its attempts. Two attempts per finding and four repair turns
   per loop, then the project is held for a person — never DONE with a blocker on it. A hold stops
-  the orchestrator's loop whatever the phase.
+  the orchestrator's loop whatever the phase. The builder may defend its code instead of changing
+  it (`disputed`, with a test as evidence); the recheck is shown that test's file and rules on the
+  defence, withdrawing the finding or saying what the test misses.
 - **The planning turn is read-only and never fatal.** No plan, or a refused planner, must leave the
   project exactly as buildable as it was before the phase existed.
 - **A plan already on disk is not bought again** — it may have been written by hand.

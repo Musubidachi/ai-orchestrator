@@ -71,6 +71,9 @@ class ReviewLoopTest {
             try {
                 Files.writeString(task.cwd().resolve("Pipeline.java"), OVERVIEW + "// turn " + briefs.size());
                 Files.writeString(task.cwd().resolve(RunFile.NAME), "@echo off\ncall mvn -q exec:java\npause\n");
+                Files.createDirectories(task.cwd().resolve("test"));
+                Files.writeString(task.cwd().resolve("test/DocxTest.java"),
+                        "class DocxTest {\n    void tablesInOrder() { /* cells before the text after them */ }\n}\n");
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
@@ -159,6 +162,11 @@ class ReviewLoopTest {
     }
 
     private RunState run(String... replies) throws IOException {
+        return runAnswering("{\"id\":\"" + A_ID + "\",\"action\":\"fixed\","
+                + "\"how\":\"walk cells in document order\",\"test\":\"DocxTest::tablesInOrder\"}", replies);
+    }
+
+    private RunState runAnswering(String answer, String... replies) throws IOException {
         Path file = Files.writeString(root.resolve("001-test.md"), """
                 ---
                 id: "001"
@@ -172,8 +180,6 @@ class ReviewLoopTest {
                 Build the thing.
                 """);
         Spec spec = SpecLoader.load(file);
-        String answer = "{\"id\":\"" + A_ID + "\",\"action\":\"fixed\","
-                + "\"how\":\"walk cells in document order\",\"test\":\"DocxTest::tablesInOrder\"}";
         Map<AgentKind, Agent> map = new EnumMap<>(AgentKind.class);
         map.put(AgentKind.CLAUDE, new Builder(built, answer));
         map.put(AgentKind.CODEX, new Reviewer(reviewed, List.of(replies)));
@@ -220,6 +226,23 @@ class ReviewLoopTest {
         assertTrue(second.contains("### Pipeline.java"), second);
         assertTrue(second.contains("// turn 2"), "the repaired file, as the repair left it:\n" + second);
         assertTrue(second.contains("from the file it is in, as it stands now"), second);
+    }
+
+    @Test
+    @DisplayName("a builder defending its code is heard: the recheck is shown the test it defends with")
+    void aDisputeShowsItsTest() throws IOException {
+        // The builder was told "the next reviewer reads your test", and the recheck was shown only
+        // the finding's own file, so a defence in a test past the diff's cut went unread.
+        String dispute = "{\"id\":\"" + A_ID + "\",\"action\":\"disputed\","
+                + "\"how\":\"cells already come in order\",\"test\":\"test/DocxTest.java::tablesInOrder\"}";
+
+        RunState state = runAnswering(dispute, review(A), recheck(A_ID, "withdrawn", "the test covers it", ""));
+
+        assertEquals(Phase.DONE, state.getPhase());
+        String second = reviewed.get(1);
+        assertTrue(second.contains("### test/DocxTest.java"), second);
+        assertTrue(second.contains("void tablesInOrder()"), "the test itself, not only its name:\n" + second);
+        assertTrue(second.contains("Rule on the defence"), second);
     }
 
     @Test

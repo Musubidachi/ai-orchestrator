@@ -1,8 +1,8 @@
 # forge-security
 
-The security check: secret scanning, dependency advisories through OSV, static analysis, the AI security review, and the loopback probe of the running build.
+The security check: secret scanning, dependency advisories through OSV, static analysis, the AI security review, the loopback probe of the running build, and the audit of what the agents did in their sessions.
 
-**Packages:** `security`, `security.ai`, `security.layer`, `security.layer.model`, `security.model`, `security.osv`, `security.osv.model`. Each has a `package-info.java` saying what belongs in it, what does not, and what it may import.
+**Packages:** `security`, `security.ai`, `security.layer`, `security.layer.model`, `security.model`, `security.osv`, `security.osv.model`, `security.session`. Each has a `package-info.java` saying what belongs in it, what does not, and what it may import.
 
 **May use:** forge-core. Maven refuses anything higher; `LayersTest` holds the direction between packages inside.
 
