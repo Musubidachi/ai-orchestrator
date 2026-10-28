@@ -17,6 +17,11 @@ constructs one.
   them driving the desktop. That removes the servers plugins provide; one named directly in
   `~/.codex/config.toml` stays until `vendors.json` lists it under `disabledMcpServers`
   (`codex mcp list` shows what is configured, and with these flags what is left).
+- **A repository never configures the agent working in it.** Claude runs with
+  `--setting-sources user`: a project's `.claude/settings.json` is a file any agent can write, and
+  its hooks run outside every sandbox when the next Claude session starts there (confirmed on
+  2.1.293). `CLAUDE.md` and `.claude/skills` still load. Codex reads a project's own config only
+  for folders trusted in `~/.codex/config.toml`, which `runs/` is not; keep it that way.
 - **Codex is told its sandbox on every call.** `-s` on a fresh turn, `-c sandbox_mode=…` on a
   resumed one — a resumed session does not keep it (0.159.3) — and `-c windows.sandbox=…` when
   `vendors.json` names one. Which Windows sandbox works is a fact about the machine: check with

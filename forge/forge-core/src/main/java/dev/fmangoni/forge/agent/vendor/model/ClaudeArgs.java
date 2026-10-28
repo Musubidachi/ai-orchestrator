@@ -34,7 +34,17 @@ public class ClaudeArgs {
                 // hosting — and bypassPermissions lets the agent call any of them unasked, which
                 // is how "never post or publish" would be broken without anyone deciding to.
                 // Checked against Claude Code 2.1.283's --help.
-                "--strict-mcp-config"));
+                "--strict-mcp-config",
+                // The person's own settings only, never the project's. A project's
+                // .claude/settings.json and settings.local.json are files in the agent's repository,
+                // and their hooks run as commands when the session starts — outside any sandbox. A
+                // Codex agent, sandboxed to its folder, could write one there and have the next
+                // Claude turn run it as Forge: the same reach as a git hook, which Git already
+                // shuts off. Confirmed on Claude Code 2.1.293: a planted SessionStart hook ran on a
+                // build turn without this and not with it, and CLAUDE.md and the project's
+                // .claude/skills still loaded with it. "A repository you don't control should not
+                // configure its own reviewer" (Anthropic's cookbook) — nor its own builder.
+                "--setting-sources", "user"));
 
         // Both of these mean "do not stop and ask", but they are not interchangeable and the CLI
         // refuses the combination outright: "bypassPermissions not supported in restricted mode",

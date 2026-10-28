@@ -79,6 +79,23 @@ public class DesignBrief {
                 - Design for the screen sizes the spec names. Keep text readable and contrast \
                 high enough to use.
 
+                Make each look designed, not a default. Left to itself a designer drifts to the \
+                same safe page every time: a system font at two weights, a purple or blue \
+                gradient on white, evenly spread pastel colours, rounded cards in a grid. Where \
+                the person's own pictures or words show a look, they outrank this list. Otherwise:
+                - Commit to one aesthetic per look and carry it through every part of the screen. \
+                Name its source of inspiration in the pitch.
+                - Typography with contrast: weights far apart (200 against 800, not 400 against \
+                600) and sizes that jump (a heading three times the body, not one and a half). \
+                Only fonts every computer has may be named, so get character from weight, size, \
+                spacing, case and the serif, sans or monospace choice, not from a font file.
+                - A dominant colour with one or two sharp accents, set as CSS variables, rather \
+                than a palette spread evenly.
+                - A background with depth: layered gradients, a pattern or texture drawn in CSS or \
+                SVG, light and shadow that suit the look, rather than one flat colour.
+                - Unless you were asked for variations of one look, each must differ from the \
+                others in more than colour: light against dark, type, shape language and density.
+
                 Then write `%3$s`, listing them:
 
                 [{"file":"option-1.html","name":"two or three words","pitch":"one sentence saying \

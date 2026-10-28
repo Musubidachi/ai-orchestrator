@@ -78,6 +78,15 @@ class AgentArgsTest {
         }
 
         @Test
+        @DisplayName("no turn loads settings, and so hooks, from the project's own folder")
+        void projectSettingsAreNotLoaded() {
+            // A hook in the repository's .claude/settings.json runs outside every sandbox; any
+            // agent, of any vendor, can write that file.
+            assertEquals("user", valueAfter(ClaudeArgs.of(false, null, "s", "", null), "--setting-sources"));
+            assertEquals("user", valueAfter(ClaudeArgs.of(true, "s", "x", "", null), "--setting-sources"));
+        }
+
+        @Test
         @DisplayName("a read-only turn cannot run anything")
         void reviewTurnsAreRestricted() {
             assertTrue(ClaudeArgs.of(true, null, "s", "", null).contains("--restricted"));

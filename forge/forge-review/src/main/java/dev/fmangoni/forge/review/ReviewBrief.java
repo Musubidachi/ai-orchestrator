@@ -103,6 +103,14 @@ public class ReviewBrief {
                 accepted as it stands — wrong behaviour, silent data loss, a test that cannot fail. \
                 Everything else is "note". An empty findings list is a valid and useful answer; do \
                 not invent problems to look thorough.
+
+                A blocking finding needs evidence. Quote in `detail` the line or lines from the \
+                diff that show the defect. If you cannot point to a line, it is a note at most. \
+                Before you raise anything, check it once more against the diff: a finding that \
+                is wrong costs a repair session that makes the code worse.
+
+                Do not raise: a matter of taste in naming or formatting, a problem in code this \
+                change did not touch, or a feature the spec did not ask for.
                 %s%s
                 ## Spec
 
