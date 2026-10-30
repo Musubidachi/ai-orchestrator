@@ -24,6 +24,12 @@ front of every implementation turn, which is what makes the cheaper rung reasona
 ## Must not be traded away
 
 - **The gate decides done.** Nothing the agent says reaches `GateStep`'s verdict.
+- **Passing commands do not end a version its builder calls unfinished.** A gate that passes after
+  a turn that changed something, with the handoff's `status` "partial" and sessions left, goes to
+  CONTINUING rather than the review (`GateStep.moreToBuild`). 003.3 passed while its handoff listed
+  four steps left, and the person found the missing half by playing it. Only the explicit status
+  counts, not a non-empty `remaining`; never for Check Again; once sessions run out it goes to the
+  review as before. The agent's word can hold a version back, never pass one.
 - **State is saved after every step**, so stopping between turns is always safe, and
   `turnInFlight` is set before an agent runs so `Recovery` can rescue its work.
 - **A rejected or empty agent call is not a session** (`AgentTurn`): it suspends or backs off

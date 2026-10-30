@@ -3,7 +3,8 @@
  * they name.
  *
  * <p><b>Belongs here:</b> {@code Gate}, its results, evidence collection, and {@code RunFile}: the
- * {@code run.bat} every project owes the person who will try it.
+ * {@code run.bat} every project owes the person who will try it. The checks for a version held to
+ * its folders: {@code OwnedFiles}, and {@code ForeignFailure} for a failure it cannot reach.
  *
  * <p><b>Not here:</b> Repairing a failure (the pipeline runs a repair turn with {@code
  * brief.RepairBrief}). The agent's own claim of success never counts here.

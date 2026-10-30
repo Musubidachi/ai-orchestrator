@@ -108,9 +108,12 @@ public class TimeContract {
                   "digest": "a briefing for a successor who has not read this conversation"
                 }
 
-                - `status` is `complete` only when you believe the acceptance commands now pass.
-                Forge runs them itself regardless, so claiming it early gains nothing and only
-                costs a repair round.
+                - `status` is `complete` only when everything the spec asks for is built and you
+                believe the acceptance commands now pass. Forge runs them itself regardless, so
+                claiming it early gains nothing and only costs a repair round. Commands that pass
+                with asked-for work still to do are `partial`: Forge gives the project another
+                session instead of sending it to review. Optional extras go in `ideas`, never in
+                `remaining`.
                 - `overview` is the path to the one class that reads as the whole program's flow,
                 described in AGENTS.md. Every session must leave one and name it here; it is what a
                 person reads to decide whether they agree with your approach.

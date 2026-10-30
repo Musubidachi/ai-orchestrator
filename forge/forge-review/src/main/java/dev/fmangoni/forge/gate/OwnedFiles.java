@@ -23,12 +23,17 @@ import lombok.experimental.UtilityClass;
 public class OwnedFiles {
 
     /**
-     * Written by Forge itself, never by the version's own work: the brief, the house rules it rewrites
-     * before every turn under both names the agents read, the scaffold's ignore file, and what the
-     * gate saves.
+     * Not the version's own code: the brief, the house rules Forge rewrites before every turn under
+     * both names the agents read, the scaffold's ignore file, what the gate saves, and the evidence
+     * the acceptance suite writes.
+     *
+     * <p>Evidence because every version's suite runs every earlier version's tests, and those save
+     * their screenshots again. 008.1, the first version held to its folders, changed seven earlier
+     * screenshots by passing their tests, and its own three lighting pictures were outside its
+     * folders too, though its spec asked for them.
      */
     private final List<String> FORGES = List.of("IMPROVEMENT.md", "SPEC.md", "CLAUDE.md", "AGENTS.md", ".gitignore",
-            "artifacts/**");
+            "artifacts/**", "evidence/**");
 
     /**
      * The failure to report when the version changed files it does not own, or empty when it did not.

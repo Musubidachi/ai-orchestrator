@@ -47,6 +47,23 @@ class OwnedFilesTest {
     }
 
     @Test
+    @DisplayName("evidence the suite writes is not the version's code, its own or an earlier version's")
+    void evidenceIsNotCode() throws Exception {
+        write("evidence/shell-home.png", "the foundation's screenshot");
+        String start = git.commitAll("Shell evidence");
+        write("src/screens/market/Market.tsx", "export const Market = () => null;\n");
+        write("evidence/market.png", "this version's picture");
+        write("evidence/shell-home.png", "the same screenshot, saved again by the shell's own test");
+        git.commitAll("Build");
+
+        assertTrue(OwnedFiles.check(repo, log, start, MARKET).isEmpty(),
+                "008.1 changed seven earlier screenshots just by passing their tests");
+        assertEquals(List.of("src/design/tokens.ts"),
+                OwnedFiles.outside(List.of("evidence/x.png", "src/design/tokens.ts"), MARKET),
+                "only evidence: a stray change to code is still caught");
+    }
+
+    @Test
     @DisplayName("a version that changed only its own folders passes")
     void ownFoldersPass() throws Exception {
         write("src/screens/market/Market.tsx", "export const Market = () => null;\n");

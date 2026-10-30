@@ -32,10 +32,17 @@ evidence the spec names.
   Whether it works is for the person.
 - **A version that owns folders changes nothing outside them** (`OwnedFiles`, from `GateStep` on a
   gate that passed). The spec's `owns:` globs; every file changed since the version's baseline
-  must match one, apart from what Forge writes itself (`IMPROVEMENT.md`, `SPEC.md`, `artifacts/`).
-  A range that cannot be read fails rather than passes. A spec without `owns` is not checked. For a
-  family built one feature per version, where no feature may change another's code.
+  must match one, apart from what Forge writes itself (`IMPROVEMENT.md`, `SPEC.md`, `artifacts/`)
+  and the evidence the suite saves (`evidence/`: every version's suite reruns every earlier version's
+  tests, and they save their screenshots again). A range that cannot be read fails rather than
+  passes. A spec without `owns` is not checked. For a family built one feature per version, where no
+  feature may change another's code.
+- **A version stuck on another version's check waits for a person** (`ForeignFailure`, from
+  `GateStep` before granting a repair round). The same command failing at two gates in a row, naming
+  the same tracked files and only files the version does not own, parks: no repair turn can change
+  them. The first failure still gets its repair, since a version can break another's test through
+  its own code. 008.1 spent four rounds on the foundation's always-day test.
 
 ## Tests
 
-`GateTest`, `EvidenceCollectorTest`, `OwnedFilesTest`.
+`GateTest`, `EvidenceCollectorTest`, `OwnedFilesTest`, `ForeignFailureTest`.

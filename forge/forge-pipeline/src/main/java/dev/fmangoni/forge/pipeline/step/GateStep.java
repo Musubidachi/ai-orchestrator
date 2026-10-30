@@ -5,6 +5,7 @@ import dev.fmangoni.forge.feature.Features;
 import dev.fmangoni.forge.feature.MissingClips;
 import dev.fmangoni.forge.feature.RecordingTake;
 import dev.fmangoni.forge.gate.CommandResult;
+import dev.fmangoni.forge.gate.ForeignFailure;
 import dev.fmangoni.forge.gate.Gate;
 import dev.fmangoni.forge.gate.GateResult;
 import dev.fmangoni.forge.gate.LookCheck;
@@ -51,9 +52,15 @@ public final class GateStep {
         if (result.passed()) {
             state.setLastFailure(null);
             state.setLastError(null);
-            state.setPhase(Phase.SECURITY_CHECK);
+            if (moreToBuild(gateOnly)) {
+                state.setContinuations(state.getContinuations() + 1);
+                state.setPhase(Phase.CONTINUING);
+            } else {
+                state.setPhase(Phase.SECURITY_CHECK);
+            }
             return;
         }
+        CommandResult before = state.getLastFailure();
         state.setLastFailure(result.firstFailure().orElse(null));
         state.setLastError(result.summary());
         if (LookCheck.failed(state.getLastFailure()) && state.getExtraKind() == null) {
@@ -76,7 +83,7 @@ public final class GateStep {
             // Another session would move the clip back. Only a person can say which name stays.
             park(moved.get());
         } else {
-            afterFailure(afterInterruption);
+            afterFailure(afterInterruption, before);
         }
     }
 
@@ -162,7 +169,8 @@ public final class GateStep {
         return plan == null ? null : plan.getOverview() == null ? "" : plan.getOverview();
     }
 
-    private void afterFailure(boolean afterInterruption) {
+    /** @param before what the gate before this one failed on, to tell a repeat from a new failure */
+    private void afterFailure(boolean afterInterruption, CommandResult before) {
         RunState state = run.state();
         Spec spec = run.spec();
         if (state.getSessions() >= spec.maxSessions()) {
@@ -172,6 +180,20 @@ public final class GateStep {
         } else if (unfinishedRatherThanBroken()) {
             state.setContinuations(state.getContinuations() + 1);
             state.setPhase(Phase.CONTINUING);
+        } else {
+            repairOrPark(before);
+        }
+    }
+
+    /** Another repair turn, unless the budget is spent or no turn could fix what fails. */
+    private void repairOrPark(CommandResult before) {
+        RunState state = run.state();
+        Spec spec = run.spec();
+        // A repair turn cannot change a file this version does not own (ForeignFailure).
+        Optional<String> foreign = ForeignFailure.stuck(run.paths().repo(), run.paths().gitLog(), spec.owns(),
+                before, state.getLastFailure());
+        if (foreign.isPresent()) {
+            park(foreign.get());
         } else if (state.getRepairRounds() >= spec.maxRepairRounds()) {
             park("acceptance still failing after " + state.getRepairRounds() + " repair rounds");
         } else {
@@ -193,6 +215,25 @@ public final class GateStep {
         Plan plan = run.state().getPlan();
         boolean saysUnfinished = plan != null && plan.usable() && plan.partial();
         return saysUnfinished && run.workspace().git().changedSince(run.state().getPreTurnCommit());
+    }
+
+    /**
+     * A gate that passed on a version its builder says is unfinished: another session, not the
+     * review.
+     *
+     * <p>The commands only check what the spec's author thought to check. 003.3 passed them while
+     * its handoff said "partial" with four steps left, went to DONE, and the person found the
+     * missing half by playing it. Only an explicit {@code "partial"}, not a non-empty remaining
+     * list, which can hold optional extras; only after a turn that changed something, as with a
+     * failure; and only while sessions are left. After that it goes to the review as before, and
+     * the report shows what the handoff still lists. Never for Check Again, which starts no turn.
+     */
+    private boolean moreToBuild(boolean gateOnly) {
+        RunState state = run.state();
+        Plan plan = state.getPlan();
+        return !gateOnly && state.getSessions() < run.spec().maxSessions()
+                && plan != null && plan.usable() && "partial".equalsIgnoreCase(plan.getStatus())
+                && run.workspace().git().changedSince(state.getPreTurnCommit());
     }
 
     /**

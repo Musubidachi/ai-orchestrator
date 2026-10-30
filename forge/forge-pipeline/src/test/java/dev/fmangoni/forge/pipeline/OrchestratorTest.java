@@ -665,6 +665,36 @@ class OrchestratorTest {
     }
 
     @Test
+    @DisplayName("a version failing twice on another version's test waits for a person, not its whole repair budget")
+    void aForeignTestFailingTwiceParks() throws IOException {
+        // 008.1 spent four repair rounds on the foundation's always-day test, which it could not change.
+        Spec spec = spec("echo FAIL tests/scene.test.ts && exit 1", 4);
+        spec.front().setOwns(List.of("src/lighting/**"));
+        seedPlan();
+        AtomicInteger turns = new AtomicInteger();
+        Agent builder = new StubAgent(AgentKind.CLAUDE, repo -> {
+            try {
+                turns.incrementAndGet();
+                Files.createDirectories(repo.resolve("tests"));
+                Files.writeString(repo.resolve("tests/scene.test.ts"), "it('is always day', () => {});\n");
+                Files.createDirectories(repo.resolve("src/lighting"));
+                Files.writeString(repo.resolve("src/lighting/index.ts"), "// turn " + turns.get() + "\n");
+                writeOverview(repo);
+            } catch (IOException e) {
+                throw new IllegalStateException(e);
+            }
+        }, finished());
+
+        RunState state = advance(spec, freshState(), agentsWhere(builder,
+                new StubAgent(AgentKind.CODEX, OrchestratorTest::writesNothing, CLEAN_REVIEW)));
+
+        assertEquals(Phase.PARKED, state.getPhase());
+        assertEquals(2, turns.get(), "the build, and one repair in case its own code broke that test");
+        assertTrue(state.getLastError().contains("tests/scene.test.ts"), state.getLastError());
+        assertTrue(state.getLastError().contains("does not own"), state.getLastError());
+    }
+
+    @Test
     @DisplayName("an agent that claims success but fails the gate is PARKED, not DONE")
     void agentSelfReportCannotPassTheGate() throws IOException {
         Spec spec = spec("exit 1", 2);
@@ -1412,6 +1442,58 @@ class OrchestratorTest {
         assertEquals(Phase.PARKED, state.getPhase());
         assertEquals(2, state.getRepairRounds());
         assertTrue(state.getLastError().contains("repair rounds"), state.getLastError());
+    }
+
+    /** Writes a new file every turn, says "partial" until its turn {@code doneOn}, then "complete". */
+    private static Agent buildsUntil(int doneOn, AtomicInteger turns) {
+        return new Agent() {
+            @Override
+            public AgentKind kind() {
+                return AgentKind.CLAUDE;
+            }
+
+            @Override
+            public AgentResult run(AgentTask task) {
+                int turn = turns.incrementAndGet();
+                try {
+                    Files.writeString(task.cwd().resolve("step" + turn + ".java"), "x");
+                } catch (IOException e) {
+                    throw new IllegalStateException(e);
+                }
+                writeOverview(task.cwd());
+                return turn >= doneOn ? finished() : partialWithDigest("halfway");
+            }
+        };
+    }
+
+    @Test
+    @DisplayName("passing commands with the builder's own work unfinished get another session, not the review")
+    void aPassingGateOnUnfinishedWorkContinues() throws IOException {
+        // 003.3 passed its commands while its handoff said "partial" with four steps left, went to
+        // DONE, and the person found the missing half by playing it.
+        Spec spec = spec("exit 0", 2, 6);
+        AtomicInteger turns = new AtomicInteger();
+
+        RunState state = advance(spec, freshState(), agentsWhere(buildsUntil(2, turns),
+                new StubAgent(AgentKind.CODEX, OrchestratorTest::writesNothing, CLEAN_REVIEW)));
+
+        assertEquals(Phase.DONE, state.getPhase(), String.valueOf(state.getLastError()));
+        assertEquals(2, turns.get(), "one more session, then the review");
+        assertEquals(1, state.getContinuations());
+        assertEquals(0, state.getRepairRounds(), "continuing is not repairing");
+    }
+
+    @Test
+    @DisplayName("the session budget still bounds a builder that never says it is done")
+    void aPassingGateGoesToReviewOnceSessionsRunOut() throws IOException {
+        Spec spec = spec("exit 0", 2, 3);
+        AtomicInteger turns = new AtomicInteger();
+
+        RunState state = advance(spec, freshState(), agentsWhere(buildsUntil(Integer.MAX_VALUE, turns),
+                new StubAgent(AgentKind.CODEX, OrchestratorTest::writesNothing, CLEAN_REVIEW)));
+
+        assertEquals(3, turns.get());
+        assertEquals(Phase.DONE, state.getPhase(), "the commands pass, so the review decides as before");
     }
 
     @Test
