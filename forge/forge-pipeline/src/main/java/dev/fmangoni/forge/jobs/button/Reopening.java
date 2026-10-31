@@ -71,6 +71,8 @@ public final class Reopening {
         // really used would otherwise re-park on the first gate failure. The same for the review loop.
         state.setRepairRounds(0);
         state.setReviewRepairs(0);
+        // Past the spec's session limit, one turn and a park on its first failing gate is no attempt.
+        state.oweSessionsToARequest();
         RunStore.save(paths.stateFile(), state);
         return pipeline.start(id);
     }

@@ -36,7 +36,8 @@ evidence the spec names.
   and the evidence the suite saves (`evidence/`: every version's suite reruns every earlier version's
   tests, and they save their screenshots again). A range that cannot be read fails rather than
   passes. A spec without `owns` is not checked. For a family built one feature per version, where no
-  feature may change another's code.
+  feature may change another's code. The same list decides whether a turn built anything
+  (`OwnedFiles.builtSince`), for every project, owns or not.
 - **A version stuck on another version's check waits for a person** (`ForeignFailure`, from
   `GateStep` before granting a repair round). The same command failing at two gates in a row, naming
   the same tracked files and only files the version does not own, parks: no repair turn can change

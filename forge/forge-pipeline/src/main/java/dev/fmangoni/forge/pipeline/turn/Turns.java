@@ -49,11 +49,12 @@ public final class Turns {
             // Cleared before the turn rather than after: if the process dies mid-turn the work is
             // recovered and gated, and re-delivering the same request would have it done twice.
             state.setUserFeedback(null);
+            state.oweSessionsToARequest();
             turn.run(FeedbackBrief.of(feedback, state.getPlan(), spec.agentTimeout()), "Requested changes");
             return;
         }
         turn.run(ContinueBrief.of(state.getLastFailure(), state.getPlan(),
-                        state.getSessions() + 1, spec.maxSessions(), spec.agentTimeout()),
+                        state.getSessions() + 1, state.sessionLimit(spec.maxSessions()), spec.agentTimeout()),
                 "Continue (session " + (state.getSessions() + 1) + ")");
     }
 

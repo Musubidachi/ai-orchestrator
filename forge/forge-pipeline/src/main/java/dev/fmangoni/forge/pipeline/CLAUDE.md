@@ -30,6 +30,16 @@ front of every implementation turn, which is what makes the cheaper rung reasona
   four steps left, and the person found the missing half by playing it. Only the explicit status
   counts, not a non-empty `remaining`; never for Check Again; once sessions run out it goes to the
   review as before. The agent's word can hold a version back, never pass one.
+- **Progress is code, not screenshots.** Both "more time" checks (`moreToBuild`,
+  `unfinishedRatherThanBroken`) ask `OwnedFiles.builtSince`, which ignores what Forge and the suite
+  write. Every gate saves the screenshots again, and counting them gave 003.3 five sessions in
+  which nothing was built. `ContinueBrief` says so when the last gate passed: telling that builder
+  its commands failed kept it calling the work partial.
+- **A person's request gets sessions of its own.** Requested changes (`Turns.continueWork`) and Run
+  Another Session (`Reopening`) call `RunState.oweSessionsToARequest`: five sessions past wherever
+  the project stands, or the spec's limit if that is higher. Every check of the limit asks
+  `state.sessionLimit(spec.maxSessions())`, never the spec alone. 003.3 was asked for two features
+  at session 33 of 30 and parked on its first failing gate, with two tests left it had named.
 - **State is saved after every step**, so stopping between turns is always safe, and
   `turnInFlight` is set before an agent runs so `Recovery` can rescue its work.
 - **A rejected or empty agent call is not a session** (`AgentTurn`): it suspends or backs off

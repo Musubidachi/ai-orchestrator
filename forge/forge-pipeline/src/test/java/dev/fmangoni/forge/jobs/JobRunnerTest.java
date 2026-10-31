@@ -2054,6 +2054,7 @@ class JobRunnerTest {
         state.setPhase(Phase.PARKED);
         state.setAssignedTo(AgentKind.CLAUDE);
         state.setRepairRounds(6);
+        state.setSessions(33);
         RunStore.save(paths.stateFile(), state);
         hasRepository("001", Phase.PARKED);
         // Blocked on quota so the reopened project records its new phase and then waits.
@@ -2065,6 +2066,8 @@ class JobRunnerTest {
         assertEquals(Phase.CONTINUING, after.getPhase());
         assertEquals(0, after.getRepairRounds(),
                 "a parked project reopened by hand starts its repair budget again");
+        assertEquals(33 + RunState.SESSIONS_PER_REQUEST, after.sessionLimit(30),
+                "past its spec's limit, a reopened project gets sessions of its own");
         assertNotEquals(Phase.PARKED, after.getPhase());
     }
 

@@ -72,6 +72,22 @@ public class OwnedFiles {
                 that owns it.""".formatted(listed(owns), abbreviated(baseline), listed(outside), baseline)));
     }
 
+    /**
+     * Whether a turn built anything: a change since {@code sha} to a file Forge and the suite do not
+     * write.
+     *
+     * <p>Every gate saves the suite's screenshots again, so counting those, 003.3 earned five more
+     * sessions in which its builder changed no code. When the changed files cannot be listed, any
+     * change counts, as before.
+     */
+    public boolean builtSince(Git git, String sha) {
+        if (!git.changedSince(sha)) {
+            return false;
+        }
+        Optional<List<String>> changed = git.changedFiles(sha, "HEAD");
+        return changed.isEmpty() || !outside(changed.get(), List.of()).isEmpty();
+    }
+
     /** The changed paths no owned glob, and nothing Forge writes, covers. */
     List<String> outside(List<String> changed, List<String> owns) {
         List<Pattern> allowed = new ArrayList<>();

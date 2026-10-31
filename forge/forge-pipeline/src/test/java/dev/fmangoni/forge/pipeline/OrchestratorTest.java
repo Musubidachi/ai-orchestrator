@@ -1484,6 +1484,50 @@ class OrchestratorTest {
     }
 
     @Test
+    @DisplayName("a session that only saved screenshots again is not progress, and a passing gate is called passing")
+    void screenshotsAloneDoNotEarnASession() throws IOException {
+        // 003.3's builder was told five sessions running that its commands did not pass when they
+        // did, said "partial", and changed nothing but the suite's screenshots.
+        Spec spec = spec("exit 0", 2, 6);
+        AtomicInteger turns = new AtomicInteger();
+        List<String> briefs = new ArrayList<>();
+        Agent builder = new Agent() {
+            @Override
+            public AgentKind kind() {
+                return AgentKind.CLAUDE;
+            }
+
+            @Override
+            public AgentResult run(AgentTask task) {
+                int turn = turns.incrementAndGet();
+                briefs.add(task.brief());
+                try {
+                    if (turn == 1) {
+                        Files.writeString(task.cwd().resolve("step1.java"), "x");
+                        writeOverview(task.cwd());
+                    }
+                    Files.createDirectories(task.cwd().resolve("artifacts"));
+                    Files.createDirectories(task.cwd().resolve("evidence"));
+                    Files.writeString(task.cwd().resolve("artifacts/home.png"), "taken at turn " + turn);
+                    Files.writeString(task.cwd().resolve("evidence/home.png"), "taken at turn " + turn);
+                } catch (IOException e) {
+                    throw new IllegalStateException(e);
+                }
+                return partialWithDigest("halfway");
+            }
+        };
+
+        RunState state = advance(spec, freshState(), agentsWhere(builder,
+                new StubAgent(AgentKind.CODEX, OrchestratorTest::writesNothing, CLEAN_REVIEW)));
+
+        assertEquals(2, turns.get(), "the code-building session earns one more; the screenshot one does not");
+        assertEquals(Phase.DONE, state.getPhase(), String.valueOf(state.getLastError()));
+        String second = briefs.get(1);
+        assertTrue(second.contains("The acceptance commands pass"), second);
+        assertFalse(second.contains("do not pass yet"), second);
+    }
+
+    @Test
     @DisplayName("the session budget still bounds a builder that never says it is done")
     void aPassingGateGoesToReviewOnceSessionsRunOut() throws IOException {
         Spec spec = spec("exit 0", 2, 3);
@@ -1628,6 +1672,62 @@ class OrchestratorTest {
         assertTrue(briefs.get(0).contains("unreadable on a phone"), "the feedback never arrived");
         assertNull(finished.getUserFeedback(), "it must not be delivered a second time");
         assertEquals(Phase.DONE, finished.getPhase());
+    }
+
+    /** A project at its spec's session limit, with a person's request waiting. */
+    private RunState pastItsLimitWithARequest(Spec spec) throws IOException {
+        RunState state = freshState();
+        state.setPhase(Phase.CONTINUING);
+        state.setSessions(spec.maxSessions());
+        state.setUserFeedback("Add the second screen.");
+        state.setBaselineCommit(new Workspace(paths, "house rules").scaffold(spec));
+        return state;
+    }
+
+    @Test
+    @DisplayName("a request made past the session limit gets sessions of its own, not one turn and a park")
+    void aRequestPastTheLimitGetsSessionsOfItsOwn() throws IOException {
+        // 003.3 was asked for two features at session 33 of 30, built them, said two tests were
+        // left to update, and parked on the first failing gate with no repair round.
+        Spec spec = spec("test -f Fixed.java", 2, 3);
+        AtomicInteger turns = new AtomicInteger();
+        Agent builder = new Agent() {
+            @Override
+            public AgentKind kind() {
+                return AgentKind.CLAUDE;
+            }
+
+            @Override
+            public AgentResult run(AgentTask task) {
+                boolean first = turns.incrementAndGet() == 1;
+                writes(first ? "Feature.java" : "Fixed.java", "class X {}").accept(task.cwd());
+                return first ? partialWithDigest("update the two tests") : finished();
+            }
+        };
+
+        RunState state = advance(spec, pastItsLimitWithARequest(spec), agentsWhere(builder,
+                new StubAgent(AgentKind.CODEX, OrchestratorTest::writesNothing, CLEAN_REVIEW)));
+
+        assertEquals(Phase.DONE, state.getPhase(), String.valueOf(state.getLastError()));
+        assertEquals(2, turns.get());
+        assertEquals(5, state.getSessions());
+    }
+
+    @Test
+    @DisplayName("a request's own sessions are bounded too")
+    void aRequestsSessionsRunOut() throws IOException {
+        Spec spec = spec("test -f Never.java", 2, 3);
+        AtomicInteger turns = new AtomicInteger();
+        Agent builder = new StubAgent(AgentKind.CLAUDE,
+                repo -> writes("Step" + turns.incrementAndGet() + ".java", "class X {}").accept(repo),
+                partialWithDigest("keep building"));
+
+        RunState state = advance(spec, pastItsLimitWithARequest(spec), agentsWhere(builder,
+                new StubAgent(AgentKind.CODEX, OrchestratorTest::writesNothing, CLEAN_REVIEW)));
+
+        assertEquals(Phase.PARKED, state.getPhase());
+        assertEquals(3 + RunState.SESSIONS_PER_REQUEST, state.getSessions());
+        assertTrue(state.getLastError().contains("sessions"), state.getLastError());
     }
 
     @Test

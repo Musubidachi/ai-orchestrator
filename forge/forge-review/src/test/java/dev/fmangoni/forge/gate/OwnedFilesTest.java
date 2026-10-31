@@ -64,6 +64,28 @@ class OwnedFilesTest {
     }
 
     @Test
+    @DisplayName("a turn that only saved screenshots and rewrote Forge's files built nothing")
+    void screenshotsAreNotProgress() throws Exception {
+        write("artifacts/home.png", "the gate's screenshot");
+        write("evidence/home.png", "the suite's screenshot");
+        write("CLAUDE.md", "The house rules, as Forge rewrote them.\n");
+        String start = git.commitAll("Last turn");
+        write("artifacts/home.png", "the same screenshot, taken again");
+        write("evidence/home.png", "the same screenshot, taken again");
+        write("CLAUDE.md", "The house rules, rewritten again.\n");
+        write("IMPROVEMENT.md", "Build the market screen, as it now reads.\n");
+        String churned = git.commitAll("Continue (session 2)");
+
+        assertFalse(OwnedFiles.builtSince(git, start), "003.3 earned five sessions this way");
+        assertFalse(OwnedFiles.builtSince(git, churned), "nothing at all changed");
+
+        write("src/screens/market/Market.tsx", "export const Market = () => null;\n");
+        git.commitAll("Continue (session 3)");
+        assertTrue(OwnedFiles.builtSince(git, start), "code beside the screenshots is progress");
+        assertTrue(OwnedFiles.builtSince(git, null), "with nothing to measure from, any turn counts, as before");
+    }
+
+    @Test
     @DisplayName("a version that changed only its own folders passes")
     void ownFoldersPass() throws Exception {
         write("src/screens/market/Market.tsx", "export const Market = () => null;\n");

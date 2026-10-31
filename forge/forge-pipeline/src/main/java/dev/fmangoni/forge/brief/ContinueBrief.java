@@ -21,6 +21,9 @@ public class ContinueBrief {
 
     public String of(CommandResult gateOutput, Plan previous, int session, int maxSessions,
                      Duration cap) {
+        if (gateOutput == null || gateOutput.passed()) {
+            return passing(previous, session, maxSessions, cap);
+        }
         return """
                 Carry on building. You reported last time that the work was not finished, and the \
                 acceptance commands agree — they do not pass yet. That is expected at this stage \
@@ -44,6 +47,28 @@ public class ContinueBrief {
                 %s%s""".formatted(
                 gateOutput == null ? "(none)" : gateOutput.command(),
                 gateOutput == null ? "(no output)" : tail(gateOutput.output()),
+                session, maxSessions,
+                TimeContract.resuming(previous),
+                TimeContract.of(cap));
+    }
+
+    /**
+     * After a gate that passed. The failing wording told 003.3's builder, five sessions running,
+     * that its commands did not pass when they did, and it went on calling the work partial.
+     */
+    private String passing(Plan previous, int session, int maxSessions, Duration cap) {
+        return """
+                Carry on building. You reported last time that the work was not finished. The \
+                acceptance commands pass, but they check only part of what the spec asks for, so \
+                passing does not make the work done.
+
+                Keep going through the remaining work. If you look and find that everything the \
+                spec asks for is already built, do not invent more: say `complete` in your handoff \
+                and stop. Optional extras go in `ideas`, never in `remaining`.
+
+                This is session %d of at most %d for this project.
+
+                %s%s""".formatted(
                 session, maxSessions,
                 TimeContract.resuming(previous),
                 TimeContract.of(cap));

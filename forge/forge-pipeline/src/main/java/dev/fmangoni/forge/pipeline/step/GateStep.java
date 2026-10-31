@@ -173,7 +173,7 @@ public final class GateStep {
     private void afterFailure(boolean afterInterruption, CommandResult before) {
         RunState state = run.state();
         Spec spec = run.spec();
-        if (state.getSessions() >= spec.maxSessions()) {
+        if (state.getSessions() >= state.sessionLimit(spec.maxSessions())) {
             park("still incomplete after " + state.getSessions() + " sessions");
         } else if (afterInterruption) {
             state.setPhase(Phase.REPAIRING);
@@ -214,7 +214,7 @@ public final class GateStep {
     private boolean unfinishedRatherThanBroken() {
         Plan plan = run.state().getPlan();
         boolean saysUnfinished = plan != null && plan.usable() && plan.partial();
-        return saysUnfinished && run.workspace().git().changedSince(run.state().getPreTurnCommit());
+        return saysUnfinished && OwnedFiles.builtSince(run.workspace().git(), run.state().getPreTurnCommit());
     }
 
     /**
@@ -231,9 +231,9 @@ public final class GateStep {
     private boolean moreToBuild(boolean gateOnly) {
         RunState state = run.state();
         Plan plan = state.getPlan();
-        return !gateOnly && state.getSessions() < run.spec().maxSessions()
+        return !gateOnly && state.getSessions() < state.sessionLimit(run.spec().maxSessions())
                 && plan != null && plan.usable() && "partial".equalsIgnoreCase(plan.getStatus())
-                && run.workspace().git().changedSince(state.getPreTurnCommit());
+                && OwnedFiles.builtSince(run.workspace().git(), state.getPreTurnCommit());
     }
 
     /**

@@ -220,6 +220,15 @@ public class RunState {
     /** How many agent turns this project has consumed, across every run and every process. */
     private int sessions;
 
+    /** Sessions a person's request is owed, counted from where the project stood when it was made. */
+    public static final int SESSIONS_PER_REQUEST = 5;
+
+    /**
+     * The session count a person's latest request may run to, whatever the spec's limit: see
+     * {@link #sessionLimit}. Zero until a person asks for anything.
+     */
+    private int sessionsOwedTo;
+
     /**
      * Tokens this project's build turns have moved, as each vendor reported them.
      *
@@ -347,4 +356,20 @@ public class RunState {
 
     private Instant createdAt;
     private Instant updatedAt;
+
+    /**
+     * Gives a person's request sessions of its own, past wherever the project stands.
+     *
+     * <p>Without this, a request made after the spec's limit got exactly one turn: 003.3 was asked
+     * for two features at session 33 of 30, built them, left two tests to update, and parked on the
+     * first failing gate with no repair round.
+     */
+    public void oweSessionsToARequest() {
+        sessionsOwedTo = Math.max(sessionsOwedTo, sessions + SESSIONS_PER_REQUEST);
+    }
+
+    /** How many sessions this project may run to: the spec's limit, or more while a request is owed them. */
+    public int sessionLimit(int specLimit) {
+        return Math.max(specLimit, sessionsOwedTo);
+    }
 }
