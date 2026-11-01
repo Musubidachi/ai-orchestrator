@@ -1,6 +1,5 @@
 package dev.fmangoni.forge.ui;
 
-import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 import dev.fmangoni.forge.agent.ledger.QuotaLedger;
 import dev.fmangoni.forge.agent.ledger.UsageLedger;
@@ -17,11 +16,9 @@ import dev.fmangoni.forge.ui.route.SystemRoutes;
 import dev.fmangoni.forge.ui.suggest.IdeaSource;
 import dev.fmangoni.forge.ui.suggest.Suggester;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.concurrent.Executors;
 import lombok.RequiredArgsConstructor;
@@ -64,7 +61,7 @@ public final class UiServer {
             // Built from the port actually bound, which is not the one asked for when that was 0.
             Endpoints endpoints = new Endpoints(server, new RequestGuard(server.getAddress().getPort()));
 
-            endpoints.read("/", UiServer::servePage);
+            endpoints.read("/", exchange -> Http.bundled(exchange, "/ui/index.html"));
             // Its own context because the root one matches every path the API does not, which is
             // why a report link previously rendered the dashboard instead of the report.
             endpoints.read("/runs/", new RunFiles(runsDir)::handle);
@@ -85,16 +82,6 @@ public final class UiServer {
             return "http://localhost:" + server.getAddress().getPort();
         } catch (IOException e) {
             throw new UncheckedIOException("cannot start the editor on port " + port, e);
-        }
-    }
-
-    private static void servePage(HttpExchange exchange) throws IOException {
-        try (InputStream in = UiServer.class.getResourceAsStream("/ui/index.html")) {
-            if (in == null) {
-                Http.error(exchange, 500, "editor page missing from the jar");
-                return;
-            }
-            Http.html(exchange, new String(in.readAllBytes(), StandardCharsets.UTF_8));
         }
     }
 }

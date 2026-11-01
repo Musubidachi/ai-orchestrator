@@ -35,42 +35,23 @@ public class FeedbackBrief {
      * down somewhere" is useful, and used to be discarded because the radio button said
      * <em>Fine as it is</em>. It is kept separate from the requests so the difference between
      * "change this" and "while you are in there" survives the trip.
-     */
-    public String itemised(List<Decision> decisions) {
-        return itemised(decisions, List.of());
-    }
-
-    /**
-     * The whole of one sitting: the review items, and what was said about the features.
      *
-     * <p>Features used to be left out entirely. A request typed beside one — "if the user loses
+     * <p>It is the whole of one sitting: the review items, and what was said about the features.
+     * Features used to be left out entirely. A request typed beside one — "if the user loses
      * a batch fails, offer an ad to buy more credit" — was saved, shown on the report, and never
      * put in front of an agent: the session it started was told to film the feature and nothing
      * else. Everything a person writes on the page reaches the next turn now, labelled by what it
      * is attached to.
      *
-     * @return blank when there is nothing to say, so a caller can tell a sitting with no words in it
-     *         from one with instructions
-     */
-    public String itemised(List<Decision> decisions, List<Decision> features) {
-        return itemised(decisions, features, Set.of());
-    }
-
-    /**
      * @param toBuild ids of approved features the project does not have yet — ideas taken up and
      *                features asked for by hand. Told to build those, not merely to film them: an
      *                agent asked to record a feature that does not exist will record whatever
      *                screen is nearest.
-     */
-    public String itemised(List<Decision> decisions, List<Decision> features,
-                           Set<String> toBuild) {
-        return itemised(decisions, features, toBuild, Map.of());
-    }
-
-    /**
      * @param reviewerDetail what the reviewer wrote about each blocking finding, keyed by the text
      *                       the form showed it as. The form shows one line; the reason the line is
      *                       true is here, and an agent sent back with the line alone was guessing.
+     * @return blank when there is nothing to say, so a caller can tell a sitting with no words in it
+     *         from one with instructions
      */
     public String itemised(List<Decision> decisions, List<Decision> features,
                            Set<String> toBuild, Map<String, String> reviewerDetail) {

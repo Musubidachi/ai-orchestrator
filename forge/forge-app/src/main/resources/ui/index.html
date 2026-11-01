@@ -2460,14 +2460,6 @@ function nextChildId(parentId) {
   return `${parentId}.1`;
 }
 
-async function startJob(id) {
-  await jobAction(id, "/api/jobs/start");
-}
-
-async function stopJob(id) {
-  await jobAction(id, "/api/jobs/stop");
-}
-
 /*
  * Where a card says what a button press came to.
  *

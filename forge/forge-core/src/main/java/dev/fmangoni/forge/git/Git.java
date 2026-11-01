@@ -302,27 +302,6 @@ public final class Git {
         return attempt(List.of("rev-parse", "--verify", "--quiet", "refs/heads/" + name)).ok();
     }
 
-    /** The commit a branch points at. */
-    public String tipOf(String branch) {
-        return run("rev-parse", "refs/heads/" + branch).stdout().strip();
-    }
-
-    /**
-     * Points a branch at a commit, making it if it is new.
-     *
-     * <p>Never the branch checked out: git refuses that, and this does not ask it to try harder.
-     * Moving a branch loses nothing as long as another branch still holds what it pointed at, which
-     * is for the caller to have made sure of.
-     */
-    public void setBranch(String name, String commit) {
-        run("branch", "-f", name, commit);
-    }
-
-    /** Checks a branch out. Git refuses when that would overwrite uncommitted work. */
-    public void checkout(String branch) {
-        run("checkout", "-q", branch);
-    }
-
     /**
      * Forge's guard settings in front of a git command run somewhere other than this class.
      *

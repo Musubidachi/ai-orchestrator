@@ -184,6 +184,41 @@ class DependencyAuditTest {
     }
 
     @Test
+    @DisplayName("when no tool the project needs is installed, the layer says so instead of passing")
+    void noToolInstalled() throws Exception {
+        Path repo = repo();
+        Files.writeString(repo.resolve("package.json"), "{}");
+        Files.writeString(repo.resolve("package-lock.json"), "{}");
+        Files.writeString(repo.resolve("pom.xml"), "<project/>");
+
+        LayerResult result = audit(repo, missingShell(), osv(Map.of()));
+
+        assertEquals(LayerResult.NOT_INSTALLED, result.status(), result.detail());
+        assertTrue(result.detail().contains("npm: not installed"), result.detail());
+        assertTrue(result.detail().contains("mvn not installed"), result.detail());
+    }
+
+    @Test
+    @DisplayName("one stack checked is enough to have run; the missing tool stays in the note")
+    void oneToolMissing() throws Exception {
+        Path repo = repo();
+        Files.writeString(repo.resolve("package.json"), "{}");
+        Files.writeString(repo.resolve("package-lock.json"), "{}");
+        Files.writeString(repo.resolve("requirements.txt"), "flask==1.0\n");
+
+        LayerResult result = audit(repo, missingShell(), osv(Map.of()));
+
+        assertEquals(LayerResult.RAN, result.status(), result.detail());
+        assertTrue(result.detail().contains("npm: not installed"), result.detail());
+    }
+
+    /** A shell on which no program exists, as Windows reports it. */
+    private Shell missingShell() {
+        return (name, command) -> new ProcResult(9009, "",
+                "'" + name + "' is not recognized as an internal or external command", false, Duration.ofSeconds(1));
+    }
+
+    @Test
     @DisplayName("OSV's grading and first fixed version are read for the right package")
     void osvDetails() throws Exception {
         var vuln = new ObjectMapper().readTree("""

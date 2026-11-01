@@ -15,7 +15,6 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 
 /**
@@ -26,10 +25,10 @@ import lombok.RequiredArgsConstructor;
  * this window has consumed so far, and compare it against what previous windows held before the
  * vendor said stop.
  *
- * <p>So a window's capacity is learned by running out of it. The first time a limit is hit, the
- * running total at that moment becomes an observation; after a few, there is a usable figure. Until
- * then this reports what has been spent and declines to guess at what is left, because a confident
- * wrong number here would have projects planning around headroom that does not exist.
+ * <p>So a window's capacity is learned by running out of it. Each time a limit is hit, the running
+ * total at that moment is kept as an observation. They are shown as a spread, never averaged into a
+ * "remaining" figure: windows here have ended anywhere from 15M to 135M tokens, and a confident
+ * wrong number would have projects planning around headroom that does not exist.
  *
  * <p>Deliberately separate from {@link QuotaLedger}. That one holds a fact the vendor stated — it
  * said stop, and named a time. This holds an inference built from measurements. Keeping them apart
@@ -92,35 +91,6 @@ public final class UsageLedger {
     public int turnsThisWindow(AgentKind kind) {
         UsageWindow window = read().get(kind.name());
         return window == null ? 0 : window.getTurns();
-    }
-
-    /**
-     * Tokens a window has held on average, or empty while that is still unknown.
-     *
-     * <p>Empty is the honest answer until a limit has actually been hit at least once. Nothing
-     * should present a budget to an agent before then.
-     */
-    public Optional<Long> learnedCapacity(AgentKind kind) {
-        UsageWindow window = read().get(kind.name());
-        if (window == null || window.getPastCapacities().isEmpty()) {
-            return Optional.empty();
-        }
-        return Optional.of((long) window.getPastCapacities().stream()
-                .mapToLong(Long::longValue).average().orElse(0));
-    }
-
-    /** Estimated tokens left in this window, or empty while capacity is still unknown. */
-    public Optional<Long> estimatedRemaining(AgentKind kind) {
-        return learnedCapacity(kind)
-                .map(capacity -> Math.max(0, capacity - spentThisWindow(kind).totalTokens()));
-    }
-
-    /** Average tokens a turn has cost in this window, or empty before any turn has run. */
-    public Optional<Long> averageTurn(AgentKind kind) {
-        int turns = turnsThisWindow(kind);
-        return turns == 0
-                ? Optional.empty()
-                : Optional.of(spentThisWindow(kind).totalTokens() / turns);
     }
 
     /**

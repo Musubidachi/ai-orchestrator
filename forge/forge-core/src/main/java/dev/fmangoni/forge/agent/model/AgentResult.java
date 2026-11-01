@@ -2,7 +2,6 @@ package dev.fmangoni.forge.agent.model;
 
 import dev.fmangoni.forge.process.ProcResult;
 import java.time.Instant;
-import java.util.Optional;
 
 /**
  * Result of one agent turn.
@@ -27,11 +26,6 @@ public record AgentResult(
 
     public AgentResult withSession(String sessionId) {
         return new AgentResult(outcome, finalMessage, proc, retryAfter, sessionId);
-    }
-
-    /** When set, the wall-clock time at which the exhausted quota window is expected to reset. */
-    public Optional<Instant> retryAfterTime() {
-        return Optional.ofNullable(retryAfter);
     }
 
     public boolean completed() {

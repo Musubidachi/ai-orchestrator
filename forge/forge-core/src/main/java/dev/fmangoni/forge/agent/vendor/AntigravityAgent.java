@@ -12,7 +12,6 @@ import dev.fmangoni.forge.process.CliRunner;
 import dev.fmangoni.forge.process.ProcResult;
 import java.nio.file.Path;
 import java.util.Objects;
-import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 
 /**
@@ -109,12 +108,5 @@ public final class AntigravityAgent implements Agent {
                 .map(node -> node.get("result"))
                 .filter(Objects::nonNull)
                 .orElse(null);
-    }
-
-    /** Token usage for this turn, for the ledger that infers what a window costs. */
-    public static Optional<JsonNode> usageOf(String stdout) {
-        return JsonlEvents.lastWhere(stdout, "event", "result")
-                .map(node -> node.path("result").path("usage"))
-                .filter(node -> !node.isMissingNode() && !node.isNull());
     }
 }

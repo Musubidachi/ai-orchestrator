@@ -2,7 +2,6 @@ package dev.fmangoni.forge.git;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import dev.fmangoni.forge.process.CliRunner;
@@ -10,7 +9,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
-import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -103,23 +101,14 @@ class GitTest {
     }
 
     @Test
-    @DisplayName("a branch can be made, moved and checked out, and the checked-out one is never moved")
+    @DisplayName("the branch checked out is named, and a branch nobody made does not exist")
     void branches() throws Exception {
         Git git = new Git(Files.createDirectories(root.resolve("repo")), root.resolve("git.log"));
         git.init();
-        String first = git.commitAll("first");
-        String second = git.commitAll("second");
+        git.commitAll("first");
+
         String trunk = git.currentBranch().orElseThrow();
-
-        git.setBranch("003.2-monthly-summary", second);
-        git.checkout("003.2-monthly-summary");
-        git.setBranch(trunk, first);
-
-        assertEquals(Optional.of("003.2-monthly-summary"), git.currentBranch());
-        assertEquals(first, git.tipOf(trunk), "moved back, with nothing lost: the branch still holds the rest");
-        assertTrue(git.branchExists("003.2-monthly-summary"));
+        assertTrue(git.branchExists(trunk));
         assertFalse(git.branchExists("003.3-never-made"));
-        assertThrows(IllegalStateException.class, () -> git.setBranch("003.2-monthly-summary", first),
-                "the branch being worked on is not moved out from under the work");
     }
 }

@@ -6,7 +6,6 @@ import dev.fmangoni.forge.json.Json;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import lombok.experimental.UtilityClass;
@@ -53,8 +52,16 @@ public class Http {
         send(exchange, 200, "text/html; charset=utf-8", content.getBytes(StandardCharsets.UTF_8));
     }
 
-    public void script(HttpExchange exchange, String content) throws IOException {
-        send(exchange, 200, "text/javascript; charset=utf-8", content.getBytes(StandardCharsets.UTF_8));
+    /** A page or script shipped inside the jar, such as {@code /ui/index.html}. */
+    public void bundled(HttpExchange exchange, String resource) throws IOException {
+        try (InputStream in = Http.class.getResourceAsStream(resource)) {
+            if (in == null) {
+                error(exchange, 500, resource + " is missing from the jar");
+                return;
+            }
+            String type = resource.endsWith(".js") ? "text/javascript" : "text/html";
+            send(exchange, 200, type + "; charset=utf-8", in.readAllBytes());
+        }
     }
 
     private void send(HttpExchange exchange, int status, String contentType, byte[] payload)
@@ -66,13 +73,5 @@ public class Http {
         try (OutputStream out = exchange.getResponseBody()) {
             out.write(payload);
         }
-    }
-
-    /** The final path segment, or empty when the request addressed the collection itself. */
-    public String lastSegment(HttpExchange exchange, String prefix) {
-        String path = exchange.getRequestURI().getPath();
-        return path.length() > prefix.length()
-                ? URLDecoder.decode(path.substring(prefix.length()), StandardCharsets.UTF_8)
-                : "";
     }
 }

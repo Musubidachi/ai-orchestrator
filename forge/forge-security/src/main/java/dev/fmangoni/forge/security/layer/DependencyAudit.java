@@ -37,6 +37,9 @@ public final class DependencyAudit {
 
     private static final ObjectMapper JSON = new ObjectMapper();
 
+    private static final String NPM_MISSING = "npm: not installed";
+    private static final String MAVEN_MISSING = "Maven: mvn not installed";
+
     /** {@code group:artifact:type[:classifier]:version:scope}, as dependency:list writes it. */
     private static final Pattern MAVEN_LINE = Pattern.compile(
             "^\\s*([\\w.\\-]+):([\\w.\\-]+):[\\w\\-]+(?::[\\w.\\-]+)?:([\\w.\\-]+):(compile|runtime|provided|system|test)\\b");
@@ -81,6 +84,11 @@ public final class DependencyAudit {
         if (!anything) {
             return LayerResult.skipped(LAYER, "no package.json, pom.xml or requirements file");
         }
+        // When every stack's tool was missing, nothing was looked at, and "ran" with no findings
+        // would read as clean. One stack checked is enough for "ran", with the gap in the note.
+        if (notes.stream().allMatch(note -> note.equals(NPM_MISSING) || note.equals(MAVEN_MISSING))) {
+            return LayerResult.notInstalled(LAYER, String.join("; ", notes));
+        }
         return LayerResult.ran(LAYER, String.join("; ", notes), findings);
     }
 
@@ -97,7 +105,7 @@ public final class DependencyAudit {
         // and half a JSON document parses as nothing.
         ProcResult result = shell.run("npm-audit", "npm audit --json > \"" + out + "\"");
         if (Shell.missing(result)) {
-            return "npm: not installed";
+            return NPM_MISSING;
         }
         if (!Files.isRegularFile(out) || Files.size(out) == 0) {
             return "npm audit produced nothing (exit " + result.exitCode() + ")";
@@ -179,7 +187,7 @@ public final class DependencyAudit {
         ProcResult result = shell.run("maven-dependencies",
                 "mvn -q -B dependency:list -DoutputFile=\"" + out + "\" -DappendOutput=true");
         if (Shell.missing(result)) {
-            return "Maven: mvn not installed";
+            return MAVEN_MISSING;
         }
         if (!Files.isRegularFile(out)) {
             return "Maven: dependency:list failed (exit " + result.exitCode() + ")";

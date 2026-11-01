@@ -60,10 +60,6 @@ public final class ProcessTree {
         return root;
     }
 
-    public Instant started() {
-        return started;
-    }
-
     /** Everything under the root right now that the root, or something it started, started. */
     public Set<ProcessHandle> members() {
         Set<ProcessHandle> found = new LinkedHashSet<>();

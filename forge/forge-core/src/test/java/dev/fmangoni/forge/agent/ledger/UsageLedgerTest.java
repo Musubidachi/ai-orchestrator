@@ -3,20 +3,22 @@ package dev.fmangoni.forge.agent.ledger;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import dev.fmangoni.forge.agent.ledger.model.UsageWindow;
 import dev.fmangoni.forge.agent.model.AgentKind;
 import dev.fmangoni.forge.agent.stream.Usage;
 import java.nio.file.Path;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 /**
- * Turning measurements into a budget, without ever pretending to more certainty than there is.
+ * Recording what each window cost, without ever pretending to more certainty than there is.
  *
  * <p>The single most important behaviour here is the one that refuses to answer: until a limit has
  * actually been hit, nothing knows how big a window is, and a made-up figure would have projects
- * planning around headroom that does not exist. Everything else is arithmetic.
+ * planning around headroom that does not exist. Everything else is bookkeeping.
  */
 class UsageLedgerTest {
 
@@ -55,15 +57,20 @@ class UsageLedgerTest {
         assertEquals(7, ledger.spentThisWindow(AgentKind.CODEX).totalTokens());
     }
 
+    /** What earlier windows held when the vendor refused, as the dashboard reads it. */
+    private List<Long> pastCapacities() {
+        UsageWindow window = ledger.snapshot().get(AgentKind.CLAUDE.name());
+        return window == null ? List.of() : window.getPastCapacities();
+    }
+
     @Test
-    @DisplayName("remaining budget is unknown until a window has actually run out")
+    @DisplayName("no window size is known until one has actually run out")
     void noGuessBeforeTheFirstLimit() {
         ledger.record(AgentKind.CLAUDE, turn(5000));
 
         // The honest answer. A number here would be invented, and everything downstream would
         // treat it as measured.
-        assertTrue(ledger.learnedCapacity(AgentKind.CLAUDE).isEmpty());
-        assertTrue(ledger.estimatedRemaining(AgentKind.CLAUDE).isEmpty());
+        assertTrue(pastCapacities().isEmpty());
     }
 
     @Test
@@ -73,47 +80,20 @@ class UsageLedgerTest {
         ledger.record(AgentKind.CLAUDE, turn(4000));
         ledger.windowExhausted(AgentKind.CLAUDE);
 
-        assertEquals(10_000, ledger.learnedCapacity(AgentKind.CLAUDE).orElseThrow());
+        assertEquals(List.of(10_000L), pastCapacities());
         assertEquals(0, ledger.spentThisWindow(AgentKind.CLAUDE).totalTokens(),
                 "the window restarts once the vendor has refused");
-        assertEquals(10_000, ledger.estimatedRemaining(AgentKind.CLAUDE).orElseThrow());
     }
 
     @Test
-    @DisplayName("capacity is averaged over past windows rather than taken from the last")
-    void capacityIsAveraged() {
+    @DisplayName("every window that ran out is kept, so the page can show the spread")
+    void spreadIsKept() {
         ledger.record(AgentKind.CLAUDE, turn(8000));
         ledger.windowExhausted(AgentKind.CLAUDE);
         ledger.record(AgentKind.CLAUDE, turn(12_000));
         ledger.windowExhausted(AgentKind.CLAUDE);
 
-        // One short window — an interrupted evening, a vendor hiccup — should not redefine what a
-        // full one holds.
-        assertEquals(10_000, ledger.learnedCapacity(AgentKind.CLAUDE).orElseThrow());
-    }
-
-    @Test
-    @DisplayName("what is left falls as the window is spent")
-    void remainingFalls() {
-        ledger.record(AgentKind.CLAUDE, turn(10_000));
-        ledger.windowExhausted(AgentKind.CLAUDE);
-
-        ledger.record(AgentKind.CLAUDE, turn(3000));
-        assertEquals(7000, ledger.estimatedRemaining(AgentKind.CLAUDE).orElseThrow());
-
-        ledger.record(AgentKind.CLAUDE, turn(9000));
-        assertEquals(0, ledger.estimatedRemaining(AgentKind.CLAUDE).orElseThrow(),
-                "overrunning the estimate reports nothing left, not a negative budget");
-    }
-
-    @Test
-    @DisplayName("the average turn is what a budget is spent in units of")
-    void averageTurn() {
-        ledger.record(AgentKind.CLAUDE, turn(3000));
-        ledger.record(AgentKind.CLAUDE, turn(5000));
-
-        assertEquals(4000, ledger.averageTurn(AgentKind.CLAUDE).orElseThrow());
-        assertTrue(ledger.averageTurn(AgentKind.CODEX).isEmpty(), "nothing has run on Codex");
+        assertEquals(List.of(8000L, 12_000L), pastCapacities());
     }
 
     @Test
@@ -132,6 +112,6 @@ class UsageLedgerTest {
 
         // Otherwise the first refusal after a restart would record a capacity of zero, and every
         // project would believe it had no budget at all.
-        assertTrue(ledger.learnedCapacity(AgentKind.CLAUDE).isEmpty());
+        assertTrue(pastCapacities().isEmpty());
     }
 }

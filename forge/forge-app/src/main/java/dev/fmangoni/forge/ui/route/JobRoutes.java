@@ -13,8 +13,6 @@ import dev.fmangoni.forge.ui.request.DecisionRequest;
 import dev.fmangoni.forge.ui.request.FeatureRequest;
 import dev.fmangoni.forge.ui.request.JobRequest;
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Base64;
 import java.util.List;
@@ -24,7 +22,8 @@ import java.util.function.BiFunction;
 /** The dashboard's endpoints: the project list, and every button on a project's card. */
 public final class JobRoutes {
 
-    private static final String NO_CLI = "no agent CLI installed";
+    /** The answer every route gives for an action that needs the projects, when none can run. */
+    static final String NO_CLI = "no agent CLI installed";
 
     /** Null when no CLI is installed; the dashboard then shows state without offering to run anything. */
     private final JobRunner jobs;
@@ -55,7 +54,7 @@ public final class JobRoutes {
         // A screenshot pasted or picked into a note, saved where the project's agent can open it.
         // Starts nothing; answers with the text the page puts in the note.
         endpoints.write("/api/jobs/attach", this::attach);
-        endpoints.read("/attach.js", JobRoutes::attachScript);
+        endpoints.read("/attach.js", exchange -> Http.bundled(exchange, "/ui/attach.js"));
         // Publishes the project. Guarded as a write like every other action, and confirmed on the
         // page with the exact command before this is ever called.
         endpoints.write("/api/jobs/deploy", action(JobRunner::deploy));
@@ -111,16 +110,6 @@ public final class JobRoutes {
                     jobs.attach(String.valueOf(body.get("id")), image)));
         } catch (IllegalArgumentException e) {
             Http.json(exchange, 200, Map.of("error", e.getMessage() == null ? "not an image" : e.getMessage()));
-        }
-    }
-
-    private static void attachScript(HttpExchange exchange) throws IOException {
-        try (InputStream in = JobRoutes.class.getResourceAsStream("/ui/attach.js")) {
-            if (in == null) {
-                Http.error(exchange, 500, "attach.js missing from the jar");
-                return;
-            }
-            Http.script(exchange, new String(in.readAllBytes(), StandardCharsets.UTF_8));
         }
     }
 

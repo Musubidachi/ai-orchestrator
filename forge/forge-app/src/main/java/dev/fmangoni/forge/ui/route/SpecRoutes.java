@@ -87,7 +87,7 @@ public final class SpecRoutes {
     /** Proposes a draft from a rough description. Never writes; the reply only fills the form. */
     private void suggest(HttpExchange exchange) throws IOException {
         if (suggester == null) {
-            Http.error(exchange, 503, "no agent CLI installed, so suggestions are unavailable");
+            Http.error(exchange, 503, JobRoutes.NO_CLI + ", so suggestions are unavailable");
             return;
         }
         SuggestRequest request = Http.bodyAs(exchange, SuggestRequest.class);
@@ -110,7 +110,7 @@ public final class SpecRoutes {
      */
     private void refine(HttpExchange exchange) throws IOException {
         if (suggester == null) {
-            Http.error(exchange, 503, "no agent CLI installed, so suggestions are unavailable");
+            Http.error(exchange, 503, JobRoutes.NO_CLI + ", so suggestions are unavailable");
             return;
         }
         RefineRequest request = Http.bodyAs(exchange, RefineRequest.class);

@@ -6,7 +6,6 @@ import dev.fmangoni.forge.tour.model.Tour;
 import dev.fmangoni.forge.tour.show.TourAudio;
 import dev.fmangoni.forge.tour.sound.Score;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;

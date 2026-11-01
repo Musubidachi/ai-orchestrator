@@ -7,8 +7,6 @@ import dev.fmangoni.forge.ui.http.Endpoints;
 import dev.fmangoni.forge.ui.http.Http;
 import dev.fmangoni.forge.ui.http.Query;
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Optional;
 
@@ -28,7 +26,7 @@ public final class ReviewRoutes {
     }
 
     public void register(Endpoints endpoints) {
-        endpoints.read("/review", ReviewRoutes::page);
+        endpoints.read("/review", exchange -> Http.bundled(exchange, "/ui/review.html"));
         endpoints.read("/api/review", this::deck);
     }
 
@@ -37,20 +35,10 @@ public final class ReviewRoutes {
         Optional<DeckView> deck = jobs == null ? Optional.empty() : jobs.reviewDeck(id);
         if (deck.isEmpty()) {
             Http.json(exchange, 404, Map.of("error", jobs == null
-                    ? "no agent CLI installed"
+                    ? JobRoutes.NO_CLI
                     : "there is no project " + id + " to review, or it has not run yet"));
             return;
         }
         Http.json(exchange, 200, deck.get());
-    }
-
-    private static void page(HttpExchange exchange) throws IOException {
-        try (InputStream in = ReviewRoutes.class.getResourceAsStream("/ui/review.html")) {
-            if (in == null) {
-                Http.error(exchange, 500, "review page missing from the jar");
-                return;
-            }
-            Http.html(exchange, new String(in.readAllBytes(), StandardCharsets.UTF_8));
-        }
     }
 }
