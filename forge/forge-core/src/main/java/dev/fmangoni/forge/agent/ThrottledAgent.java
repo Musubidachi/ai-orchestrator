@@ -103,7 +103,7 @@ public final class ThrottledAgent implements Agent {
         }
         try {
             if (result.outcome() == AgentOutcome.RATE_LIMITED) {
-                usage.windowExhausted(kind());
+                usage.windowExhausted(kind(), result.retryAfter());
                 return;
             }
             usage.record(kind(), Usage.from(kind(),

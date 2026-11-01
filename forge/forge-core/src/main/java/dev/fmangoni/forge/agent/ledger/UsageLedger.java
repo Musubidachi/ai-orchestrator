@@ -39,7 +39,7 @@ public final class UsageLedger {
 
     private static final ObjectMapper JSON = Json.mapper();
 
-    /** How many past windows to average over; enough to smooth one odd window, few enough to adapt. */
+    /** How many past windows to show; enough to see the spread, few enough to follow a change. */
     private static final int WINDOWS_REMEMBERED = 5;
 
     private final Path file;
@@ -64,20 +64,34 @@ public final class UsageLedger {
      *
      * <p>Called when the vendor refuses: whatever had been spent by then is, as closely as this can
      * be known from outside, the size of a window.
+     *
+     * <p>Unless the last refusal's reset time has not come yet. Then the vendor's window never
+     * reset, and what was spent since belongs to the window already recorded. Antigravity keeps a
+     * quota per model, so one model can work while another is out: closing a window on each
+     * refusal recorded one that "held" 65K tokens, beside others of 4M to 11M.
+     *
+     * @param resetsAt when the vendor said this window resets, or null if it did not say
      */
-    public synchronized void windowExhausted(AgentKind kind) {
+    public synchronized void windowExhausted(AgentKind kind, Instant resetsAt) {
         Map<String, UsageWindow> all = read();
         UsageWindow window = all.get(kind.name());
         if (window == null || window.getTurns() == 0) {
             return;
         }
         List<Long> past = new ArrayList<>(window.getPastCapacities());
-        past.add(window.spent().totalTokens());
+        long spent = window.spent().totalTokens();
+        boolean neverReset = window.getOpensAt() != null && Instant.now().isBefore(window.getOpensAt());
+        if (neverReset && !past.isEmpty()) {
+            past.set(past.size() - 1, past.getLast() + spent);
+        } else {
+            past.add(spent);
+        }
         while (past.size() > WINDOWS_REMEMBERED) {
             past.removeFirst();
         }
         UsageWindow next = fresh();
         next.setPastCapacities(past);
+        next.setOpensAt(resetsAt != null ? resetsAt : neverReset ? window.getOpensAt() : null);
         all.put(kind.name(), next);
         write(all);
     }

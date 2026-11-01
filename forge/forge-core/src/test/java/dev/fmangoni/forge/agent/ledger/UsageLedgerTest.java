@@ -7,6 +7,8 @@ import dev.fmangoni.forge.agent.ledger.model.UsageWindow;
 import dev.fmangoni.forge.agent.model.AgentKind;
 import dev.fmangoni.forge.agent.stream.Usage;
 import java.nio.file.Path;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -78,7 +80,7 @@ class UsageLedgerTest {
     void exhaustionTeachesCapacity() {
         ledger.record(AgentKind.CLAUDE, turn(6000));
         ledger.record(AgentKind.CLAUDE, turn(4000));
-        ledger.windowExhausted(AgentKind.CLAUDE);
+        ledger.windowExhausted(AgentKind.CLAUDE, null);
 
         assertEquals(List.of(10_000L), pastCapacities());
         assertEquals(0, ledger.spentThisWindow(AgentKind.CLAUDE).totalTokens(),
@@ -89,11 +91,35 @@ class UsageLedgerTest {
     @DisplayName("every window that ran out is kept, so the page can show the spread")
     void spreadIsKept() {
         ledger.record(AgentKind.CLAUDE, turn(8000));
-        ledger.windowExhausted(AgentKind.CLAUDE);
+        ledger.windowExhausted(AgentKind.CLAUDE, null);
         ledger.record(AgentKind.CLAUDE, turn(12_000));
-        ledger.windowExhausted(AgentKind.CLAUDE);
+        ledger.windowExhausted(AgentKind.CLAUDE, null);
 
         assertEquals(List.of(8000L, 12_000L), pastCapacities());
+    }
+
+    @Test
+    @DisplayName("a refusal before the last one's reset time belongs to the same window")
+    void refusalBeforeTheResetIsTheSameWindow() {
+        ledger.record(AgentKind.CLAUDE, turn(9_000_000));
+        ledger.windowExhausted(AgentKind.CLAUDE, Instant.now().plus(Duration.ofHours(30)));
+        // Another model still had quota, so a few turns ran before it was refused too.
+        ledger.record(AgentKind.CLAUDE, turn(65_000));
+        ledger.windowExhausted(AgentKind.CLAUDE, Instant.now().plus(Duration.ofHours(29)));
+
+        assertEquals(List.of(9_065_000L), pastCapacities(),
+                "not a second window that held 65K tokens");
+    }
+
+    @Test
+    @DisplayName("a refusal after the last one's reset time ends a new window")
+    void refusalAfterTheResetIsANewWindow() {
+        ledger.record(AgentKind.CLAUDE, turn(9_000_000));
+        ledger.windowExhausted(AgentKind.CLAUDE, Instant.now().minus(Duration.ofMinutes(1)));
+        ledger.record(AgentKind.CLAUDE, turn(7_000_000));
+        ledger.windowExhausted(AgentKind.CLAUDE, null);
+
+        assertEquals(List.of(9_000_000L, 7_000_000L), pastCapacities());
     }
 
     @Test
@@ -108,7 +134,7 @@ class UsageLedgerTest {
     @Test
     @DisplayName("exhausting a window nothing was spent in teaches nothing")
     void emptyWindowIsNotAnObservation() {
-        ledger.windowExhausted(AgentKind.CLAUDE);
+        ledger.windowExhausted(AgentKind.CLAUDE, null);
 
         // Otherwise the first refusal after a restart would record a capacity of zero, and every
         // project would believe it had no budget at all.
