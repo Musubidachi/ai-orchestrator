@@ -16,6 +16,7 @@ import dev.fmangoni.forge.project.Phase;
 import dev.fmangoni.forge.project.RunPaths;
 import dev.fmangoni.forge.review.decision.DecisionStore;
 import dev.fmangoni.forge.spec.model.Spec;
+import dev.fmangoni.forge.state.GateLooks;
 import dev.fmangoni.forge.state.RunState;
 import dev.fmangoni.forge.state.Timings;
 import java.util.ArrayList;
@@ -41,6 +42,7 @@ public final class GateStep {
         // Recorded whether it passed or failed: a command that got slower is worth knowing about
         // even on a run that went green, and especially on one that did not.
         Timings.record(state, result.commands());
+        GateLooks.record(state, result.commands());
         Optional<String> moved = rememberClips(result, owed);
 
         boolean afterInterruption = state.isRecoveredTurn();

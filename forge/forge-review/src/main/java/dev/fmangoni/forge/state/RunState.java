@@ -195,6 +195,10 @@ public class RunState {
      */
     private CommandResult lastFailure;
 
+    /** What the last gate's commands passed but asked a person to look at ({@link GateLooks}). */
+    @Builder.Default
+    private List<String> gateLooks = new ArrayList<>();
+
     /** Blocking review findings awaiting a repair turn, for the same reason. */
     @Builder.Default
     private List<Finding> blockingFindings = new ArrayList<>();

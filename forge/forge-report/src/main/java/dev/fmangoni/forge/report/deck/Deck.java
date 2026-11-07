@@ -15,6 +15,7 @@ import dev.fmangoni.forge.review.model.Finding;
 import dev.fmangoni.forge.review.model.Review;
 import dev.fmangoni.forge.security.model.SecurityFinding;
 import dev.fmangoni.forge.security.model.SecurityReport;
+import dev.fmangoni.forge.state.GateLooks;
 import dev.fmangoni.forge.state.RunState;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -43,7 +44,7 @@ public class Deck {
      */
     public DeckView of(Path runsDir, RunPaths paths, RunState state, Review review) {
         SecurityReport security = SecurityReport.load(paths.securityFile());
-        List<ReviewItem> items = ReviewItem.of(state.getPlan(), review, security);
+        List<ReviewItem> items = GateLooks.with(ReviewItem.of(state.getPlan(), review, security), state);
         List<Decision> stored = Decisions.realign(items, DecisionStore.load(paths.decisionsFile()));
         List<Sitting> history = ReviewHistory.load(paths.reviewHistoryFile());
         Map<String, Decision> earlier = stored.stream()
@@ -57,7 +58,8 @@ public class Deck {
                     earlier.get(item.id()), cameBack);
             boolean answeredAlone = cameBack != null
                     || ReviewItem.BLOCKING.equals(item.source())
-                    || ReviewItem.SECURITY.equals(item.source());
+                    || ReviewItem.SECURITY.equals(item.source())
+                    || GateLooks.asks(item);
             (answeredAlone ? mustDecide : skim).add(card);
         }
 

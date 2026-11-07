@@ -19,6 +19,7 @@ import dev.fmangoni.forge.review.decision.model.Decision;
 import dev.fmangoni.forge.review.decision.model.ReviewItem;
 import dev.fmangoni.forge.review.decision.model.Sitting;
 import dev.fmangoni.forge.security.model.SecurityReport;
+import dev.fmangoni.forge.state.GateLooks;
 import dev.fmangoni.forge.state.RunState;
 import dev.fmangoni.forge.state.RunStore;
 import java.io.IOException;
@@ -295,8 +296,8 @@ public final class Submissions {
     }
 
     private static List<ReviewItem> itemsOf(RunPaths paths, RunState state) {
-        return ReviewItem.of(state.getPlan(), ReviewStore.load(paths.reviewFile()),
-                SecurityReport.load(paths.securityFile()));
+        return GateLooks.with(ReviewItem.of(state.getPlan(), ReviewStore.load(paths.reviewFile()),
+                SecurityReport.load(paths.securityFile())), state);
     }
 
     private static List<RecordingTake> unfilmed(RunPaths paths, RunState state, List<Decision> rulings) {

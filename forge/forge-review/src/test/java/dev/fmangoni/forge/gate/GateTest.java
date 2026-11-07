@@ -91,6 +91,16 @@ class GateTest {
     }
 
     @Test
+    @DisplayName("the look code passes the gate and goes on to the next command")
+    void lookCodePasses() {
+        GateResult result = run(List.of("echo LOOK: the banner && exit " + CommandResult.LOOK, "echo two"), List.of());
+
+        assertTrue(result.passed());
+        assertEquals(2, result.commands().size());
+        assertEquals(CommandResult.LOOK, result.commands().get(0).exitCode());
+    }
+
+    @Test
     @DisplayName("commands stop at the first failure so the repair prompt names the real cause")
     void stopsAtFirstFailure() {
         GateResult result = run(List.of("echo first", "exit 1", "echo never"), List.of());

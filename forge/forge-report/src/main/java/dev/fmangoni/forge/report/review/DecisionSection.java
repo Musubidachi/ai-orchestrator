@@ -12,6 +12,7 @@ import dev.fmangoni.forge.review.decision.model.ReviewItem;
 import dev.fmangoni.forge.review.decision.model.Sitting;
 import dev.fmangoni.forge.review.model.Review;
 import dev.fmangoni.forge.security.model.SecurityReport;
+import dev.fmangoni.forge.state.GateLooks;
 import dev.fmangoni.forge.state.RunState;
 import java.util.List;
 import lombok.experimental.UtilityClass;
@@ -29,7 +30,8 @@ import lombok.experimental.UtilityClass;
 public class DecisionSection {
 
     public String render(RunPaths paths, RunState state, Review review) {
-        List<ReviewItem> items = ReviewItem.of(state.getPlan(), review, SecurityReport.load(paths.securityFile()));
+        List<ReviewItem> items = GateLooks.with(
+                ReviewItem.of(state.getPlan(), review, SecurityReport.load(paths.securityFile())), state);
         List<Decision> stored = Decisions.realign(items, DecisionStore.load(paths.decisionsFile()));
         List<Sitting> history = ReviewHistory.load(paths.reviewHistoryFile());
 

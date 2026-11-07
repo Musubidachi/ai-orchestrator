@@ -5,6 +5,7 @@ import dev.fmangoni.forge.review.decision.ReviewHistory;
 import dev.fmangoni.forge.review.decision.model.Decision;
 import dev.fmangoni.forge.review.decision.model.ReviewItem;
 import dev.fmangoni.forge.review.decision.model.Sitting;
+import dev.fmangoni.forge.state.GateLooks;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -155,7 +156,7 @@ public class DecisionForm {
      * time. Everything else still starts at "Fine as it is".
      */
     private String row(ReviewItem item, Decision previous, String cameBack) {
-        boolean blank = cameBack != null || ReviewItem.BLOCKING.equals(item.source());
+        boolean blank = cameBack != null || ReviewItem.BLOCKING.equals(item.source()) || GateLooks.asks(item);
         String id = Html.escape(item.id());
 
         return """

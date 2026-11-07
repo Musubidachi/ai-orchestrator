@@ -10,6 +10,10 @@ evidence the spec names.
   counts here.
 - **Commands run as written in the spec**, from a script (`process.ShellScript`) so no quoting
   changes them, inside the run's repo, with the spec's timeout.
+- **Exit 42 (`CommandResult.LOOK`) is a pass that asks a person to look.** Each output line starting
+  `LOOK` becomes a review item (`state.GateLooks`, recorded by `GateStep` after every gate), answered
+  on its own. The code is high on purpose: a small one is what a real failure exits with. It never
+  fails or holds a gate; only the person's ruling decides what it means.
 - **Checks stay deliberately shallow where judgement is needed.** The flow-class check verifies the
   file exists and is not a stub. Whether it is a good flow is for the review and the person.
 - **A failed recordings check lists every owed clip**, filmed or missing, each under the exact name

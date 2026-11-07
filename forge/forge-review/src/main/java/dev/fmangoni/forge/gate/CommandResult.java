@@ -18,14 +18,21 @@ public record CommandResult(
         Duration elapsed,
         String script) {
 
+    /**
+     * The exit code meaning "passed, and a person should look" ({@code state.GateLooks}). Not a
+     * small number, which a real failure could exit with (pytest exits 3 on an internal error, and
+     * on Windows a program may exit with its last system error).
+     */
+    public static final int LOOK = 42;
+
     public boolean passed() {
-        return exitCode == 0 && !timedOut;
+        return (exitCode == 0 || exitCode == LOOK) && !timedOut;
     }
 
     public String summary() {
         if (timedOut) {
             return "TIMED OUT after " + elapsed.toMinutes() + "m: " + command;
         }
-        return (passed() ? "PASS" : "FAIL(" + exitCode + ")") + ": " + command;
+        return (exitCode == LOOK ? "PASS, LOOK" : passed() ? "PASS" : "FAIL(" + exitCode + ")") + ": " + command;
     }
 }
