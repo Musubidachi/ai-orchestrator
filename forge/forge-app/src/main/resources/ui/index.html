@@ -2351,12 +2351,15 @@ async function loadJobs() {
   // DONE means the gate passed and the work is sitting in front of you; ACCEPTED means you
   // looked at it and said yes. Counting DONE as accepted would report your own unread queue
   // back to you as finished work, which is the one number here worth getting right.
-  const accepted = jobs.filter(j => j.phase === "ACCEPTED").length;
-  const yours = jobs.filter(needsYou).length;
+  // Every count comes from the grouping the table and the phone's tiles use. Counted on its own,
+  // a project shelved on GitHub was "needing you" here and "not on this machine" in the table.
+  const keys = jobs.map(j => groupOf(j).key);
+  const count = kind => keys.filter(key => key === kind || kindOf(key) === kind).length;
+  const away = count("away");
   const disk = jobs.reduce((t, j) => t + (j.diskBytes || 0), 0);
-  const waiting = jobs.filter(j => j.queuePosition > 0).length;
   $("jobsSummary").textContent = `${jobs.length} project(s) · ${active} running · `
-    + `${waiting} queued · ${accepted} accepted · ${yours} needing you · ${bytes(disk)} on disk`;
+    + `${count("queued")} queued · ${count("waiting")} waiting · ${count("accepted")} accepted · `
+    + `${count("you")} needing you${away ? ` · ${away} not here` : ""} · ${bytes(disk)} on disk`;
   $("jobsNote").textContent = active > 0
     ? "At most one Claude and one Codex call run at a time, so two projects can be talking to a "
       + "model at once however many are in flight."

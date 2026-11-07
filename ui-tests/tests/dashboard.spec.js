@@ -286,6 +286,28 @@ test("a finished project counts as needing you, not as accepted", async ({ page 
   await expect(summary).toContainText("1 needing you");
 });
 
+test("the summary counts a shelved project where the table puts it", async ({ page }) => {
+  // The bug: the line above the table counted a project shelved while finished as "needing you",
+  // and one shelved after it was accepted as "accepted", while the table put both under "Not on
+  // this machine". Two counts of one board that disagreed.
+  await page.route("**/api/jobs", async (route) => {
+    const response = await route.fetch();
+    const jobs = await response.json();
+    const gamma = jobs.find(j => j.id === "003");
+    gamma.shelvedBranch = "shelf/003";
+    jobs.push({ ...gamma, id: "009", title: "Iota Project", phase: "ACCEPTED", priority: 9 });
+    await route.fulfill({ response, json: jobs });
+  });
+  await page.reload();
+  await expect(page.locator("#row-009")).toBeVisible();
+
+  const summary = page.locator("#jobsSummary");
+  await expect(summary).toContainText("0 accepted");
+  await expect(summary).toContainText("0 needing you");
+  await expect(summary).toContainText("2 not here");
+  expect(await headings(page)).not.toContain("Needs you");
+});
+
 test("the card says what is outstanding before sending you to decide", async ({ page }) => {
   // There is deliberately no Accept button here. The only route to accepting runs through the
   // list of what was not proven, which lives in the report.
