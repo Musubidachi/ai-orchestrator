@@ -308,6 +308,36 @@ test("the summary counts a shelved project where the table puts it", async ({ pa
   expect(await headings(page)).not.toContain("Needs you");
 });
 
+test("with the queue off, a project waiting out a quota says it will need you", async ({ page }) => {
+  // The bug: it said "Nothing needs you" while Keep the queue moving was off, so when the wait
+  // ended nothing started it, and nothing had said that someone would have to.
+  let autoRun = false;
+  await page.route("**/api/auto", (route) => route.fulfill({ json: { available: true, autoRun } }));
+  await page.route("**/api/jobs", async (route) => {
+    const response = await route.fetch();
+    const jobs = await response.json();
+    const alpha = jobs.find(j => j.id === "001");
+    alpha.phase = "SUSPENDED";
+    alpha.queuePosition = 0;
+    alpha.blockedReason = "CODEX is out of quota until Sun Nov 8, 7:29 AM";
+    await route.fulfill({ response, json: jobs });
+  });
+  await page.reload();
+
+  const off = await open(page, "001");
+  await expect(off.locator(".move-label")).toHaveText("Needs you later");
+  await expect(off.locator(".move-head")).toHaveText("CODEX is out of quota until Sun Nov 8, 7:29 AM.");
+  await expect(off.locator(".move-sub")).toHaveText("Keep the queue moving is off, so it will not "
+    + "start by itself: press Resume Now once the wait is over, or turn the queue on.");
+
+  // With the queue on, the end of the wait starts it, and then nothing does need you.
+  autoRun = true;
+  await page.reload();
+  const on = await open(page, "001");
+  await expect(on.locator(".move-label")).toHaveText("Nothing needs you");
+  await expect(on.locator(".move-sub")).toBeHidden();
+});
+
 test("the card says what is outstanding before sending you to decide", async ({ page }) => {
   // There is deliberately no Accept button here. The only route to accepting runs through the
   // list of what was not proven, which lives in the report.

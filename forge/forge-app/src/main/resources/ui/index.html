@@ -1385,8 +1385,13 @@ function ask(j) {
               : `Keep the queue moving is off, so it waits for you to press ${press}.`};
   }
   if (j.phase === "SUSPENDED" || j.blockedReason) {
-    return {label: "Nothing needs you", tone: "muted", sub: "",
-            head: capital(j.blockedReason || "waiting for quota") + "."};
+    const head = capital(j.blockedReason || "waiting for quota") + ".";
+    if ($("autoRun").checked) return {label: "Nothing needs you", tone: "muted", sub: "", head};
+    // With the queue off nothing starts by itself, so the end of the wait hands it to you.
+    const press = j.phase === "NEW" ? "Start" : "Resume Now";
+    return {label: "Needs you later", tone: "muted", head,
+            sub: `Keep the queue moving is off, so it will not start by itself: press ${press} once the `
+              + `wait is over${$("autoRun").disabled ? "" : ", or turn the queue on"}.`};
   }
   if (j.phase === "NEW") {
     return {label: "Not started", tone: "muted", head: "Not started yet.",
