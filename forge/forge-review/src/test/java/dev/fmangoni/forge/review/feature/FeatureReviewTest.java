@@ -61,15 +61,17 @@ class FeatureReviewTest {
     /** Answers each call from the feature named in the brief, and records what it was asked. */
     private final class Replier implements Agent {
 
+        private final AgentKind kind;
         private final Function<AgentTask, AgentResult> reply;
 
-        private Replier(Function<AgentTask, AgentResult> reply) {
+        private Replier(AgentKind kind, Function<AgentTask, AgentResult> reply) {
+            this.kind = kind;
             this.reply = reply;
         }
 
         @Override
         public AgentKind kind() {
-            return AgentKind.CODEX;
+            return kind;
         }
 
         @Override
@@ -93,7 +95,40 @@ class FeatureReviewTest {
     }
 
     private FeatureReview review(Function<AgentTask, AgentResult> reply) {
-        return new FeatureReview(new Replier(reply), repo, logs, "cheapest");
+        return review(AgentKind.CODEX, reply);
+    }
+
+    private FeatureReview review(AgentKind kind, Function<AgentTask, AgentResult> reply) {
+        return new FeatureReview(new Replier(kind, reply), repo, logs, "cheapest");
+    }
+
+    @Test
+    @DisplayName("each vendor is told the way it can read: Codex by read-only commands, the others by file tools")
+    void eachVendorIsToldHowToRead() {
+        for (AgentKind kind : AgentKind.values()) {
+            review(kind, task -> says("{\"verdict\":\"holds\",\"why\":\"x\"}")).run(RACER, List.of(feature("one")));
+        }
+
+        for (int i = 0; i < AgentKind.values().length; i++) {
+            String brief = seen.get(i).brief();
+            boolean codex = AgentKind.values()[i] == AgentKind.CODEX;
+            // Codex has no file tools: forbidding commands left it unable to open a file (008.2).
+            assertEquals(codex, brief.contains("read-only commands"), AgentKind.values()[i] + ": " + brief);
+            // Antigravity ends its session on a refused command before answering (003.3).
+            assertEquals(!codex, brief.contains("do not run any command"), AgentKind.values()[i] + ": " + brief);
+        }
+    }
+
+    @Test
+    @DisplayName("a reviewer that could not read the code says so, which is no verdict and stops its pass")
+    void couldNotReadIsNoVerdict() {
+        List<FeatureCheck> checks = review(task -> says("{\"verdict\":\"unread\",\"why\":\"commands were refused\"}"))
+                .run(RACER, List.of(feature("one"), feature("two")));
+
+        assertEquals(1, seen.size(), "a session that could not open the code for one claim cannot for the next");
+        assertTrue(checks.stream().noneMatch(FeatureCheck::answered), "owed to the next reviewer, never unproven");
+        assertTrue(checks.get(1).getWhy().contains("could not read the code: commands were refused"), checks.get(1).getWhy());
+        assertTrue(seen.get(0).brief().contains("\"unread\""), "the reviewer is told it may say so");
     }
 
     @Test
@@ -169,7 +204,6 @@ class FeatureReviewTest {
 
         assertTrue(seen.get(0).brief().contains("IMPROVEMENT.md wins"), seen.get(0).brief());
         assertFalse(seen.get(1).brief().contains("IMPROVEMENT.md"), "a first build has no IMPROVEMENT.md");
-        assertTrue(seen.get(1).brief().contains("do not run any command"));
     }
 
     @Test

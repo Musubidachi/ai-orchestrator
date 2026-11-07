@@ -85,14 +85,24 @@ public final class FeatureReview {
         return checks;
     }
 
-    /** Set on a check the vendor refused, so the pass can stop rather than repeat the refusal. */
+    /**
+     * Set on a check the vendor refused, or one it could not read the code for, so the pass can
+     * stop rather than repeat it: a session that could not open the code for one claim cannot for
+     * the next either. FeaturePass hands what is left to the next reviewer.
+     */
     private String blockedReason(FeatureCheck check) {
-        return check.getWhy().startsWith(reviewer.kind() + " was unavailable") ? check.getWhy() : null;
+        String why = check.getWhy();
+        boolean blocked = why.startsWith(reviewer.kind() + " was unavailable") || why.startsWith(couldNotRead());
+        return blocked ? why : null;
+    }
+
+    private String couldNotRead() {
+        return reviewer.kind() + " could not read the code";
     }
 
     private FeatureCheck check(Spec spec, PlanFeature feature) {
         AgentResult result = reviewer.run(
-                AgentTask.readOnly(repo, FeatureBrief.of(feature, spec), CAP, logDir).using(model));
+                AgentTask.readOnly(repo, FeatureBrief.of(feature, spec, reviewer.kind()), CAP, logDir).using(model));
 
         if (result.blockedExternally()) {
             return FeatureCheck.unchecked(feature.getName(), reviewer.kind() + " was unavailable: " + result.outcome());
@@ -110,6 +120,10 @@ public final class FeatureReview {
         try {
             FeatureCheck check = MAPPER.readValue(json, FeatureCheck.class);
             check.setFeature(feature.getName());
+            if (FeatureBrief.UNREAD.equals(check.getVerdict())) {
+                // Not a finding about the claim: it is owed to the next reviewer, not reported as unproven.
+                return FeatureCheck.unchecked(feature.getName(), couldNotRead() + ": " + check.getWhy());
+            }
             if (!FeatureCheck.HOLDS.equals(check.getVerdict()) && !check.unproven()) {
                 check.setVerdict(FeatureCheck.UNCHECKED);
             }

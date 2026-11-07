@@ -94,6 +94,21 @@ class FeaturePassTest {
     }
 
     @Test
+    @DisplayName("a reviewer that could not read the code hands every claim on, and none reads as unproven")
+    void couldNotReadIsPassedOn() {
+        FeaturePass pass = new FeaturePass(List.of(
+                reviewer(AgentKind.CODEX, claim -> "{\"verdict\":\"unread\",\"why\":\"every command was refused\"}"),
+                reviewer(AgentKind.CLAUDE, claim -> HOLDS)));
+
+        List<FeatureCheck> checks = pass.run(FeatureReviewTest.RACER,
+                List.of(feature("Monthly summary"), feature("Report export")));
+
+        assertEquals(List.of("CODEX:summary", "CLAUDE:summary", "CLAUDE:export"), asked,
+                "a reviewer that could not look has said nothing about the claims; the next one is asked");
+        assertTrue(checks.stream().allMatch(check -> FeatureCheck.HOLDS.equals(check.getVerdict())));
+    }
+
+    @Test
     @DisplayName("when nobody answers, the claim stays unchecked with the last reason given")
     void nobodyAnswering() {
         FeaturePass pass = new FeaturePass(List.of(

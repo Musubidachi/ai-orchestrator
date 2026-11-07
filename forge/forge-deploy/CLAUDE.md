@@ -2,8 +2,6 @@
 
 Deploying an accepted project with the command its spec names, when a person presses Deploy, and nothing else. And publishing a family's versions to GitHub, when one is approved or a person presses Publish.
 
-**Packages:** `deploy`, `deploy.github`, `deploy.shelf`. Each has a `package-info.java` saying what belongs in it, what does not, and what it may import.
-
 **May use:** forge-review and below. Maven refuses anything higher; `LayersTest` holds the direction between packages inside.
 
 **Rules:** Explicit click only, with one exception: with GitHub publishing switched on, an enhancement's branch is pushed as it begins and a version is pushed when approved, which the person asked for and the queue can trigger unattended (`ScaffoldStep`, `JobRunner.decide`). A repository is only made by approving the initial version or pressing Publish, a shelf only by pressing Shelve. Never a login, a credential or an install. See `deploy/CLAUDE.md`. Both kinds of going out share one set of preconditions, `Readiness`.

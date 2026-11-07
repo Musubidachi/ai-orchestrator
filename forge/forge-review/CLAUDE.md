@@ -2,17 +2,17 @@
 
 Judging a project: the gate (Forge runs the acceptance commands itself), the cross-review and a person's rulings, the approved features and their recordings, and `state.json`, which records all of their results.
 
-**Packages:** `feature`, `gate`, `review`, `review.decision`, `review.decision.model`, `review.feature`, `review.model`, `state`. Each has a `package-info.java` saying what belongs in it, what does not, and what it may import.
-
 **May use:** forge-security, forge-core. Maven refuses anything higher; `LayersTest` holds the direction between packages inside.
 
 **Rules:** The gate decides done; nothing an agent says reaches its verdict. See `gate/CLAUDE.md`.
 The cross-review is two passes: `FeatureReview` asks a reviewer's cheapest model about each
 claimed feature, then `ReviewStage` reviews the change once on its best model, holding what that
 pass could not find. A refusal stops one reviewer's cheap pass rather than repeating it per feature;
-`FeaturePass` hands every claim that reviewer left unanswered (refused, empty, not JSON) to the next
-reviewer, and an unchecked claim never reads as one that held up. On an enhancement the cheap pass
-is told that IMPROVEMENT.md wins over SPEC.md's non-goals.
+`FeaturePass` hands every claim that reviewer left unanswered (refused, empty, not JSON, or `unread`:
+it could not open the code) to the next reviewer, and an unchecked claim never reads as one that
+held up. `FeatureBrief` tells each vendor how it can read in a read-only session: Codex has no file
+tools and reads with read-only commands; Claude and Antigravity use file tools and run no command.
+On an enhancement the cheap pass is told that IMPROVEMENT.md wins over SPEC.md's non-goals.
 
 A review after a repair is also a recheck: `ReviewRound` hands the reviewer the previous blocking
 findings by id, with the builder's answer to each, and the reply's `rechecks` say which are fixed.

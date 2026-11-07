@@ -2,8 +2,6 @@
 
 What a person reads and hears about a project: the index and one page per project, each section a class of its own, the walkthrough the dashboard reads aloud, and the narrated code tour.
 
-**Packages:** `report`, `report.deck`, `report.evidence`, `report.outward`, `report.review`, `report.section`, `report.shell`, `walkthrough`, `tour`, `tour.film`, `tour.model`, `tour.read`, `tour.read.model`, `tour.say`, `tour.show`, `tour.sound`. Each has a `package-info.java` saying what belongs in it, what does not, and what it may import.
-
 **May use:** forge-marketing and below. Maven refuses anything higher; `LayersTest` holds the direction between packages inside.
 
 **Rules:** It shows what other modules decided and decides nothing itself. Nothing here calls a model — the walkthrough is assembled from the run's files and the tour from the source and the notes beside it, so both cost no quota and cannot describe a project as anything other than what is on disk.
