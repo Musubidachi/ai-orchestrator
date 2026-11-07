@@ -10,6 +10,7 @@ import dev.fmangoni.forge.gate.Gate;
 import dev.fmangoni.forge.gate.GateResult;
 import dev.fmangoni.forge.gate.LookCheck;
 import dev.fmangoni.forge.gate.OwnedFiles;
+import dev.fmangoni.forge.gate.words.SameWords;
 import dev.fmangoni.forge.pipeline.run.RunContext;
 import dev.fmangoni.forge.plan.Plan;
 import dev.fmangoni.forge.project.Phase;
@@ -38,7 +39,8 @@ public final class GateStep {
     public void run() {
         RunState state = run.state();
         List<Feature> owed = owedRecordings();
-        GateResult result = withOwnedFiles(withDefaultLook(newGate().run(run.acceptance(), run.evidence(), overview(), owed)));
+        GateResult result = withOwnedFiles(withDefaultLook(SameWords.around(run.paths().repo(),
+                () -> newGate().run(run.acceptance(), run.evidence(), overview(), owed))));
         // Recorded whether it passed or failed: a command that got slower is worth knowing about
         // even on a run that went green, and especially on one that did not.
         Timings.record(state, result.commands());

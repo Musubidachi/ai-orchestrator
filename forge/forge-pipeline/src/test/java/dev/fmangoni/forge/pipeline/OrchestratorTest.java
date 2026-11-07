@@ -18,6 +18,7 @@ import dev.fmangoni.forge.feature.Features;
 import dev.fmangoni.forge.gate.CommandResult;
 import dev.fmangoni.forge.gate.LookCheck;
 import dev.fmangoni.forge.gate.RunFile;
+import dev.fmangoni.forge.gate.words.SameWords;
 import dev.fmangoni.forge.design.DesignStudio;
 import dev.fmangoni.forge.git.Git;
 import dev.fmangoni.forge.pipeline.run.Workspace;
@@ -572,6 +573,23 @@ class OrchestratorTest {
         assertEquals(Phase.DONE, state.getPhase());
         assertNull(state.getLastError());
         assertTrue(Files.isRegularFile(paths.repo().resolve("Main.java")));
+    }
+
+    @Test
+    @DisplayName("a suite whose themed screen says something else does not pass, whatever its commands exit")
+    void aThemeThatChangesTheWordsFails() throws IOException {
+        // The suite is the acceptance command itself: the gate empties the folder before it runs.
+        Spec spec = spec("(if not exist artifacts\\words mkdir artifacts\\words) & (echo Gold 1,250)> artifacts\\words\\market.default.txt"
+                + " & (echo Gold 1,520)> artifacts\\words\\market.halloween.txt", 1, 3);
+        Agent builder = new StubAgent(AgentKind.CLAUDE, writes("Main.java", "class Main {}"), finished());
+
+        RunState state = advance(spec, freshState(), agentsWhere(builder,
+                new StubAgent(AgentKind.CODEX, OrchestratorTest::writesNothing, CLEAN_REVIEW)));
+
+        assertEquals(Phase.PARKED, state.getPhase(), state.getLastError());
+        assertTrue(state.getLastFailure().command().startsWith(SameWords.FAILURE), state.getLastFailure().summary()
+                + "\n" + state.getLastFailure().output());
+        assertTrue(state.getLastFailure().output().contains("+ Gold 1,520"), state.getLastFailure().output());
     }
 
     @Test

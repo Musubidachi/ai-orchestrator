@@ -14,6 +14,10 @@ evidence the spec names.
   `LOOK` becomes a review item (`state.GateLooks`, recorded by `GateStep` after every gate), answered
   on its own. The code is high on purpose: a small one is what a real failure exits with. It never
   fails or holds a gate; only the person's ruling decides what it means.
+- **Every look of a screen says what its default says** (`gate.words.SameWords`, around the gate
+  run in `GateStep`). The suite saves each screen's visible text to
+  `artifacts/words/<screen>.<look>.txt`; the folder is emptied before the commands, so a file from
+  an earlier build cannot pass for this one, and a passed gate fails on any line that differs.
 - **Checks stay deliberately shallow where judgement is needed.** The flow-class check verifies the
   file exists and is not a stub. Whether it is a good flow is for the review and the person.
 - **A failed recordings check lists every owed clip**, filmed or missing, each under the exact name
