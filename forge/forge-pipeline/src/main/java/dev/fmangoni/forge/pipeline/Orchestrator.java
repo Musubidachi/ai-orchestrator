@@ -98,6 +98,7 @@ public final class Orchestrator {
      */
     public RunState advance() {
         recovery.prepare();
+        new MissingPictures(run).holdIfAny();
         while (!halted() && !stopRequested.getAsBoolean()) {
             timedStep();
             RunStore.save(run.paths().stateFile(), run.state());

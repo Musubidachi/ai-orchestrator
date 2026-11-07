@@ -2,6 +2,7 @@
  * Wishlist entries: reading them, writing them back, and the wishlist as a whole.
  *
  * <p><b>Belongs here:</b> {@code SpecLoader} and {@code SpecWriter}, the refusal a bad entry earns,
+ * {@code SpecPictures} (the pictures an entry names, and whether they are ready),
  * and {@code Wishlist}, which resolves an improvement's ancestry.
  *
  * <p><b>Not here:</b> The entry's own data ({@code spec.model}), the ordering ({@code spec.rank})

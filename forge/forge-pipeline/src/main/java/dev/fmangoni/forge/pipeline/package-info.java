@@ -2,7 +2,8 @@
  * Driving one project through its phases, persisting after every transition.
  *
  * <p><b>Belongs here:</b> {@code Orchestrator} (the loop and the dispatch, and nothing else) and
- * {@code Recovery}, which puts a run back in order before its next step.
+ * {@code Recovery}, which puts a run back in order before its next step, and {@code MissingPictures},
+ * which holds a run whose spec names pictures that are not there.
  *
  * <p><b>Not here:</b> The phases ({@code pipeline.step}), what a building turn involves ({@code
  * pipeline.turn}) and the run every step is handed ({@code pipeline.run}). Choosing which project

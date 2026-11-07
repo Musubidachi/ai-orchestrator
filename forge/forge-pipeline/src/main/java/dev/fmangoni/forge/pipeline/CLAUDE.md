@@ -48,6 +48,11 @@ front of every implementation turn, which is what makes the cheaper rung reasona
   `run.Suspension` until someone presses Start; so is the third agent call in a row that failed
   without doing anything (`run.PersonHold`). Every suspension carries a resume time — one without
   was read as "ready now", and relaunched the same call the moment the slot freed.
+- **A spec's pictures are checked before any step** (`MissingPictures`, from `Orchestrator.advance`
+  after `Recovery`, using `spec.SpecPictures`). Every `[image: …]` the spec names must be in the
+  repository, and every screenshot in its pictures table must be in `evidence`; otherwise the
+  project is held for the person, naming the picture. No agent can mend a spec or the pictures
+  folder, so a turn would only trip on it. `[image: …]` inside backticks is prose and not checked.
 - **The loop stops between steps when asked** (`Orchestrator`'s stop check, which the job queue
   wires to a draining shutdown). A stop never lands inside a step.
 - **The person picks the vendor, even mid-project.** `Recovery` honours a changed `assign:` at any
