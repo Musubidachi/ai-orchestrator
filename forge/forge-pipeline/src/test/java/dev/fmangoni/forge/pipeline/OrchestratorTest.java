@@ -593,6 +593,21 @@ class OrchestratorTest {
     }
 
     @Test
+    @DisplayName("a command that passes and asks to look goes on to the review, with its question kept for the person")
+    void aLookIsKeptForThePerson() throws IOException {
+        // No colon after LOOK: the command sits unquoted in the spec's YAML, where it would make a map.
+        Spec spec = spec("echo LOOK the banner moved & exit " + CommandResult.LOOK, 1, 3);
+        Agent builder = new StubAgent(AgentKind.CLAUDE, writes("Main.java", "class Main {}"), finished());
+
+        RunState state = advance(spec, freshState(), agentsWhere(builder,
+                new StubAgent(AgentKind.CODEX, OrchestratorTest::writesNothing, CLEAN_REVIEW)));
+
+        assertEquals(Phase.DONE, state.getPhase(), state.getLastError());
+        assertEquals(1, state.getGateLooks().size(), state.getGateLooks().toString());
+        assertTrue(state.getGateLooks().get(0).contains("the banner moved"), state.getGateLooks().toString());
+    }
+
+    @Test
     @DisplayName("a gate stopped only by the default look waits for the person, and no session is spent on it")
     void aChangedLookWaitsForThePerson() throws IOException {
         // 003.4 added the navigation bar it was asked to. Its look then differed from the reference

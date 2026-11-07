@@ -14,7 +14,7 @@ deploy, monetization), so a spec that names a missing picture, or a half-updated
 when an agent trips on it, which costs a turn.
 
 **Built:** `spec.SpecPictures` reads the pictures and the table; `pipeline.MissingPictures`, called
-once from `Orchestrator.advance`, holds the project for you before any step, naming the picture.
+once, first in the pipeline's `Outline`, holds the project for you before any step, naming the picture.
 
 ### 2. Each spec picture beside its screenshot, in the report
 
@@ -53,7 +53,7 @@ command exit with a reserved code meaning "passed, a person should look", with i
 into **Your review** as an item instead of failing the gate.
 
 **Built:** exit code 42 (`CommandResult.LOOK`) passes. `state.GateLooks` records each output line
-starting `LOOK` after every gate (one line in `GateStep`) and adds them to the review items the
+starting `LOOK` after every gate (attached after the gate step in `Outline`) and adds them to the review items the
 form, the quick review and saving all use. They start unticked and are dealt on their own, like a
 blocking finding. A later gate that no longer asks takes them away.
 
@@ -64,7 +64,8 @@ are the same as in the default theme", so the agent's own test grades the agent.
 saved each screen's visible text, default and themed, to named files, the gate could compare them
 itself, in keeping with "the gate decides done, not the agent".
 
-**Built:** `gate.words.SameWords`, wrapped around the gate run in `GateStep`. The suite saves each
+**Built:** `gate.words.SameWords`, attached in `Outline`: cleared before the gate step,
+checked as one of its gate checks. The suite saves each
 screen's visible text to `artifacts/words/<screen>.<look>.txt` (`default` for the default theme).
 The gate empties that folder before the commands run, and a gate that passed fails when a look's
 lines differ from the default's, in any order, listing what differs for the repair turn. A spec

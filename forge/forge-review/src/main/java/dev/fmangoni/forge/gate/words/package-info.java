@@ -7,7 +7,8 @@
  *
  * <p><b>Not here:</b> running the commands or collecting evidence, which is {@code gate}.
  *
- * <p><b>Start with:</b> {@code SameWords.around}.
+ * <p><b>Start with:</b> {@code SameWords.clear}, then {@code SameWords.check}; both are attached in the
+ * pipeline's {@code Outline}.
  *
  * <p>Depends on: gate.
  */

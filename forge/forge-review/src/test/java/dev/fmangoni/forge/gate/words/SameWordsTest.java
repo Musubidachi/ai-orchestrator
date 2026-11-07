@@ -5,12 +5,9 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import dev.fmangoni.forge.gate.CommandResult;
-import dev.fmangoni.forge.gate.GateResult;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Duration;
-import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -38,11 +35,6 @@ class SameWordsTest {
 
     private void save(String name, String text) throws IOException {
         Files.writeString(words.resolve(name), text);
-    }
-
-    private static GateResult passed() {
-        return new GateResult(List.of(new CommandResult("npm test", 0, "", false, Duration.ofSeconds(1), "x")),
-                List.of());
     }
 
     @Test
@@ -90,42 +82,27 @@ class SameWordsTest {
     }
 
     @Test
-    @DisplayName("words left from an earlier build are cleared before the commands run")
+    @DisplayName("words left from an earlier build are cleared, and nothing else in the folder")
     void staleWordsAreCleared() throws IOException {
         save("market.default.txt", MARKET);
-        save("market.halloween.txt", MARKET);
+        save("market.halloween.txt", MARKET.replace("Buy", "Purchase"));
+        save("notes.md", "kept");
 
-        GateResult result = SameWords.around(repo, () -> {
-            assertFalse(Files.exists(words.resolve("market.default.txt")), "cleared before the gate");
-            try {
-                save("market.default.txt", MARKET);
-                save("market.halloween.txt", MARKET.replace("Buy", "Purchase"));
-            } catch (IOException e) {
-                throw new IllegalStateException(e);
-            }
-            return passed();
-        });
+        SameWords.clear(repo);
 
-        assertFalse(result.passed());
-        assertEquals(2, result.commands().size());
-        assertTrue(result.commands().get(1).output().contains("+ Purchase Sell"));
+        assertFalse(Files.exists(words.resolve("market.default.txt")));
+        assertFalse(Files.exists(words.resolve("market.halloween.txt")));
+        assertTrue(Files.exists(words.resolve("notes.md")));
+        assertEquals(Optional.empty(), SameWords.check(repo));
     }
 
     @Test
-    @DisplayName("a gate that failed already has its reason, and is not compared")
-    void failedGateIsLeftAlone() throws IOException {
-        GateResult failed = new GateResult(
-                List.of(new CommandResult("npm test", 1, "", false, Duration.ofSeconds(1), "x")), List.of());
+    @DisplayName("a folder that was never made is nothing to clear")
+    void noFolder() throws IOException {
+        Files.delete(words);
 
-        GateResult result = SameWords.around(repo, () -> {
-            try {
-                save("market.halloween.txt", MARKET);
-            } catch (IOException e) {
-                throw new IllegalStateException(e);
-            }
-            return failed;
-        });
+        SameWords.clear(repo);
 
-        assertEquals(failed, result);
+        assertFalse(Files.exists(words));
     }
 }

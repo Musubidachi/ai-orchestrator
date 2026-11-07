@@ -11,19 +11,20 @@ evidence the spec names.
 - **Commands run as written in the spec**, from a script (`process.ShellScript`) so no quoting
   changes them, inside the run's repo, with the spec's timeout.
 - **Exit 42 (`CommandResult.LOOK`) is a pass that asks a person to look.** Each output line starting
-  `LOOK` becomes a review item (`state.GateLooks`, recorded by `GateStep` after every gate), answered
+  `LOOK` becomes a review item (`state.GateLooks`, recorded after every gate step in the
+  pipeline's `Outline`), answered
   on its own. The code is high on purpose: a small one is what a real failure exits with. It never
   fails or holds a gate; only the person's ruling decides what it means.
-- **Every look of a screen says what its default says** (`gate.words.SameWords`, around the gate
-  run in `GateStep`). The suite saves each screen's visible text to
+- **Every look of a screen says what its default says** (`gate.words.SameWords`: `clear` before the
+  gate step and `check` among its gate checks, both in the pipeline's `Outline`). The suite saves each screen's visible text to
   `artifacts/words/<screen>.<look>.txt`; the folder is emptied before the commands, so a file from
   an earlier build cannot pass for this one, and a passed gate fails on any line that differs.
 - **Checks stay deliberately shallow where judgement is needed.** The flow-class check verifies the
   file exists and is not a stub. Whether it is a good flow is for the review and the person.
 - **A failed recordings check lists every owed clip**, filmed or missing, each under the exact name
   it is owed by. Listing only the missing ones let an agent fix one name by renaming another's clip.
-- **A project with a pack slot keeps its default look** (`LookCheck`, called from `GateStep` on a
-  gate that passed). Its suite saves `artifacts/look-default.png`; the first passing gate keeps it
+- **A project with a pack slot keeps its default look** (`LookCheck`, a gate check in the pipeline's
+  `Outline`, asked only of a gate that passed). Its suite saves `artifacts/look-default.png`; the first passing gate keeps it
   beside the repository (`RunPaths.lookReference`), and later gates fail when more than 2% of the
   pixels changed, the size changed, or the screenshot stopped being saved. Only a polish that
   replaces the look clears the reference (`LookCheck.forget`), or a person who saw both looks and
@@ -38,8 +39,8 @@ evidence the spec names.
   Ctrl+C for itself, so the server outlived its window and kept its port (003). Installing and
   building through npm are fine. It never runs the file: it opens a window and does not exit.
   Whether it works is for the person.
-- **A version that owns folders changes nothing outside them** (`OwnedFiles`, from `GateStep` on a
-  gate that passed). The spec's `owns:` globs; every file changed since the version's baseline
+- **A version that owns folders changes nothing outside them** (`OwnedFiles`, a gate check in the
+  pipeline's `Outline`, asked only of a gate that passed). The spec's `owns:` globs; every file changed since the version's baseline
   must match one, apart from what Forge writes itself (`IMPROVEMENT.md`, `SPEC.md`, `artifacts/`)
   and the evidence the suite saves (`evidence/`: every version's suite reruns every earlier version's
   tests, and they save their screenshots again). A range that cannot be read fails rather than

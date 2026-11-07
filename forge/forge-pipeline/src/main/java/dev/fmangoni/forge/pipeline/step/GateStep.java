@@ -10,14 +10,12 @@ import dev.fmangoni.forge.gate.Gate;
 import dev.fmangoni.forge.gate.GateResult;
 import dev.fmangoni.forge.gate.LookCheck;
 import dev.fmangoni.forge.gate.OwnedFiles;
-import dev.fmangoni.forge.gate.words.SameWords;
 import dev.fmangoni.forge.pipeline.run.RunContext;
 import dev.fmangoni.forge.plan.Plan;
 import dev.fmangoni.forge.project.Phase;
 import dev.fmangoni.forge.project.RunPaths;
 import dev.fmangoni.forge.review.decision.DecisionStore;
 import dev.fmangoni.forge.spec.model.Spec;
-import dev.fmangoni.forge.state.GateLooks;
 import dev.fmangoni.forge.state.RunState;
 import dev.fmangoni.forge.state.Timings;
 import java.util.ArrayList;
@@ -31,20 +29,28 @@ import java.util.Optional;
 public final class GateStep {
 
     private final RunContext run;
+    private final List<GateCheck> checks;
+    private GateResult lastResult;
 
-    public GateStep(RunContext run) {
+    /** @param checks what the gate adds after the commands, in order ({@link GateCheck}) */
+    public GateStep(RunContext run, List<GateCheck> checks) {
         this.run = run;
+        this.checks = List.copyOf(checks);
+    }
+
+    /** The verdict of the gate this step ran last, checks included; null before it has run. */
+    public GateResult lastResult() {
+        return lastResult;
     }
 
     public void run() {
         RunState state = run.state();
         List<Feature> owed = owedRecordings();
-        GateResult result = withOwnedFiles(withDefaultLook(SameWords.around(run.paths().repo(),
-                () -> newGate().run(run.acceptance(), run.evidence(), overview(), owed))));
+        GateResult result = withChecks(newGate().run(run.acceptance(), run.evidence(), overview(), owed));
+        lastResult = result;
         // Recorded whether it passed or failed: a command that got slower is worth knowing about
         // even on a run that went green, and especially on one that did not.
         Timings.record(state, result.commands());
-        GateLooks.record(state, result.commands());
         Optional<String> moved = rememberClips(result, owed);
 
         boolean afterInterruption = state.isRecoveredTurn();
@@ -112,42 +118,24 @@ public final class GateStep {
     }
 
     /**
-     * The gate's verdict, held to the project's default look once it has one ({@link LookCheck}).
+     * The commands' verdict, held to each check in turn while it still passes ({@link GateCheck}).
      *
-     * <p>Only on a gate that passed: a reference adopted from a failing build would hold the project
-     * to a look nobody accepted, and a failing gate already has a reason to give.
+     * <p>Only on a gate that passed: a failing one already has a reason to give, and the repair it
+     * leads to may well be what puts a stray file back or a changed look right.
      */
-    private GateResult withDefaultLook(GateResult result) {
-        if (!result.passed()) {
-            return result;
+    private GateResult withChecks(GateResult result) {
+        for (GateCheck check : checks) {
+            if (!result.passed()) {
+                return result;
+            }
+            Optional<CommandResult> failure = check.failure();
+            if (failure.isPresent()) {
+                List<CommandResult> commands = new ArrayList<>(result.commands());
+                commands.add(failure.get());
+                result = new GateResult(commands, result.evidence());
+            }
         }
-        return LookCheck.check(run.paths().repo(), run.paths().lookReference())
-                .map(changed -> {
-                    List<CommandResult> commands = new ArrayList<>(result.commands());
-                    commands.add(changed);
-                    return new GateResult(commands, result.evidence());
-                })
-                .orElse(result);
-    }
-
-    /**
-     * The gate's verdict, held to the folders the spec says this version owns ({@link OwnedFiles}).
-     *
-     * <p>Only on a gate that passed, like the look: a failing one already has a reason to give, and
-     * the repair it leads to may well be what puts a stray file back.
-     */
-    private GateResult withOwnedFiles(GateResult result) {
-        if (!result.passed()) {
-            return result;
-        }
-        return OwnedFiles.check(run.paths().repo(), run.paths().gitLog(), run.state().getBaselineCommit(),
-                        run.spec().owns())
-                .map(outside -> {
-                    List<CommandResult> commands = new ArrayList<>(result.commands());
-                    commands.add(outside);
-                    return new GateResult(commands, result.evidence());
-                })
-                .orElse(result);
+        return result;
     }
 
     /** The checks the gate adds after the commands, which have no script of their own. */

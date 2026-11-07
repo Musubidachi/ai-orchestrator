@@ -1,7 +1,6 @@
 package dev.fmangoni.forge.gate.words;
 
 import dev.fmangoni.forge.gate.CommandResult;
-import dev.fmangoni.forge.gate.GateResult;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -11,7 +10,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Supplier;
 
 /**
  * The gate, holding every look of a screen to the words of its default look.
@@ -42,21 +40,22 @@ public final class SameWords {
     private SameWords() {
     }
 
-    /** Runs the gate with the words cleared first and compared after, when it passed. */
-    public static GateResult around(Path repo, Supplier<GateResult> gate) {
-        clear(repo.resolve(FOLDER));
-        GateResult result = gate.get();
-        if (!result.passed()) {
-            return result;
+    /** Empties the folder of words, before the gate's commands run, so only theirs are compared. */
+    public static void clear(Path repo) {
+        for (Path file : ScreenWords.texts(repo.resolve(FOLDER))) {
+            try {
+                Files.deleteIfExists(file);
+            } catch (IOException e) {
+                // Left in place, it is compared as though this gate had saved it; say so in the log.
+                System.err.println("could not clear " + file + ": " + e.getMessage());
+            }
         }
-        return check(repo).map(failure -> {
-            List<CommandResult> commands = new ArrayList<>(result.commands());
-            commands.add(failure);
-            return new GateResult(commands, result.evidence());
-        }).orElse(result);
     }
 
-    /** What differs between the looks of each screen, as a failed command, or nothing. */
+    /**
+     * What differs between the looks of each screen, as a failed command, or nothing. Asked only of
+     * a gate that passed: a failing one already has its reason.
+     */
     public static Optional<CommandResult> check(Path repo) {
         List<String> problems = new ArrayList<>();
         try {
@@ -104,16 +103,5 @@ public final class SameWords {
             }
         }
         return out;
-    }
-
-    private static void clear(Path folder) {
-        for (Path file : ScreenWords.texts(folder)) {
-            try {
-                Files.deleteIfExists(file);
-            } catch (IOException e) {
-                // Left in place, it is compared as though this gate had saved it; say so in the log.
-                System.err.println("could not clear " + file + ": " + e.getMessage());
-            }
-        }
     }
 }

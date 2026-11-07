@@ -1,9 +1,15 @@
 # pipeline
 
-Drives one project through its phases. `Orchestrator` is the loop and the dispatch only: it runs
-`Recovery` once, then one step per phase, saving `state.json` after each. Every step shares one
-`RunContext` (spec, paths, state, agents, workspace, wishlist, models) and records its outcome in
-the state.
+Drives one project through its phases. **`Outline` is the whole run in order**: what is done once
+before any step (`Recovery`, `MissingPictures`), then one step per phase, with what is attached
+before or after each and the checks the gate adds after the commands (`step.GateCheck`). Read
+`Outline.of` top to bottom. `Orchestrator` is the loop only: it follows the outline, saving
+`state.json` after each step. Every step shares one `RunContext` (spec, paths, state, agents,
+workspace, wishlist, models), records its outcome in the state, and sets the next phase itself.
+
+**Attach, don't edit.** Something new to do around a step goes in `Outline` as `first`, `before`
+or `after`; something the gate must hold a passing build to is a `GateCheck` in the gate's list.
+Neither touches the step. `OutlineTest` fails on a phase with no step or an attachment to one.
 
 | Phase | Class |
 |---|---|
@@ -48,8 +54,8 @@ front of every implementation turn, which is what makes the cheaper rung reasona
   `run.Suspension` until someone presses Start; so is the third agent call in a row that failed
   without doing anything (`run.PersonHold`). Every suspension carries a resume time — one without
   was read as "ready now", and relaunched the same call the moment the slot freed.
-- **A spec's pictures are checked before any step** (`MissingPictures`, from `Orchestrator.advance`
-  after `Recovery`, using `spec.SpecPictures`). Every `[image: …]` the spec names must be in the
+- **A spec's pictures are checked before any step** (`MissingPictures`, first in `Outline` after
+  `Recovery`, using `spec.SpecPictures`). Every `[image: …]` the spec names must be in the
   repository, and every screenshot in its pictures table must be in `evidence`; otherwise the
   project is held for the person, naming the picture. No agent can mend a spec or the pictures
   folder, so a turn would only trip on it. `[image: …]` inside backticks is prose and not checked.
@@ -105,8 +111,8 @@ front of every implementation turn, which is what makes the cheaper rung reasona
 
 ## Adding a phase
 
-Append it to `Phase`, write a step class taking `RunContext`, add a case to `Orchestrator.step`,
-and add it to `Compaction.atACleanBoundary` (a compile error reminds you).
+Append it to `Phase`, write a step class taking `RunContext`, add a `step` line to `Outline.of`
+where it falls in the run, and add it to `Compaction.atACleanBoundary` (a compile error reminds you).
 
 ## Tests
 

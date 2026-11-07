@@ -54,7 +54,7 @@ points at what:
 
 | | |
 |---|---|
-| `x` | the entry point and nothing else — `Orchestrator`, `JobRunner`, `SecurityCheck`, `UiServer` |
+| `x` | the entry point and nothing else — `Orchestrator` (with the `Outline` it follows), `JobRunner`, `SecurityCheck`, `UiServer` |
 | `x.model` | the records and enums that subject passes around, which call nothing |
 | `x.<subject>` | a job of its own, with its own records beside it (`agent.vendor`, `jobs.button`, `report.section`) |
 | below both | whatever several of them share — `jobs.work`, `pipeline.run`, `ui.http`, `report.shell`, `status.read` |
@@ -102,7 +102,9 @@ jobs.JobRunner ──► pipeline.Orchestrator ──► brief (prompt) ──�
 | a wording rule for code said out loud | `tour.say` | inside the page or the video |
 | another way to play a tour back | `tour.show` | `tour`, which decides what it says |
 | an HTTP endpoint | a `*Routes` class in `ui`, calling into `jobs` | logic inside the handler |
-| a pipeline phase | a step class in `pipeline`, dispatched from `Orchestrator.step` | inside `Orchestrator` |
+| a pipeline phase | a step class in `pipeline.step`, listed in `pipeline.Outline` | inside `Orchestrator` |
+| something done before or after a pipeline step | attached in `pipeline.Outline` (`first`, `before`, `after`) | inside the step |
+| something the gate must hold a passing build to | a `GateCheck` in the gate's list in `pipeline.Outline` | inside `GateStep` |
 | a rule about which model runs something | `spec.ModelChoice` | a model name at the call site |
 | finding out what a vendor can actually run | `agent.catalog` | a list written into the code |
 | a dashboard button | a small job class in `jobs`, delegated from `JobRunner` | inside `JobRunner` |

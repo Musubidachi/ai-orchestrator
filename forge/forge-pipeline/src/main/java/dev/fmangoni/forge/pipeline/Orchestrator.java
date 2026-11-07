@@ -4,12 +4,6 @@ import dev.fmangoni.forge.agent.Agents;
 import dev.fmangoni.forge.git.Git;
 import dev.fmangoni.forge.pipeline.run.RunContext;
 import dev.fmangoni.forge.pipeline.run.Workspace;
-import dev.fmangoni.forge.pipeline.step.GateStep;
-import dev.fmangoni.forge.pipeline.step.PlanStep;
-import dev.fmangoni.forge.pipeline.step.ReviewStep;
-import dev.fmangoni.forge.pipeline.step.ScaffoldStep;
-import dev.fmangoni.forge.pipeline.step.SecurityStep;
-import dev.fmangoni.forge.pipeline.turn.Turns;
 import dev.fmangoni.forge.project.Phase;
 import dev.fmangoni.forge.project.RunPaths;
 import dev.fmangoni.forge.spec.Wishlist;
@@ -31,10 +25,8 @@ import java.util.function.Consumer;
  * killed between any two steps — or stopped for six hours by a quota window — and the next
  * invocation continues without repeating work already paid for.
  *
- * <p>This class is the loop and the dispatch only. Each phase's work is its own class:
- * {@link ScaffoldStep}, {@link PlanStep}, {@link Turns}, {@link GateStep}, {@link SecurityStep},
- * {@link ReviewStep};
- * and {@link Recovery} puts the run in order before the first step.
+ * <p>This class is the loop only. What is done, in which phase and in what order, is the
+ * {@link Outline}; each phase's work is a class of its own, which the outline names.
  */
 public final class Orchestrator {
 
@@ -63,13 +55,7 @@ public final class Orchestrator {
      */
     private final BooleanSupplier stopRequested;
 
-    private final Recovery recovery;
-    private final ScaffoldStep scaffold;
-    private final PlanStep plan;
-    private final Turns turns;
-    private final GateStep gate;
-    private final SecurityStep security;
-    private final ReviewStep review;
+    private final Outline outline;
 
     public Orchestrator(Spec spec, RunPaths paths, RunState state, Agents agents, Workspace workspace,
                         Wishlist wishlist, ModelTiers tiers, Consumer<RunState> afterEachStep) {
@@ -83,13 +69,7 @@ public final class Orchestrator {
                 new ModelChoice(tiers, spec));
         this.afterEachStep = afterEachStep;
         this.stopRequested = stopRequested;
-        this.recovery = new Recovery(run);
-        this.scaffold = new ScaffoldStep(run);
-        this.plan = new PlanStep(run);
-        this.turns = new Turns(run);
-        this.gate = new GateStep(run);
-        this.security = new SecurityStep(run);
-        this.review = new ReviewStep(run);
+        this.outline = Outline.of(run);
     }
 
     /**
@@ -97,8 +77,7 @@ public final class Orchestrator {
      *         was when a stop was requested between two steps
      */
     public RunState advance() {
-        recovery.prepare();
-        new MissingPictures(run).holdIfAny();
+        outline.prepare();
         while (!halted() && !stopRequested.getAsBoolean()) {
             timedStep();
             RunStore.save(run.paths().stateFile(), run.state());
@@ -156,26 +135,10 @@ public final class Orchestrator {
     private void timedStep() {
         Instant began = Instant.now();
         try {
-            step();
+            outline.run(run.state().getPhase());
         } finally {
             RunState state = run.state();
             state.setWorkedMillis(state.getWorkedMillis() + Duration.between(began, Instant.now()).toMillis());
-        }
-    }
-
-    private void step() {
-        switch (run.state().getPhase()) {
-            case NEW -> scaffold.run();
-            case PLANNING -> plan.run();
-            case SCAFFOLDED -> turns.opening();
-            case REPAIRING -> turns.repair();
-            case CONTINUING -> turns.continueWork();
-            case GATING -> gate.run();
-            case SECURITY_CHECK -> security.run();
-            case SECURITY_REPAIR -> turns.securityRepair();
-            case REVIEWING -> review.run();
-            case REVIEW_REPAIR -> turns.reviewRepair();
-            default -> throw new IllegalStateException("cannot step from " + run.state().getPhase());
         }
     }
 
