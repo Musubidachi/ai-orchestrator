@@ -7,7 +7,8 @@
  * <p><b>Not here:</b> The loop and the dispatch, which is {@code Orchestrator}, and the agent turns
  * themselves.
  *
- * <p><b>Start with:</b> {@code ScaffoldStep}, {@code PlanStep}, {@code GateStep}, {@code
+ * <p><b>Start with:</b> {@code ScaffoldStep}, {@code PlanStep}, {@code GateStep} (and {@code
+ * QuickGate}, which stands in for it while the builder says the work is unfinished), {@code
  * SecurityStep}, {@code ReviewStep}.
  *
  * <p>Depends on: agent.model, brief, deploy.github, feature, gate, pipeline.run, pipeline.turn, plan, project, review, review.decision, review.decision.model, review.feature, review.model, security, security.model, security.osv, spec.model, state.

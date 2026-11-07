@@ -7,6 +7,7 @@ import dev.fmangoni.forge.pipeline.run.RunContext;
 import dev.fmangoni.forge.pipeline.step.GateCheck;
 import dev.fmangoni.forge.pipeline.step.GateStep;
 import dev.fmangoni.forge.pipeline.step.PlanStep;
+import dev.fmangoni.forge.pipeline.step.QuickGate;
 import dev.fmangoni.forge.pipeline.step.ReviewStep;
 import dev.fmangoni.forge.pipeline.step.ScaffoldStep;
 import dev.fmangoni.forge.pipeline.step.SecurityStep;
@@ -49,6 +50,7 @@ public final class Outline {
                 () -> LookCheck.check(paths.repo(), paths.lookReference()),
                 () -> OwnedFiles.check(paths.repo(), paths.gitLog(), run.state().getBaselineCommit(),
                         run.spec().owns())));
+        QuickGate quickGate = new QuickGate(run, gate);
         return new Outline()
                 .first("put the run back in order after a stop, a crash or a changed spec",
                         new Recovery(run)::prepare)
@@ -66,9 +68,11 @@ public final class Outline {
                 // → SECURITY_CHECK; CONTINUING or REPAIRING; PARKED when no turn can help
                 .before(Phase.GATING, "empty the folder the screens' words are saved to",
                         () -> SameWords.clear(paths.repo()))
-                .step(Phase.GATING, "run the spec's acceptance commands, then the gate checks", gate::run)
+                .step(Phase.GATING, "run the spec's acceptance commands, then the gate checks;"
+                        + " only the quick commands while the builder says unfinished", quickGate::run)
                 .after(Phase.GATING, "keep what the gate asked a person to look at",
-                        () -> GateLooks.record(run.state(), gate.lastResult().commands()))
+                        () -> quickGate.lastFull().ifPresent(
+                                result -> GateLooks.record(run.state(), result.commands())))
 
                 // → REVIEWING, or SECURITY_REPAIR on a serious finding
                 .step(Phase.SECURITY_CHECK, "secrets, dependencies, risky code, the running app",

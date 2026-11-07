@@ -16,7 +16,7 @@ Neither touches the step. `OutlineTest` fails on a phase with no step or an atta
 | NEW | `ScaffoldStep` |
 | PLANNING | `PlanStep` (read-only, top of the ladder, writes `plan.md`) |
 | SCAFFOLDED, REPAIRING, CONTINUING, SECURITY_REPAIR, REVIEW_REPAIR | `Turns` (which brief), `AgentTurn` (runs it) |
-| GATING | `GateStep` |
+| GATING | `QuickGate` (the quick commands only, while the builder says partial), otherwise `GateStep` |
 | SECURITY_CHECK | `SecurityStep` |
 | REVIEWING | `ReviewStep` |
 
@@ -41,6 +41,15 @@ front of every implementation turn, which is what makes the cheaper rung reasona
   write. Every gate saves the screenshots again, and counting them gave 003.3 five sessions in
   which nothing was built. `ContinueBrief` says so when the last gate passed: telling that builder
   its commands failed kept it calling the work partial.
+- **A quick gate never passes a version.** After a turn whose handoff says `partial`, that changed
+  code, with sessions left, and never after an interrupted turn or for Check Again, `step.QuickGate`
+  runs only the commands before the first that usually takes `SLOW_SECONDS` or more, and always
+  goes to CONTINUING, where the full gate would have sent it too (a changed look or a moved clip,
+  which would have parked it, waits for the full gate). Every other gate is the full one, so nothing
+  reaches the review without it. A command never timed is run, so a new one is never skipped. What
+  a quick gate left out is `notRunAtLastGate`, named in the next brief (`QuickGateBrief`) and in the
+  report's verdict, and cleared by the next full gate. 003.3 waited ten minutes and more on its
+  browser suite before each of its sixteen continuations.
 - **A person's request gets sessions of its own.** Requested changes (`Turns.continueWork`) and Run
   Another Session (`Reopening`) call `RunState.oweSessionsToARequest`: five sessions past wherever
   the project stands, or the spec's limit if that is higher. Every check of the limit asks

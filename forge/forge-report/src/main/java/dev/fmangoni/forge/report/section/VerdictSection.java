@@ -3,6 +3,7 @@ package dev.fmangoni.forge.report.section;
 import dev.fmangoni.forge.gate.CommandResult;
 import dev.fmangoni.forge.report.shell.Html;
 import dev.fmangoni.forge.state.RunState;
+import java.util.List;
 import lombok.experimental.UtilityClass;
 
 /** The title, who built it, and the acceptance result, stated plainly, including for a project that failed. */
@@ -27,7 +28,7 @@ public class VerdictSection {
     private String verdict(RunState state) {
         CommandResult failure = state.getLastFailure();
         if (failure == null && state.getLastError() == null) {
-            return "<div class=\"card\"><strong>All acceptance commands passed.</strong></div>";
+            return passed(state.getNotRunAtLastGate());
         }
         StringBuilder out = new StringBuilder("<div class=\"card\"><strong>Not accepted.</strong>");
         if (state.getLastError() != null) {
@@ -44,5 +45,18 @@ public class VerdictSection {
                     .append("</code></p>");
         }
         return out.append("</div>").toString();
+    }
+
+    /**
+     * A gate that passed, and what it covers. A quick gate ({@code QuickGate}) ran only some of the
+     * commands, and calling that "all" would read as a version ready for review.
+     */
+    private String passed(List<String> notRun) {
+        if (notRun == null || notRun.isEmpty()) {
+            return "<div class=\"card\"><strong>All acceptance commands passed.</strong></div>";
+        }
+        return "<div class=\"card\"><strong>The quicker acceptance commands passed.</strong>"
+                + "<p class=\"muted\">The builder says the work is unfinished, so these wait for the full"
+                + " gate:</p><pre>" + Html.escape(String.join("\n", notRun)) + "</pre></div>";
     }
 }

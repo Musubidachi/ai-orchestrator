@@ -3,6 +3,7 @@ package dev.fmangoni.forge.pipeline.turn;
 import dev.fmangoni.forge.brief.BuildBrief;
 import dev.fmangoni.forge.brief.ContinueBrief;
 import dev.fmangoni.forge.brief.ImproveBrief;
+import dev.fmangoni.forge.brief.QuickGateBrief;
 import dev.fmangoni.forge.brief.repair.FeedbackBrief;
 import dev.fmangoni.forge.brief.repair.RepairBrief;
 import dev.fmangoni.forge.brief.repair.ReviewRepairBrief;
@@ -53,8 +54,9 @@ public final class Turns {
             turn.run(FeedbackBrief.of(feedback, state.getPlan(), spec.agentTimeout()), "Requested changes");
             return;
         }
-        turn.run(ContinueBrief.of(state.getLastFailure(), state.getPlan(),
-                        state.getSessions() + 1, state.sessionLimit(spec.maxSessions()), spec.agentTimeout()),
+        turn.run(QuickGateBrief.of(state.getNotRunAtLastGate())
+                        + ContinueBrief.of(state.getLastFailure(), state.getPlan(), state.getSessions() + 1,
+                                state.sessionLimit(spec.maxSessions()), spec.agentTimeout()),
                 "Continue (session " + (state.getSessions() + 1) + ")");
     }
 

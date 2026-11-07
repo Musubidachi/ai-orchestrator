@@ -77,7 +77,8 @@ class OutlineTest {
     void gateAttachments() throws IOException {
         List<String> lines = forge().lines().stream().map(OutlineStep::what).toList();
 
-        int gate = lines.indexOf("run the spec's acceptance commands, then the gate checks");
+        int gate = lines.indexOf("run the spec's acceptance commands, then the gate checks;"
+                + " only the quick commands while the builder says unfinished");
         assertEquals("empty the folder the screens' words are saved to", lines.get(gate - 1));
         assertEquals("keep what the gate asked a person to look at", lines.get(gate + 1));
         assertEquals("hold a spec whose pictures are not there", lines.get(1));

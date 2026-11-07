@@ -132,6 +132,16 @@ public class RunState {
     private List<String> unfilmedAtLastGate = new ArrayList<>();
 
     /**
+     * The acceptance commands the last gate left out because it was a quick one ({@code
+     * QuickGate}), in the spec's order; empty after a full gate.
+     *
+     * <p>Kept so the next brief and the report can say which commands that gate's verdict covers.
+     * Without it, a quick gate that passed reads as every command passing.
+     */
+    @Builder.Default
+    private List<String> notRunAtLastGate = new ArrayList<>();
+
+    /**
      * Ids of missing clips a person said they still want since the last gate.
      *
      * <p>So the dashboard can show the question as answered. Saying "still want it" changes no
@@ -216,7 +226,8 @@ public class RunState {
      *
      * <p>Kept because the gate measures it anyway, and a command that has quietly gone from twenty
      * seconds to three minutes is the performance regression a person actually wants to hear about.
-     * It is a record, never a threshold — nothing here can fail a build.
+     * It is a record, never a threshold — nothing here can fail a build. {@code QuickGate} reads it
+     * only to leave the slow commands out of a gate that cannot pass a version either way.
      */
     private Map<String, List<Integer>> commandSeconds =
             new LinkedHashMap<>();

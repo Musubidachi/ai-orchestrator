@@ -101,6 +101,23 @@ needs three decisions first:
 Once those are settled, the pieces are a spec kind (the check as the acceptance command, the sheets
 as evidence) and a card kind in `report.deck` for the sheets.
 
+### 7. A quick gate while the builder says unfinished
+
+After a turn whose handoff says `partial`, the gate can only lead to another session: a pass goes
+to CONTINUING (`moreToBuild`), and so does a failure once the turn built something. Yet each of
+those gates ran the whole suite. 003.3 had sixteen continuations, each waiting ten minutes and more
+on its browser suite before the next session could start.
+
+**Built:** `pipeline.step.QuickGate`, the GATING step in `Outline`, standing in front of `GateStep`.
+When the handoff says `partial`, the turn changed code, sessions are left and every command has
+been timed before, it runs the spec's commands up to the first that usually takes two minutes or
+more (`SLOW_SECONDS`, against the middle of its last runs), and the next session starts. The full
+gate runs when the builder says `complete`, when sessions run out, after an interrupted turn and
+for Check Again, so no version reaches the review without it. The commands left out are kept on
+the state (`notRunAtLastGate`): the next brief names them (`QuickGateBrief`), and the report says
+"The quicker acceptance commands passed" rather than "all". The evidence, the recordings and the
+gate checks (the words, the look, the owned files) wait for the full gate too.
+
 ## For how the work is run
 
 - Keep the pilot-then-stop pattern: two jobs, a look, then the rest.
