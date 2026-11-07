@@ -55,7 +55,8 @@ into **Your review** as an item instead of failing the gate.
 **Built:** exit code 42 (`CommandResult.LOOK`) passes. `state.GateLooks` records each output line
 starting `LOOK` after every gate (attached after the gate step in `Outline`) and adds them to the review items the
 form, the quick review and saving all use. They start unticked and are dealt on their own, like a
-blocking finding. A later gate that no longer asks takes them away.
+blocking finding. A later gate that no longer asks takes them away. The event check
+(`tools/events.py check`) exits 42 on a LOOK, so it is ready to be an acceptance command.
 
 ### 5. Forge compares the words itself
 
@@ -69,7 +70,8 @@ checked as one of its gate checks. The suite saves each
 screen's visible text to `artifacts/words/<screen>.<look>.txt` (`default` for the default theme).
 The gate empties that folder before the commands run, and a gate that passed fails when a look's
 lines differ from the default's, in any order, listing what differs for the repair turn. A spec
-asks for it by listing the files in `evidence`; a suite that saves none is not checked.
+asks for it by listing the files in `evidence`; a suite that saves none is not checked. The Twin
+Thrones event specs ask for it: six screens, in the event's theme and the default, twelve files each.
 
 ### 6. Picture jobs as Forge jobs
 
