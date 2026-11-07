@@ -1,6 +1,6 @@
 /**
  * The parts of the page about putting the project in front of people: security, deployments, the
- * marketing kit, and how a polish came out.
+ * marketing kit, how a polish came out, and how a version built to pictures came out.
  *
  * <p><b>Belongs here:</b> One section class each.
  *
@@ -8,8 +8,8 @@
  * {@code jobs}.
  *
  * <p><b>Start with:</b> {@code SecuritySection}, {@code DeploymentsSection}, {@code
- * MarketingSection}, {@code PolishSection}.
+ * MarketingSection}, {@code PolishSection}, {@code PicturesSection}.
  *
- * <p>Depends on: deploy, design, json, marketing, project, report.shell, security.model.
+ * <p>Depends on: deploy, design, json, marketing, project, report.shell, security.model, spec, spec.model, state.
  */
 package dev.fmangoni.forge.report.outward;

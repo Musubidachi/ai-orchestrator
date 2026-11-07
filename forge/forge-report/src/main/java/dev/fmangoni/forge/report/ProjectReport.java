@@ -5,6 +5,7 @@ import dev.fmangoni.forge.feature.Feature;
 import dev.fmangoni.forge.project.RunPaths;
 import dev.fmangoni.forge.report.outward.DeploymentsSection;
 import dev.fmangoni.forge.report.outward.MarketingSection;
+import dev.fmangoni.forge.report.outward.PicturesSection;
 import dev.fmangoni.forge.report.outward.PolishSection;
 import dev.fmangoni.forge.report.outward.SecuritySection;
 import dev.fmangoni.forge.report.review.DecisionSection;
@@ -62,6 +63,7 @@ public final class ProjectReport {
                 + TimingsSection.render(state)
                 + EvidenceSection.render(paths, state)
                 + PolishSection.render(paths)
+                + PicturesSection.render(paths, state)
                 + SecuritySection.render(SecurityReport.load(paths.securityFile()))
                 + DeploymentsSection.render(Deployment.history(paths.deploymentsFile()))
                 + MarketingSection.render(paths, state.getId())
