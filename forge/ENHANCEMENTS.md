@@ -72,6 +72,9 @@ The gate empties that folder before the commands run, and a gate that passed fai
 lines differ from the default's, in any order, listing what differs for the repair turn. A spec
 asks for it by listing the files in `evidence`; a suite that saves none is not checked. The Twin
 Thrones event specs ask for it: six screens, in the event's theme and the default, twelve files each.
+Each event names its own pair (`halloween-main-game.default.txt` beside
+`halloween-main-game.halloween.txt`): every event's suite runs in the same gate, and a shared
+`main-game.default.txt` would be whichever suite wrote it last, perhaps from another game state.
 
 ### 6. Picture jobs as Forge jobs
 
