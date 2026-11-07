@@ -3,6 +3,7 @@ package dev.fmangoni.forge.report;
 import dev.fmangoni.forge.deploy.Deployment;
 import dev.fmangoni.forge.feature.Feature;
 import dev.fmangoni.forge.project.RunPaths;
+import dev.fmangoni.forge.report.changes.ScreenChangesSection;
 import dev.fmangoni.forge.report.outward.DeploymentsSection;
 import dev.fmangoni.forge.report.outward.MarketingSection;
 import dev.fmangoni.forge.report.outward.PicturesSection;
@@ -64,6 +65,7 @@ public final class ProjectReport {
                 + EvidenceSection.render(paths, state)
                 + PolishSection.render(paths)
                 + PicturesSection.render(paths, state)
+                + ScreenChangesSection.render(paths)
                 + SecuritySection.render(SecurityReport.load(paths.securityFile()))
                 + DeploymentsSection.render(Deployment.history(paths.deploymentsFile()))
                 + MarketingSection.render(paths, state.getId())

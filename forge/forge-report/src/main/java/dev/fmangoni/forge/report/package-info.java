@@ -11,6 +11,6 @@
  *
  * <p><b>Start with:</b> {@code ProjectReport.write}, {@code IndexReport.write}.
  *
- * <p>Depends on: deploy, feature, project, report.outward, report.review, report.section, report.shell, review.decision, review.model, security.model, state.
+ * <p>Depends on: deploy, feature, project, report.changes, report.outward, report.review, report.section, report.shell, review.decision, review.model, security.model, state.
  */
 package dev.fmangoni.forge.report;
