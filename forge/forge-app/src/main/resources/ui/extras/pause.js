@@ -1,5 +1,6 @@
 /*
- * Stop with a reason: a project held until you press Resume Now, and why it is held.
+ * Stop with a reason: a project held until you press Resume Now, why it is held, and, if you asked,
+ * the day it moves to Needs you so that it is not forgotten.
  *
  * A plain Stop freed the project's slot, and with the queue on, the fill that followed started the
  * same project again before anyone could say why it had been stopped. Stop now asks why first, and
@@ -11,9 +12,11 @@
  * reads the reasons from /api/pauses, and gives the page one name, ForgePause, which the waiting
  * card, the next 24 hours and the family rows ask, so a project you paused is never also said to be
  * waiting; forge:pauses tells them when the reasons change. Of the page's own it changes classes on
- * a paused project's row and panel, and one click: Stop on a project a pause can hold opens the
- * dialog here instead of stopping it outright. All else it shows is its own: a line and a word on the
- * row, a box and a button in the panel, and the dialog.
+ * a paused project's row and panel; one click: Stop on a project a pause can hold opens the dialog
+ * here instead of stopping it outright; and one function, groupOf, which it wraps so that a paused
+ * project is listed under Paused, or under Needs you once its reminder is due, and never under what
+ * else it waits for. The headings, the tiles and the counts all come from groupOf. All else it shows
+ * is its own: a line and a word on the row, a box and a button in the panel, and the dialog.
  */
 (() => {
 
@@ -21,6 +24,12 @@ const MINUTE = 60 * 1000;
 
 /* Reasons given often enough to offer with one press. */
 const REASONS = ["Waiting for art", "I’m trying it myself", "Rewriting the spec", "Saving quota"];
+
+/* The page's groups a pause leaves as they are: one running or not on this machine shows no pause,
+   and one needing you or accepted is already where it belongs. */
+const KEPT = new Set(["working", "away", "you", "accepted"]);
+const NEEDS_YOU = {key: "you", title: "Needs you", tone: "fail"};
+const PAUSED = {key: "paused", title: "Paused", tone: "todo"};
 
 const ICON = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" '
   + 'stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
@@ -66,7 +75,9 @@ const CSS = `
   .pzwhen{font-size:.8rem;color:var(--muted)}
   .pzquote{margin:0;padding:.5rem .75rem;border-radius:.5rem;background:var(--blue-bg);color:var(--fg);
            white-space:pre-wrap;overflow-wrap:anywhere}
-  .pznote{margin:0;color:var(--soft);font-size:.88rem}
+  .pznote, .pzback{margin:0;color:var(--soft);font-size:.88rem}
+  .pzback.pzon{color:var(--amber-fg)}
+  .pzdue{color:var(--amber-fg);font-weight:600;white-space:nowrap}
   .pzdlg{width:min(34rem,calc(100vw - 2rem));padding:0;border:1px solid #3a3a38;border-radius:.9rem;
          background:var(--raise);color:var(--fg)}
   .pzdlg::backdrop{background:rgba(0,0,0,.55)}
@@ -82,6 +93,12 @@ const CSS = `
   .pzchips{display:flex;flex-wrap:wrap;gap:.4rem}
   .pzchips button{padding:0 .75rem;border-radius:999px;background:var(--card);color:var(--soft);
                   font-size:.82rem}
+  .pzday{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem;color:var(--soft);font-size:.88rem}
+  .pzday label{margin:0;font-size:inherit;color:inherit}
+  .pzday input[type=checkbox]{width:1rem;height:1rem;margin:0;padding:0}
+  .pzday input[type=date]{width:auto;min-height:2.25rem;padding:0 .6rem;border:1px solid var(--selline);
+                          border-radius:.5rem;background:var(--field);color:var(--fg);font:inherit;
+                          font-size:.88rem}
   .pzfoot{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:.5rem}
   .pzfoot .pzcancel{background:transparent}
   .pzfoot .pzstop{background:var(--red-bg);color:var(--red-fg);border-color:#5a2a2a;font-weight:600}
@@ -122,13 +139,49 @@ function byYou(note, now) {
   return `Paused by you, ${lasted(new Date(note.at), now) || "just now"}`;
 }
 
+const SHORT = {weekday: "short", month: "short", day: "numeric"};
+
 /* The panel's: "Wed, Nov 4 · 3 days ago". */
 function since(note, now) {
   if (!note.at) return "";
   const at = new Date(note.at);
   const ago = lasted(at, now);
-  return `${at.toLocaleDateString(undefined, {weekday: "short", month: "short", day: "numeric"})} · `
-    + (ago ? ago + " ago" : "just now");
+  return `${at.toLocaleDateString(undefined, SHORT)} · ` + (ago ? ago + " ago" : "just now");
+}
+
+/* A day as the date field and the server write it, "2026-11-14", in this browser's time zone. */
+const dayOf = d => [d.getFullYear(), d.getMonth() + 1, d.getDate()]
+  .map((n, i) => String(n).padStart(i ? 2 : 4, "0")).join("-");
+
+/* "Sat, Nov 14", from "2026-11-14". Read as a day here: a Date made from the text alone is midnight
+   in UTC, which is still the day before in New York. */
+function named(day) {
+  const [y, m, d] = day.split("-").map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString(undefined, SHORT);
+}
+
+/* The reminder offered when none is set: a week from today. */
+function weekOn(now) {
+  const d = new Date(now);
+  d.setDate(d.getDate() + 7);
+  return dayOf(d);
+}
+
+/* Whether a note's reminder has come: on its day, or since. Such days compare as text. */
+const due = (note, now) => !!note.remind && note.remind <= dayOf(now);
+
+/* The row's word once it has: "Reminder today", or since which day. */
+function dueWord(note, now) {
+  if (!due(note, now)) return "";
+  return note.remind === dayOf(now) ? "Reminder today" : `Reminder since ${named(note.remind)}`;
+}
+
+/* The panel's line on a reminder: "It moves to Needs you on Sat, Nov 14." */
+function reminder(note, now) {
+  if (!note.remind) return "";
+  if (!due(note, now)) return `It moves to Needs you on ${named(note.remind)}.`;
+  return note.remind === dayOf(now) ? "It moved to Needs you today, as you asked."
+    : `It moved to Needs you on ${named(note.remind)}, as you asked.`;
 }
 
 /* Where the page puts a button's answer, cleared after a minute unless something newer replaced it,
@@ -168,8 +221,8 @@ class Notes {
   }
 }
 
-/* A paused project's row: under its title who paused it, how long ago and why, and Paused for its
-   word. The page's word stays in the row, hidden by the class. */
+/* A paused project's row: under its title who paused it, how long ago, whether its reminder has
+   come, and why, and Paused for its word. The page's word stays in the row, hidden by the class. */
 class RowMark {
   constructor(row) {
     this.row = row;
@@ -183,18 +236,22 @@ class RowMark {
   fill(note, now) {
     const main = this.row.querySelector(".main");
     const line = main.querySelector(".pzline") || main.appendChild(make("span", "pzline",
-      `<span class="pzwho">${ICON}<span class="pzfor"></span></span><span class="pzwhy"></span>`));
+      `<span class="pzwho">${ICON}<span class="pzfor"></span></span><span class="pzdue"></span>`
+      + '<span class="pzwhy"></span>'));
     const stage = this.row.querySelector(".stage");
     if (!stage.querySelector(".pzpill")) stage.prepend(make("span", "pzpill", "Paused"));
     put(line.querySelector(".pzfor"), byYou(note, now));
+    const word = line.querySelector(".pzdue");
+    put(word, dueWord(note, now));
+    word.hidden = !word.textContent;
     const why = line.querySelector(".pzwhy");
     put(why, note.reason ? `“${note.reason}”` : "");
     why.hidden = !note.reason;
   }
 }
 
-/* A paused project's panel: who paused it, when and why, in place of the page's three lines, which
-   stay in the panel hidden by the class. */
+/* A paused project's panel: who paused it, when and why, and when it moves to Needs you, in place of
+   the page's three lines, which stay in the panel hidden by the class. */
 class PanelMark {
   constructor(panel) {
     this.panel = panel;
@@ -211,13 +268,17 @@ class PanelMark {
       box = make("div", "pzbox", '<div class="pzhead"><span class="pztitle">Paused by you</span>'
         + '<span class="pzwhen"></span></div><blockquote class="pzquote"></blockquote>'
         + '<p class="pznote">Nothing is running it, and the queue leaves it alone until you press '
-        + 'Resume Now.</p>');
+        + 'Resume Now.</p><p class="pzback"></p>');
       this.panel.querySelector(".move-sub").after(box);
     }
     put(box.querySelector(".pzwhen"), since(note, now));
     const quote = box.querySelector(".pzquote");
     put(quote, note.reason || "");
     quote.hidden = !note.reason;
+    const back = box.querySelector(".pzback");
+    put(back, reminder(note, now));
+    back.hidden = !note.remind;
+    back.classList.toggle("pzon", due(note, now));
   }
 }
 
@@ -231,18 +292,21 @@ class Dialog {
     this.mode = "";
   }
 
-  open(j, mode, reason) {
+  /* Asks about `j`, with the reason and the reminder it has so far ("" for none). */
+  open(j, mode, reason, remind) {
     if (!this.el) this.build();
     const words = MODES[mode];
     this.j = j;
     this.mode = mode;
     put(this.el.querySelector("h2"), words.title(j));
     put(this.el.querySelector(".pzbody"), words.body);
-    put(this.el.querySelector("label"), words.ask);
+    put(this.el.querySelector(".pzfield label"), words.ask);
     const go = this.el.querySelector(".pzgo");
     put(go, words.go);
     go.className = "pzgo " + words.tone;
     this.why.value = reason;
+    this.remind.checked = !!remind;
+    this.day.value = remind || weekOn(new Date());
     if (!this.el.open) this.el.showModal();
     this.why.focus();
   }
@@ -256,6 +320,9 @@ class Dialog {
       + 'it.</div></div>'
       + '<div class="pzchips" role="group" aria-label="Common reasons">'
       + REASONS.map(reason => `<button type="button">${reason}</button>`).join("") + '</div>'
+      + '<div class="pzday"><input id="pzRemind" type="checkbox">'
+      + '<label for="pzRemind">Move it to Needs you on</label>'
+      + '<input id="pzDay" type="date" aria-label="Reminder date"></div>'
       + '<div class="pzfoot"><button type="button" class="pzcancel">Cancel</button>'
       + '<button type="submit" class="pzgo"></button></div></form>');
     el.setAttribute("aria-labelledby", "pzTitle");
@@ -263,6 +330,10 @@ class Dialog {
     document.body.append(el);
     this.el = el;
     this.why = el.querySelector("textarea");
+    this.remind = el.querySelector("#pzRemind");
+    this.day = el.querySelector("#pzDay");
+    // Picking a day is asking to be reminded on it.
+    this.day.addEventListener("input", () => { this.remind.checked = true; });
     el.querySelectorAll(".pzchips button").forEach(chip => {
       chip.onclick = () => {
         this.why.value = chip.textContent;
@@ -273,17 +344,19 @@ class Dialog {
     el.querySelector("form").onsubmit = e => {
       e.preventDefault();
       el.close();
-      this.send(this.j, this.mode, this.why.value.trim());
+      this.send(this.j, this.mode, this.why.value.trim(), this.remind.checked ? this.day.value : "");
     };
   }
 }
 
-/* Marks each paused project on every poll, and asks why wherever a pause can begin. */
+/* Marks each paused project on every poll, lists it where it belongs, and asks why wherever a pause
+   can begin. */
 class Pauses {
   constructor() {
     this.notes = new Notes();
     this.jobs = new Map();
-    this.dialog = new Dialog((j, mode, reason) => this.send(j, mode, reason));
+    this.page = null;
+    this.dialog = new Dialog((j, mode, reason, remind) => this.send(j, mode, reason, remind));
     const style = document.createElement("style");
     style.textContent = CSS;
     document.head.append(style);
@@ -291,7 +364,11 @@ class Pauses {
     document.addEventListener("forge:jobs", e => {
       this.jobs = new Map(e.detail.map(j => [j.id, j]));
       this.render();
-      this.refresh();
+      this.wrap();
+      // Where a project is listed depends on the notes, so new ones have the page lay it out again.
+      this.refresh().then(changed => {
+        if (changed) loadJobs();
+      });
     });
     // Heard on the way down, so the page's own Stop never hears a click this one answers.
     document.addEventListener("click", e => this.intercept(e), true);
@@ -303,10 +380,31 @@ class Pauses {
     return j.running || notHere(j) ? null : this.notes.of(j.id);
   }
 
+  /* Wraps the page's groupOf, on the first poll: the page's own script runs after this one, and its
+     declaration would replace a wrapper set any sooner. Notes read before then are laid out at once. */
+  wrap() {
+    if (this.page) return;
+    const page = window.groupOf;
+    this.page = page;
+    window.groupOf = j => this.group(page(j), j);
+    if (Object.keys(this.notes.map).length) loadJobs();
+  }
+
+  /* The page's group `g` for `j`, unless a pause puts it under Paused, or Needs you once its reminder
+     is due. */
+  group(g, j) {
+    const note = KEPT.has(g.key) ? null : this.shown(j);
+    if (!note) return g;
+    return due(note, new Date()) ? NEEDS_YOU : PAUSED;
+  }
+
+  /* Whether a fresh read changed the notes; when it did, the marks are redrawn and the other extras
+     told. */
   async refresh() {
-    if (!await this.notes.read()) return;
+    if (!await this.notes.read()) return false;
     this.render();
     document.dispatchEvent(new CustomEvent("forge:pauses", {detail: this.notes.map}));
+    return true;
   }
 
   render() {
@@ -348,8 +446,8 @@ class Pauses {
     const j = this.jobs.get(id);
     if (!j) return;
     const note = this.shown(j);
-    if (note) this.dialog.open(j, "change", note.reason || "");
-    else if (pausable(j)) this.dialog.open(j, "pause", "");
+    if (note) this.dialog.open(j, "change", note.reason || "", note.remind || "");
+    else if (pausable(j)) this.dialog.open(j, "pause", "", "");
   }
 
   /* Stop on a project a pause can hold asks why first. On a finished project Stop ends a button job,
@@ -361,13 +459,13 @@ class Pauses {
     if (!j || !j.running || terminal(j)) return;
     e.preventDefault();
     e.stopImmediatePropagation();
-    this.dialog.open(j, "stop", "");
+    this.dialog.open(j, "stop", "", "");
   }
 
   /* Sends the pause, says the answer where the page says its buttons', and redraws. */
-  async send(j, mode, reason) {
+  async send(j, mode, reason, remind) {
     say(j.id, MODES[mode].busy);
-    const r = await post("/api/jobs/pause", {id: j.id, reason}).catch(e => ({result: String(e)}));
+    const r = await post("/api/jobs/pause", {id: j.id, reason, remind}).catch(e => ({result: String(e)}));
     say(j.id, r.result || r.error || "");
     await this.refresh();
     loadJobs();

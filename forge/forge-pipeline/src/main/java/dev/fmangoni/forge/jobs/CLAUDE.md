@@ -42,7 +42,9 @@ are not synchronized themselves.
 - **A pause holds until a person presses Resume Now.** It is a cool-off set to
   `Pausing.UNTIL_RESUMED`, which every runner already waits out and only an explicit Start clears.
   The stop and the hold happen under the lock, so the slot the stop frees cannot go back to the
-  project before it is held. Start lifts the pause even when the start itself has to wait.
+  project before it is held. Start lifts the pause even when the start itself has to wait. A
+  reminder day only moves the project to Needs you on the page; nothing here acts on it, and the
+  project stays held.
 - **A submission is saved before anything can refuse it**, and features alone never accept.
 - **Nothing runs for a project whose repository is not on this machine**: shelved on GitHub, or
   begun with its repository gone (`Eligibility.notHere`). Start, the scheduler and every reopening

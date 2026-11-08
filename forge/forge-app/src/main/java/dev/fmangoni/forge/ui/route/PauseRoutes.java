@@ -10,8 +10,9 @@ import java.util.Map;
 /**
  * Stop with a reason: the dialog's endpoint, and the notes the page shows on a paused project.
  *
- * <p>A pause's body is {@code {"id": "004", "reason": "Waiting for art"}}, read as a plain map so the
- * request needs no class of its own. What it does is {@code jobs.pause.Pausing}'s.
+ * <p>A pause's body is {@code {"id": "004", "reason": "Waiting for art", "remind": "2026-11-14"}}, read
+ * as a plain map so the request needs no class of its own; the reason and the reminder may be left
+ * out. What it does is {@code jobs.pause.Pausing}'s.
  */
 public final class PauseRoutes {
 
@@ -29,9 +30,13 @@ public final class PauseRoutes {
 
     private void pause(HttpExchange exchange) throws IOException {
         Map<?, ?> body = Http.bodyAs(exchange, Map.class);
-        Object reason = body.get("reason");
         Http.json(exchange, 200, Map.of("result", jobs == null
                 ? JobRoutes.NO_CLI
-                : jobs.pause(String.valueOf(body.get("id")), reason == null ? "" : String.valueOf(reason))));
+                : jobs.pause(String.valueOf(body.get("id")), text(body.get("reason")), text(body.get("remind")))));
+    }
+
+    /** A field the page may leave out, as text. */
+    private static String text(Object value) {
+        return value == null ? "" : String.valueOf(value);
     }
 }

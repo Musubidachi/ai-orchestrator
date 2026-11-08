@@ -41,10 +41,10 @@ async function board(page, { notes = {}, change = () => {}, quota = {} } = {}) {
   await page.route("**/api/quota", (route) => route.fulfill({ json: quota }));
   await page.route("**/api/pauses", (route) => route.fulfill({ json: state.notes }));
   await page.route("**/api/jobs/pause", (route) => {
-    const { id, reason } = route.request().postDataJSON();
-    state.posted.push({ id, reason });
+    const { id, reason, remind } = route.request().postDataJSON();
+    state.posted.push({ id, reason, remind });
     const at = state.notes[id] ? state.notes[id].at : NOW.toISOString();
-    state.notes = { ...state.notes, [id]: { reason, at } };
+    state.notes = { ...state.notes, [id]: { reason, at, remind: remind || null } };
     return route.fulfill({ json: { result: state.answer } });
   });
   await page.route("**/api/jobs/stop", (route) => {
@@ -74,6 +74,21 @@ const panel = async (page, id) => {
   return detail;
 };
 
+/* The table's headings, top to bottom, as a wide screen orders them. */
+const headings = (page) => page.locator("#jobs .grouphead").evaluateAll(heads => heads
+  .map(h => ({ order: +getComputedStyle(h).order, text: h.querySelector(".gt").textContent }))
+  .sort((a, b) => a.order - b.order)
+  .map(h => h.text));
+
+/* The heading a project's line is listed under on a wide screen. */
+const headingOf = (page, id) => page.evaluate((id) => {
+  const order = (el) => +getComputedStyle(el).order;
+  const line = order(document.getElementById("row-" + id));
+  const above = [...document.querySelectorAll("#jobs .grouphead")].filter(h => order(h) < line);
+  above.sort((a, b) => order(a) - order(b));
+  return above.length ? above[above.length - 1].querySelector(".gt").textContent : "";
+}, id);
+
 test("Stop asks why, and the project stays stopped with the reason on its row", async ({ page }) => {
   // The server holds a project it paused: it is not running once the pause is on record.
   const state = await board(page, { change: (jobs, { notes }) => notes["001"] && stopped(jobs) });
@@ -91,7 +106,7 @@ test("Stop asks why, and the project stays stopped with the reason on its row", 
 
   await stop.click();
   await expect(dialog.locator("h2")).toHaveText("Stop Alpha Project (001)?");
-  await expect(dialog.locator("label")).toHaveText("Why are you stopping it?");
+  await expect(dialog.locator(".pzfield label")).toHaveText("Why are you stopping it?");
   await expect(dialog.locator("textarea")).toHaveValue("");
   await dialog.getByRole("button", { name: "Waiting for art" }).click();
   await expect(dialog.locator("textarea")).toHaveValue("Waiting for art");
@@ -103,7 +118,7 @@ test("Stop asks why, and the project stays stopped with the reason on its row", 
   await expect(row.locator(".pzfor")).toHaveText("Paused by you, just now");
   await expect(row.locator(".pzwhy")).toHaveText("“Waiting for art”");
   await expect(stop).toHaveText("Resume Now");
-  expect(state.posted).toEqual([{ id: "001", reason: "Waiting for art" }]);
+  expect(state.posted).toEqual([{ id: "001", reason: "Waiting for art", remind: "" }]);
   // The page's own Stop never heard the click.
   expect(state.stops).toEqual([]);
 });
@@ -142,7 +157,7 @@ test("a paused project says how long and why, and its reason can be changed", as
   await expect(row.locator(".pzwhy")).toHaveText("“Rewriting the spec after the playtest.”");
   // Still paused since Wednesday: a new reason is not a new pause.
   await expect(detail.locator(".pzwhen")).toHaveText("Wed, Nov 4 · 3 days ago");
-  expect(state.posted).toEqual([{ id: "001", reason: "Rewriting the spec after the playtest." }]);
+  expect(state.posted).toEqual([{ id: "001", reason: "Rewriting the spec after the playtest.", remind: "" }]);
 });
 
 test("a project that is not running can be paused the same way, with no reason", async ({ page }) => {
@@ -157,7 +172,7 @@ test("a project that is not running can be paused the same way, with no reason",
   await pause.click();
   const dialog = page.locator("dialog.pzdlg");
   await expect(dialog.locator("h2")).toHaveText("Pause Alpha Project (001)?");
-  await expect(dialog.locator("label")).toHaveText("Why are you pausing it?");
+  await expect(dialog.locator(".pzfield label")).toHaveText("Why are you pausing it?");
   await dialog.getByRole("button", { name: "Pause it" }).click();
 
   await expect(detail.locator(".msg")).toHaveText(PAUSED);
@@ -166,7 +181,7 @@ test("a project that is not running can be paused the same way, with no reason",
   await expect(row.locator(".pzwhy")).toBeHidden();
   await expect(detail.locator(".pzquote")).toBeHidden();
   await expect(pause).toHaveText("Change the reason");
-  expect(state.posted).toEqual([{ id: "001", reason: "" }]);
+  expect(state.posted).toEqual([{ id: "001", reason: "", remind: "" }]);
 
   // Nothing to pause in one that has not started, nor in one that is finished.
   for (const id of ["002", "003"]) {
@@ -200,6 +215,7 @@ test("a project you paused is not said to be waiting, whatever else it waits for
   const strip = page.locator(".wnd24");
   await expect(detail).toHaveClass(/\bwst\b/);
   await expect(strip).toContainText("Alpha Project");
+  await expect.poll(() => headingOf(page, "001")).toBe("Waiting · CLAUDE is out of quota until later");
 
   state.notes = { "001": { reason: "Saving quota", at: NOW.toISOString() } };
   // Read again on the page's next poll, every four seconds.
@@ -209,6 +225,75 @@ test("a project you paused is not said to be waiting, whatever else it waits for
   // The strip stays for Claude's quota, without the project that no longer starts at any time.
   await expect(strip).toBeVisible();
   await expect(strip).not.toContainText("Alpha Project");
+  // Nor is it listed as waiting: the heading it was under has gone, and so has the waiting count.
+  await expect.poll(() => headings(page)).toEqual(["Needs you", "Queued", "Paused"]);
+  expect(await headingOf(page, "001")).toBe("Paused");
+  await expect(page.locator("#job-001")).toHaveAttribute("data-kinds", "other");
+  await expect(page.locator("#tiles .tile.waiting .n")).toHaveText("0");
+});
+
+test("a pause can ask for a reminder, a week on unless another day is picked", async ({ page }) => {
+  // Not running and waiting on nothing else, as the server leaves a project it paused.
+  const state = await board(page, { change: stopped });
+  state.answer = PAUSED;
+  const detail = await panel(page, "001");
+  await detail.locator(".pzbtn").click();
+  const dialog = page.locator("dialog.pzdlg");
+  const remind = dialog.getByRole("checkbox", { name: "Move it to Needs you on" });
+  const day = dialog.getByLabel("Reminder date");
+
+  // Off unless asked for, with a day ready in case it is; picking another day asks for it.
+  await expect(remind).not.toBeChecked();
+  await expect(day).toHaveValue("2026-11-14");
+  await day.fill("2026-11-16");
+  await expect(remind).toBeChecked();
+  await dialog.getByRole("button", { name: "Pause it" }).click();
+
+  await expect(detail.locator(".msg")).toHaveText(PAUSED);
+  expect(state.posted).toEqual([{ id: "001", reason: "", remind: "2026-11-16" }]);
+  await expect(detail.locator(".pzback")).toHaveText("It moves to Needs you on Mon, Nov 16.");
+  await expect(page.locator("#row-001 .pzdue")).toBeHidden();
+  expect(await headingOf(page, "001")).toBe("Paused");
+
+  // Its day comes, read on the page's next poll.
+  state.notes = { "001": { ...state.notes["001"], remind: "2026-11-07" } };
+  await expect(page.locator("#row-001 .pzdue")).toHaveText("Reminder today", { timeout: 10_000 });
+  await expect.poll(() => headings(page)).toEqual(["Needs you", "Queued"]);
+  expect(await headingOf(page, "001")).toBe("Needs you");
+  await expect(detail.locator(".pzback")).toHaveText("It moved to Needs you today, as you asked.");
+  // Still held: only where it is listed changed.
+  await expect(detail.locator(".act-btn")).toHaveText("Resume Now");
+});
+
+test("a reminder that came while nobody looked waits under Needs you until it is taken off", async ({ page }) => {
+  const state = await board(page, {
+    notes: { "001": { reason: "Waiting for art", at: new Date(NOW - 3 * DAY).toISOString(), remind: "2026-11-05" } },
+    change: stopped,
+  });
+  const row = page.locator("#row-001");
+
+  await expect(row.locator(".pzdue")).toHaveText("Reminder since Thu, Nov 5");
+  await expect.poll(() => headingOf(page, "001")).toBe("Needs you");
+  await expect(page.locator("#job-001")).toHaveAttribute("data-kinds", "you");
+  await expect(page.locator("#tiles .tile.you .n")).toHaveText("2");
+  const detail = await panel(page, "001");
+  await expect(detail.locator(".pzback")).toHaveText("It moved to Needs you on Thu, Nov 5, as you asked.");
+
+  // Changing the reason keeps the reminder; unticking it takes it off.
+  await detail.locator(".pzbtn").click();
+  const dialog = page.locator("dialog.pzdlg");
+  const remind = dialog.getByRole("checkbox", { name: "Move it to Needs you on" });
+  await expect(remind).toBeChecked();
+  await expect(dialog.getByLabel("Reminder date")).toHaveValue("2026-11-05");
+  state.answer = "reason saved";
+  await remind.uncheck();
+  await dialog.getByRole("button", { name: "Save" }).click();
+
+  await expect(detail.locator(".msg")).toHaveText("reason saved");
+  expect(state.posted).toEqual([{ id: "001", reason: "Waiting for art", remind: "" }]);
+  await expect.poll(() => headingOf(page, "001")).toBe("Paused");
+  await expect(row.locator(".pzdue")).toBeHidden();
+  await expect(detail.locator(".pzback")).toBeHidden();
 });
 
 test("a version you paused is Paused on its family's row, with why", async ({ page }) => {

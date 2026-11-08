@@ -16,6 +16,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -58,14 +60,22 @@ public final class Pausing {
     }
 
     /**
-     * Stops the project if it is running, then holds it, with the reason given.
+     * Stops the project if it is running, then holds it, with the reason given and the day, if any,
+     * the page is to move it to Needs you ({@code remind}, such as {@code 2026-11-14}; blank for none).
      *
-     * <p>On a project already held it only changes the reason, and keeps the time it was first paused.
+     * <p>On a project already held it only changes the reason and the reminder, and keeps the time it
+     * was first paused.
      */
-    public String pause(String id, String reason) {
+    public String pause(String id, String reason, String remind) {
         Optional<Project> found = projects.find(id);
         if (found.isEmpty()) {
             return Projects.unknown(id);
+        }
+        LocalDate day;
+        try {
+            day = day(remind);
+        } catch (DateTimeParseException e) {
+            return "the reminder must be a day, such as 2026-11-14";
         }
         Project project = found.get();
         boolean running = pool.isRunning(id);
@@ -81,7 +91,7 @@ public final class Pausing {
             return "another Forge process is working in this repository — try again when it stops";
         }
         try {
-            return hold(project.paths(), tidy(reason), running);
+            return hold(project.paths(), tidy(reason), day, running);
         } finally {
             lock.ifPresent(RepoLock::close);
         }
@@ -121,7 +131,7 @@ public final class Pausing {
         for (Spec spec : wishlist.all()) {
             RunPaths paths = projects.of(spec, wishlist).paths();
             if (held(paths)) {
-                notes.put(spec.id(), PauseNote.load(paths.root()).orElse(new PauseNote("", null)));
+                notes.put(spec.id(), PauseNote.load(paths.root()).orElse(new PauseNote("", null, null)));
             }
         }
         return notes;
@@ -162,7 +172,7 @@ public final class Pausing {
     }
 
     /** Writes the hold and its note, with the repository's lock held. */
-    private static String hold(RunPaths paths, String reason, boolean stopped) {
+    private static String hold(RunPaths paths, String reason, LocalDate remind, boolean stopped) {
         RunState state;
         try {
             Optional<RunState> loaded = RunStore.load(paths.stateFile());
@@ -190,7 +200,7 @@ public final class Pausing {
         }
         String done = stopped ? "stopped" : wasHeld ? "reason saved" : "paused";
         try {
-            new PauseNote(reason, since).save(paths.root());
+            new PauseNote(reason, since, remind).save(paths.root());
         } catch (IOException e) {
             return done + ", but its reason could not be saved: " + e.getMessage();
         }
@@ -217,6 +227,11 @@ public final class Pausing {
                 .filter(other -> !other.equals(project.spec().id()))
                 .flatMap(other -> wishlist.byId(other).stream())
                 .anyMatch(other -> RepoLock.fileFor(projects.of(other, wishlist).paths()).equals(lock));
+    }
+
+    /** The reminder's day; null for none. */
+    private static LocalDate day(String remind) {
+        return remind == null || remind.isBlank() ? null : LocalDate.parse(remind.strip());
     }
 
     private static String tidy(String reason) {

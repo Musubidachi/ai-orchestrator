@@ -413,8 +413,8 @@ public final class JobRunner {
      * <p>Under the lock, and kept while the project it stops winds down: the slot that frees must
      * not go back to it before it is held.
      */
-    public synchronized String pause(String id, String reason) {
-        return here(id, () -> pausing.pause(id, reason));
+    public synchronized String pause(String id, String reason, String remind) {
+        return here(id, () -> pausing.pause(id, reason, remind));
     }
 
     /** See {@link Pausing#notes}. Reads only, so it takes no lock. */

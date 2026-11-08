@@ -27,6 +27,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.EnumMap;
 import java.util.Map;
@@ -102,7 +103,7 @@ class PauseTest {
         runIn("001", Phase.SCAFFOLDED);
         runIn("002", Phase.SCAFFOLDED);
 
-        String result = jobs.pause("001", "  Waiting for art  ");
+        String result = jobs.pause("001", "  Waiting for art  ", "");
 
         assertEquals("paused; the queue leaves it alone until you press Resume Now", result);
         assertEquals(Pausing.UNTIL_RESUMED, stateOf("001").getCoolOffUntil());
@@ -120,7 +121,7 @@ class PauseTest {
     void resumeLiftsThePause() {
         spec("001", "Alpha", 1);
         runIn("001", Phase.SCAFFOLDED);
-        jobs.pause("001", "Saving quota");
+        jobs.pause("001", "Saving quota", "");
         // Out of quota, so the start is refused; the pause must not outlive the click regardless.
         quota.record(AgentKind.CLAUDE, Instant.now().plus(2, ChronoUnit.HOURS), "hit your limit");
 
@@ -137,15 +138,50 @@ class PauseTest {
     void changingTheReasonKeepsTheTime() throws InterruptedException {
         spec("001", "Alpha", 1);
         runIn("001", Phase.SCAFFOLDED);
-        jobs.pause("001", "Waiting for art");
+        jobs.pause("001", "Waiting for art", "");
         Instant first = jobs.pauses().get("001").at();
         Thread.sleep(30);
 
-        String result = jobs.pause("001", "Rewriting the spec");
+        String result = jobs.pause("001", "Rewriting the spec", "");
 
         assertEquals("reason saved", result);
-        assertEquals(new PauseNote("Rewriting the spec", first), jobs.pauses().get("001"));
+        assertEquals(new PauseNote("Rewriting the spec", first, null), jobs.pauses().get("001"));
         assertEquals(Pausing.UNTIL_RESUMED, stateOf("001").getCoolOffUntil());
+    }
+
+    @Test
+    @DisplayName("a reminder is kept with the reason and changed with it, and a day that cannot be read holds nothing")
+    void reminders() {
+        spec("001", "Alpha", 1);
+        runIn("001", Phase.SCAFFOLDED);
+
+        assertEquals("the reminder must be a day, such as 2026-11-14",
+                jobs.pause("001", "Waiting for art", "next week"));
+        assertNull(stateOf("001").getCoolOffUntil(), "held although its reminder was refused");
+        assertEquals(Map.of(), jobs.pauses());
+
+        assertEquals("paused; the queue leaves it alone until you press Resume Now",
+                jobs.pause("001", "Waiting for art", " 2026-11-14 "));
+        assertEquals(LocalDate.of(2026, 11, 14), jobs.pauses().get("001").remind());
+
+        jobs.pause("001", "Waiting for art", "2026-11-21");
+        assertEquals(LocalDate.of(2026, 11, 21), jobs.pauses().get("001").remind());
+
+        jobs.pause("001", "Waiting for art", "");
+        assertNull(jobs.pauses().get("001").remind(), "a reminder left blank is no reminder");
+    }
+
+    @Test
+    @DisplayName("a note saved before there were reminders reads as one with none")
+    void notesFromBeforeReminders() throws IOException {
+        spec("001", "Alpha", 1);
+        runIn("001", Phase.SCAFFOLDED);
+        jobs.pause("001", "Waiting for art", "2026-11-14");
+        Files.writeString(paths("001").root().resolve("pause.json"),
+                "{\"reason\":\"Waiting for art\",\"at\":\"2026-11-04T15:00:00Z\"}");
+
+        assertEquals(new PauseNote("Waiting for art", Instant.parse("2026-11-04T15:00:00Z"), null),
+                jobs.pauses().get("001"));
     }
 
     @Test
@@ -155,9 +191,9 @@ class PauseTest {
         spec("002", "Beta", 2);
         runIn("001", Phase.DONE);
 
-        assertEquals("already DONE", jobs.pause("001", ""));
-        assertEquals("it has not started, so there is nothing to pause", jobs.pause("002", ""));
-        assertEquals("no spec with id 999", jobs.pause("999", ""));
+        assertEquals("already DONE", jobs.pause("001", "", ""));
+        assertEquals("it has not started, so there is nothing to pause", jobs.pause("002", "", ""));
+        assertEquals("no spec with id 999", jobs.pause("999", "", ""));
         assertEquals(Map.of(), jobs.pauses());
         assertFalse(Files.exists(paths("002").stateFile()), "refusing wrote a state for a project never begun");
     }
@@ -170,7 +206,7 @@ class PauseTest {
 
         try (RepoLock other = RepoLock.tryAcquire(paths("001")).orElseThrow()) {
             assertEquals("another Forge process is working in this repository — try again when it stops",
-                    jobs.pause("001", "Waiting for art"));
+                    jobs.pause("001", "Waiting for art", ""));
         }
         assertNull(stateOf("001").getCoolOffUntil(), "the state belongs to whoever holds the lock");
     }
@@ -181,7 +217,7 @@ class PauseTest {
         spec("001", "Alpha", 1);
         runIn("001", Phase.SCAFFOLDED);
 
-        jobs.pause("001", "x".repeat(800));
+        jobs.pause("001", "x".repeat(800), "");
 
         String reason = jobs.pauses().get("001").reason();
         assertEquals(501, reason.length());
@@ -202,7 +238,7 @@ class PauseTest {
         }
         runner.setAutoRun(true);
 
-        String result = runner.pause("001", "Trying it myself");
+        String result = runner.pause("001", "Trying it myself", "");
         awaitIdle(runner);
 
         try {

@@ -18,8 +18,10 @@ served at `/extras/<name>.js` by `ExtraRoutes`, attached by its tag in the block
 (every project, after the page has placed them) and `forge:quota` (the vendors closed right now,
 as the top bar's chips show them), and calls the page's own helpers (`groupOf`, `steps`, `esc`, ...)
 only when one fires. It wraps itself in a function so its names cannot collide with the page's,
-brings its own `<style>`, and hides what it replaces with a class rather than removing it. To take
-one out, delete its file and its tag. `ExtrasTest` checks that every extra has a tag, is served,
+brings its own `<style>`, and hides what it replaces with a class rather than removing it. One page
+function is replaced, by one extra: `pause.js` wraps `groupOf`, on the first `forge:jobs`, because
+the extras' tags come before the page's own script, whose declaration would replace a wrapper set
+any sooner. To take one out, delete its file and its tag. `ExtrasTest` checks that every extra has a tag, is served,
 parses, and is wrapped: one that was not, and reused a name the page declares, would stop the
 page's own script and leave the dashboard empty.
 
@@ -40,8 +42,12 @@ running can be paused from its panel the same way. The endpoints are `PauseRoute
 project's row and panel say so, with how long and why. It gives the page one name, `ForgePause`, and
 fires `forge:pauses` when the reasons change: the waiting card, the next 24 hours and the family
 rows ask it, so a project you paused is never also said to be waiting. Without it they show what
-they showed before. Stop on a finished project ends a button's job, a deploy say, and stays the
-page's own.
+they showed before. The dialog can also ask for a reminder: a day, a week on unless another is
+picked, kept with the reason (`PauseNote.remind`), when the project moves to Needs you, still held.
+Where a held project is listed is the wrapped `groupOf`'s: under Paused, or Needs you once its
+reminder is due, never under the quota or the version it also waits for, so the headings, the
+tiles and the counts agree with its row. Stop on a finished project ends a button's job, a deploy
+say, and stays the page's own.
 
 `gate.js` puts the last gate under the open project's stats: quick or full, passed or failed, and
 what it did with each command (ran, failed, not reached, waits for the full gate, not run yet),

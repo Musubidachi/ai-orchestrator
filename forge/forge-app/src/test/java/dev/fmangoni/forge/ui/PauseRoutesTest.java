@@ -103,6 +103,20 @@ class PauseRoutesTest {
     }
 
     @Test
+    @DisplayName("a reminder is sent as a day and read back as one, and one that is not a day is refused")
+    void reminders() throws Exception {
+        runIn("001", Phase.SCAFFOLDED);
+
+        assertEquals("the reminder must be a day, such as 2026-11-14",
+                result(post(wired, "{\"id\":\"001\",\"reason\":\"x\",\"remind\":\"Saturday\"}")));
+        assertEquals(PAUSED, result(post(wired, "{\"id\":\"001\",\"reason\":\"x\",\"remind\":\"2026-11-14\"}")));
+
+        // The page compares it with today's date as text, so it must come back as one, not as numbers.
+        JsonNode note = Json.mapper().readTree(get(wired, "/api/pauses").body()).path("001");
+        assertEquals("2026-11-14", note.path("remind").asText(), note.toString());
+    }
+
+    @Test
     @DisplayName("a pause sent with no reason is held all the same, and an unknown id is refused")
     void withoutAReason() throws Exception {
         runIn("001", Phase.SCAFFOLDED);

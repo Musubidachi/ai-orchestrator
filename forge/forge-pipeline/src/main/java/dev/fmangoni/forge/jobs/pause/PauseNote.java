@@ -8,19 +8,24 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.Optional;
 
 /**
- * Why a person paused a project, and since when: {@code pause.json} in its run folder.
+ * Why a person paused a project, since when, and the day they asked to be reminded of it:
+ * {@code pause.json} in its run folder.
  *
  * <p>Beside the state rather than in it. The state holds the pause itself, as a cool-off (see
  * {@link Pausing}); this only says why, so the record every part of Forge reads gains nothing.
  *
  * @param reason what the person wrote; empty when they wrote nothing
  * @param at     when it was first paused; changing the reason keeps it
+ * @param remind the day the page moves it to Needs you, or null for none. Only the page reads it:
+ *               the project stays held until Resume Now either way. A note saved before there were
+ *               reminders reads as one with none.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
-public record PauseNote(String reason, Instant at) {
+public record PauseNote(String reason, Instant at, LocalDate remind) {
 
     private static final String FILE = "pause.json";
 
