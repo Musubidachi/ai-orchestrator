@@ -95,6 +95,7 @@
 </footer>
 
 <script src="/attach.js"></script>
+<script src="/extras/review-pictures.js"></script>
 <script>
 "use strict";
 
@@ -219,28 +220,28 @@ function showFeature(step) {
   const on = v => ruled.verdict === v ? " on" : "";
   $("stage").innerHTML = `
     <section class="card feature" data-item="${esc(f.id)}">
-      <div class="meta"><span>Feature — is it worth keeping?</span></div>
+      <div class="meta"><span>Feature — is it worth seeing?</span></div>
       <h1>${esc(f.name)}</h1>
       ${f.demo ? `<p class="muted">${esc(f.demo)}</p>` : ""}
       ${clipOf(f)}
       <p class="muted" style="font-size:.82rem;margin:.2rem 0 .7rem">${esc(f.clipNote)}</p>
       ${earlier(f.notes)}
       <input type="text" id="note" value="${esc(ruled.comment || "")}" data-attach="${esc(projectId)}"
-             placeholder="How it should change, or why not (needed for Change it)">
+             placeholder="What should change (needed for Needs changes)">
       <div class="choices">
-        <button class="drop${on("declined")}" data-v="declined">&darr; Drop it</button>
-        <button class="change${on("changes")}" data-v="changes">&larr; Change it</button>
-        <button class="keep${on("approved")}" data-v="approved">Keep it &rarr;</button>
+        <button class="drop${on("declined")}" data-v="declined">&darr; Not worth a clip</button>
+        <button class="change${on("changes")}" data-v="changes">&larr; Needs changes</button>
+        <button class="keep${on("approved")}" data-v="approved">Worth seeing &rarr;</button>
       </div>
       <button class="later" data-v="">Decide later</button>
     </section>`;
   $("stage").querySelectorAll("[data-v]").forEach(b => {
     b.onclick = () => {
       const note = $("note").value.trim();
-      // "Change it" with nothing said is not an instruction anyone could carry out.
+      // "Needs changes" with nothing said is not an instruction anyone could carry out.
       if (b.dataset.v === "changes" && !note) {
         $("note").classList.add("wanted");
-        $("note").placeholder = "Say what should change, then press Change it";
+        $("note").placeholder = "Say what should change, then press Needs changes";
         $("note").focus();
         return;
       }
@@ -248,7 +249,8 @@ function showFeature(step) {
       show(at + 1);
     };
   });
-  hint("<kbd>&rarr;</kbd> keep &nbsp; <kbd>&larr;</kbd> change &nbsp; <kbd>&darr;</kbd> drop &nbsp; <kbd>&uarr;</kbd> back");
+  hint("<kbd>&rarr;</kbd> worth seeing &nbsp; <kbd>&larr;</kbd> needs changes &nbsp; <kbd>&darr;</kbd> not worth a clip"
+    + " &nbsp; <kbd>&uarr;</kbd> back");
 }
 
 /* ------------------------------------------------------------------ everything that can be skimmed */
@@ -316,15 +318,16 @@ function showFinal() {
   fixing.forEach(c => lines.push(`<li><b>Fix:</b> ${esc(c.headline)}`
     + (rulings[c.id].comment ? ` <span class="muted">— “${esc(rulings[c.id].comment)}”</span>` : "") + `</li>`));
   feats.forEach(([, r]) => lines.push(`<li><b>${
-      {approved: "Keep", changes: "Change", declined: "Drop"}[r.verdict]}:</b> ${esc(r.text)}`
+      {approved: "Worth seeing", changes: "Needs changes", declined: "Not worth a clip"}[r.verdict]}:</b> ${esc(r.text)}`
     + (r.comment ? ` <span class="muted">— “${esc(r.comment)}”</span>` : "") + `</li>`));
   if (!lines.length) lines.push(`<li>Nothing is outstanding on this project.</li>`);
 
   const cautions = [];
   if (deck.notice) cautions.push(esc(deck.notice));
   if (unfilmed.length) {
-    cautions.push(`Keeping ${unfilmed.length} feature${unfilmed.length === 1 ? "" : "s"} with no recording `
-      + `sends the project back for a session to film ${unfilmed.length === 1 ? "it" : "them"}.`);
+    const one = unfilmed.length === 1;
+    cautions.push(`${unfilmed.length} feature${one ? "" : "s"} worth seeing ${one ? "has" : "have"} no recording `
+      + `yet, so the project goes back for a session to film ${one ? "it" : "them"}.`);
   }
   // Not a caution: something the reader may wonder about, said quietly below the rest.
   const asides = [];

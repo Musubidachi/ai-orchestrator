@@ -30,7 +30,7 @@ class FeatureCards {
                 .demo(feature.demo() == null ? "" : feature.demo())
                 .clip("")
                 .clipKind("")
-                .clipNote("No recording yet. Keeping it asks for one, which takes a session.")
+                .clipNote("No recording yet. Worth seeing sends the project back for a session to film it.")
                 .notes(notesOn(ruling));
 
         RecordingTake take = Features.takeOf(repo, feature);

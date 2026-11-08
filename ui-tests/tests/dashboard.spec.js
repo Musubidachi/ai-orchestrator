@@ -456,7 +456,10 @@ test("the quick review deals the same review one decision at a time", async ({ p
   const feature = page.locator(".card.feature");
   await expect(feature.locator("h1")).toHaveText("Monthly summary");
   await expect(feature.locator(".noclip")).toBeVisible();
-  // "Change it" with nothing said is not an instruction, so it does not move on.
+  // The answers say what each does: a clip is asked for, a change, or nothing. None removes the feature.
+  await expect(feature.locator(".choices button")).toHaveText(["↓ Not worth a clip", "← Needs changes", "Worth seeing →"]);
+  await expect(feature).toContainText("Worth seeing sends the project back for a session to film it.");
+  // "Needs changes" with nothing said is not an instruction, so it does not move on.
   await feature.locator(".change").click();
   await expect(feature.locator("#note")).toHaveClass(/wanted/);
   await expect(feature).toBeVisible();
@@ -476,8 +479,8 @@ test("the quick review deals the same review one decision at a time", async ({ p
   await expect(final.locator("#submit")).toHaveText("Send back 2 things");
   await expect(final.locator(".summary")).toContainText("AWS access key id committed");
   await expect(final.locator(".summary")).toContainText("tab through it once");
-  await expect(final.locator(".summary")).toContainText("Keep: Monthly summary");
-  await expect(final).toContainText("Keeping 1 feature with no recording sends the project back");
+  await expect(final.locator(".summary")).toContainText("Worth seeing: Monthly summary");
+  await expect(final).toContainText("1 feature worth seeing has no recording yet, so the project goes back");
   expect(posted).toBeNull();
 
   // Going back keeps what was answered.

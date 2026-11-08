@@ -27,8 +27,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 /**
- * The dashboard's extras (see {@code ui/CLAUDE.md}): each one is attached, served, parses, and keeps
- * its names to itself.
+ * The extras of the dashboard and the quick review (see {@code ui/CLAUDE.md}): each one is attached,
+ * served, parses, and keeps its names to itself.
  *
  * <p>The last is the one that matters most. An extra is loaded before the page's own script, and
  * one that declared a top-level name the page also declares would break not itself but the page:
@@ -39,6 +39,9 @@ import org.junit.jupiter.api.io.TempDir;
 class ExtrasTest {
 
     private static final Pattern TAG = Pattern.compile("<script src=\"/extras/([^\"]+)\"></script>");
+
+    /** The pages an extra may be attached to: the dashboard, and the quick review. */
+    private static final List<String> PAGES = List.of("/ui/index.html", "/ui/review.html");
 
     @TempDir
     Path root;
@@ -125,17 +128,19 @@ class ExtrasTest {
         return rest;
     }
 
-    /** The extras the dashboard attaches, by the names its tags give. */
+    /** The extras the dashboard and the quick review attach, by the names their tags give. */
     private List<String> attached() throws IOException {
-        String page;
-        try (InputStream in = getClass().getResourceAsStream("/ui/index.html")) {
-            assertTrue(in != null, "the editor page is missing from the classpath");
-            page = new String(in.readAllBytes(), StandardCharsets.UTF_8);
-        }
         List<String> names = new ArrayList<>();
-        Matcher tags = TAG.matcher(page);
-        while (tags.find()) {
-            names.add(tags.group(1));
+        for (String resource : PAGES) {
+            String page;
+            try (InputStream in = getClass().getResourceAsStream(resource)) {
+                assertTrue(in != null, resource + " is missing from the classpath");
+                page = new String(in.readAllBytes(), StandardCharsets.UTF_8);
+            }
+            Matcher tags = TAG.matcher(page);
+            while (tags.find()) {
+                names.add(tags.group(1));
+            }
         }
         return names;
     }

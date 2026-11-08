@@ -1,7 +1,7 @@
 # pipeline
 
 Drives one project through its phases. **`Outline` is the whole run in order**: what is done once
-before any step (`Recovery`, `MissingPictures`), then one step per phase, with what is attached
+before any step (`Recovery`, `MissingPictures`, `PictureLook`), then one step per phase, with what is attached
 before or after each and the checks the gate adds after the commands (`step.GateCheck`). Read
 `Outline.of` top to bottom. `Orchestrator` is the loop only: it follows the outline, saving
 `state.json` after each step. Every step shares one `RunContext` (spec, paths, state, agents,
@@ -68,6 +68,11 @@ front of every implementation turn, which is what makes the cheaper rung reasona
   repository, and every screenshot in its pictures table must be in `evidence`; otherwise the
   project is held for the person, naming the picture. No agent can mend a spec or the pictures
   folder, so a turn would only trip on it. `[image: …]` inside backticks is prose and not checked.
+- **A spec built to pictures asks its person to compare them.** `PictureLook` puts one question
+  among the gate's looks (`state.GateLooks`) before any step, and again after each gate, since a
+  full gate replaces them. The review asks it on its own, never pre-ticked, and Fix it sends it to
+  the agent with the note. Its words never change: a ruling follows it from gate to gate, and the
+  quick review finds its card by them (`ui/extras/review-pictures.js` shows the pairs there).
 - **The loop stops between steps when asked** (`Orchestrator`'s stop check, which the job queue
   wires to a draining shutdown). A stop never lands inside a step.
 - **The person picks the vendor, even mid-project.** `Recovery` honours a changed `assign:` at any

@@ -56,6 +56,8 @@ public final class Outline {
                 .first("put the run back in order after a stop, a crash or a changed spec",
                         new Recovery(run)::prepare)
                 .first("hold a spec whose pictures are not there", new MissingPictures(run)::holdIfAny)
+                .first("ask the person whether the screens look like the spec's pictures",
+                        new PictureLook(run)::ask)
 
                 // → PLANNING
                 .step(Phase.NEW, "set up the repository", new ScaffoldStep(run)::run)
@@ -76,6 +78,8 @@ public final class Outline {
                                 result -> GateLooks.record(run.state(), result.commands())))
                 .after(Phase.GATING, "note the gate in the version's list of gates, for its panel",
                         () -> GateHistory.note(paths.root(), run.acceptance(), run.state()))
+                .after(Phase.GATING, "ask again about the spec's pictures, which a full gate's looks replaced",
+                        new PictureLook(run)::ask)
 
                 // → REVIEWING, or SECURITY_REPAIR on a serious finding
                 .step(Phase.SECURITY_CHECK, "secrets, dependencies, risky code, the running app",

@@ -295,11 +295,14 @@ does every blocking finding. Submit refuses until each of those has a ruling.
 on the same items under the same ids and submits to the same place, so either page can be used for
 any sitting and each shows what the other recorded.
 
-- First, one at a time and with nothing chosen: security findings, blocking findings, and anything
-  that has come back. *Fix it* or *Fine as it is* (← and → on the keyboard), with an optional note.
-  There is no way past one except by answering it.
-- Then each feature nobody has ruled on, as its clip: *Keep it*, *Change it* (which needs a note),
-  *Drop it*, or decide later.
+- First, one at a time and with nothing chosen: security findings, blocking findings, what the gate
+  asks you to look at, and anything that has come back. *Fix it* or *Fine as it is* (← and → on the
+  keyboard), with an optional note. There is no way past one except by answering it. When the spec
+  has a table of pictures, one card asks whether the screens look like them, and shows each picture
+  beside its screenshot.
+- Then each feature nobody has ruled on, as its clip: *Worth seeing*, *Needs changes* (which needs a
+  note), *Not worth a clip*, or decide later. None of them removes a feature from the code; *Not
+  worth a clip* only stops asking for its recording.
 - Then everything that starts as fine — what the gate does not prove, and work the agent says
   remains — as one list to skim, with a *Fix it* on each.
 - Last, the whole sitting read back, and one button: **Accept**, or **Send back N things**.

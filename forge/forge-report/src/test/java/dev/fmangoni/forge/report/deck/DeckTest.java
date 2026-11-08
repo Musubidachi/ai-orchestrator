@@ -211,13 +211,14 @@ class DeckTest {
     }
 
     @Test
-    @DisplayName("a feature with nothing to watch says so, and says what keeping it costs")
+    @DisplayName("a feature with nothing to watch says so, and says what Worth seeing costs")
     void aFeatureWithNoClip() {
         FeatureCard card = deal().getFeatures().getFirst();
 
         assertEquals("", card.getClip());
         assertEquals("", card.getClipKind());
-        assertTrue(card.getClipNote().contains("takes a session"), card.getClipNote());
+        assertTrue(card.getClipNote().contains("Worth seeing sends the project back for a session"),
+                card.getClipNote());
     }
 
     @Test

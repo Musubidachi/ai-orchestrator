@@ -25,7 +25,8 @@ public class Verdicts {
             case "ok" -> "Fine as it is";
             case "changes" -> "Needs work";
             case "approved" -> "Worth seeing";
-            case "declined" -> "Not wanted";
+            // Not "Not wanted": the feature stays in the code, only its recording is not asked for.
+            case "declined" -> "Not worth a clip";
             case "", "undecided" -> "no ruling";
             default -> value;
         };

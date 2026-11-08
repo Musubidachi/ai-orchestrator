@@ -64,6 +64,12 @@ version's state by a step the `Outline` attaches after each gate). It gives the 
 `ForgeGate`, null until the open project's answer is fresh, and fires `forge:gate` when one
 arrives: the waiting card says from it what the last gate ran, instead of the poll's sum.
 
+`review-pictures.js` is the quick review's extra, tagged beside `attach.js` in `review.html`. On
+the card that asks whether the screens look like the spec's pictures (`pipeline.PictureLook`,
+found by those words), it puts each picture beside its screenshot, between the question and the
+note. It reads them from the report's own Pictures section (`report.outward.PicturesSection`), so
+they are the ones the report shows; when it cannot, the card says so and links to the report.
+
 ## Must not be traded away
 
 - **Only the editor itself may act.** `RequestGuard` checks Host (against DNS rebinding), Origin and
@@ -82,4 +88,4 @@ arrives: the waiting card says from it what the last gate ran, instead of the po
 `QueryTest`, `PauseRoutesTest`, `GateRoutesTest`, and the Playwright suite in `ui-tests/` against
 fixture roots (`status.spec.js` for the waiting card, `nextday.spec.js` for the next 24 hours,
 `families.spec.js` for the family and single-project rows, `pause.spec.js` for Stop with a reason, `gate.spec.js`
-for the last gate).
+for the last gate, `review-pictures.spec.js` for the pictures on the quick review).

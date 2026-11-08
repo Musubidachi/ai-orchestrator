@@ -3,8 +3,9 @@
  *
  * <p><b>Belongs here:</b> {@code Outline}, every step of a run in order and the one place to attach
  * to it; {@code Orchestrator}, the loop that follows it and nothing else; and what the outline does
- * before any step: {@code Recovery}, which puts a run back in order, and {@code MissingPictures},
- * which holds a run whose spec names pictures that are not there.
+ * before any step: {@code Recovery}, which puts a run back in order, {@code MissingPictures},
+ * which holds a run whose spec names pictures that are not there, and {@code PictureLook}, which
+ * asks the person whether the screens came out like the spec's pictures (again after each gate).
  *
  * <p><b>Not here:</b> The phases ({@code pipeline.step}), what a building turn involves ({@code
  * pipeline.turn}) and the run every step is handed ({@code pipeline.run}). Choosing which project
