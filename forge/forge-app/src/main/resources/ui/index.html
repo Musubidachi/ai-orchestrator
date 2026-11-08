@@ -592,6 +592,9 @@
 </div>
 
 <script src="/attach.js"></script>
+<!-- Extras: each adds one thing to this page, is attached here and nowhere else, and hears what the
+     page loaded from the forge:jobs and forge:quota events. See ui/CLAUDE.md. -->
+<script src="/extras/status.js"></script>
 <script>
 const TEMPLATE = `## Goal
 
@@ -2212,6 +2215,8 @@ async function loadQuota(jobs) {
   }).join("");
   $("quotaBar").querySelectorAll(".retry").forEach(b => { b.onclick = () => retryVendor(b); });
   vendorChips();
+  // For the extras: the vendors closed right now, exactly as the chips above show them.
+  document.dispatchEvent(new CustomEvent("forge:quota", {detail: closedVendors}));
 }
 
 /* What the last Try Now said, shown for a moment: the row it was pressed on goes as soon as it works. */
@@ -2394,6 +2399,8 @@ async function loadJobs() {
   cards().forEach(c => { if (!ids.has(c.id)) c.remove(); });
 
   layout(jobs);
+  // For the extras: every project as this poll saw it, now that each has its line and its panel.
+  document.dispatchEvent(new CustomEvent("forge:jobs", {detail: jobs}));
 }
 
 /* Moves a spec one place within its group, then renumbers the whole list. */

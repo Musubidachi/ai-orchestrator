@@ -10,6 +10,19 @@ report's form: a box marked `data-attach="<project id>"` takes a pasted, dropped
 posts it to `/api/jobs/attach` (`jobs.submit.Attachments`), and gets `[image: .forge-images/…]` put
 in its text. Notes stay plain text, so nothing downstream had to learn about pictures.
 
+## Extras
+
+Each improvement to the dashboard that can stand alone is an extra: one script in `ui/extras/`,
+served at `/extras/<name>.js` by `ExtraRoutes`, attached by its tag in the block beside
+`attach.js` and nowhere else. An extra learns what the page loaded from two events, `forge:jobs`
+(every project, after the page has placed them) and `forge:quota` (the vendors closed right now,
+as the top bar's chips show them), and calls the page's own helpers (`groupOf`, `steps`, `esc`, ...)
+only when one fires. It wraps itself in a function so its names cannot collide with the page's,
+brings its own `<style>`, and hides what it replaces with a class rather than removing it. To take
+one out, delete its file and its tag. `ExtrasTest` checks that every extra has a tag, is served,
+parses, and is wrapped: one that was not, and reused a name the page declares, would stop the
+page's own script and leave the dashboard empty.
+
 ## Must not be traded away
 
 - **Only the editor itself may act.** `RequestGuard` checks Host (against DNS rebinding), Origin and
@@ -24,5 +37,6 @@ in its text. Notes stay plain text, so nothing downstream had to learn about pic
 
 ## Tests
 
-`UiServerTest`, `SpecApiTest`, `SuggesterTest`, `CrossSiteTest`, `UiScriptTest`, `QueryTest`, and the
-Playwright suite in `ui-tests/` against fixture roots.
+`UiServerTest`, `SpecApiTest`, `SuggesterTest`, `CrossSiteTest`, `UiScriptTest`, `ExtrasTest`,
+`QueryTest`, and the Playwright suite in `ui-tests/` against fixture roots (`status.spec.js` for the
+waiting card).

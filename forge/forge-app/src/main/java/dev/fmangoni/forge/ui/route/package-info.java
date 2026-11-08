@@ -1,9 +1,9 @@
 /**
  * The editor's HTTP endpoints, grouped by what they are about.
  *
- * <p><b>Belongs here:</b> Spec routes, job routes, system routes, and the two pages that are not
- * the dashboard: the quick review and Polish. Each handler parses a request and calls into
- * {@code jobs} or the editor.
+ * <p><b>Belongs here:</b> Spec routes, job routes, system routes, the two pages that are not the
+ * dashboard (the quick review and Polish), and the dashboard's extras ({@code /extras/}). Each
+ * handler parses a request and calls into {@code jobs} or the editor.
  *
  * <p><b>Not here:</b> Any logic of its own. A handler that cannot be understood without HTTP has
  * too much in it.
