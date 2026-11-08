@@ -15,6 +15,7 @@ import dev.fmangoni.forge.pipeline.turn.Turns;
 import dev.fmangoni.forge.project.Phase;
 import dev.fmangoni.forge.project.RunPaths;
 import dev.fmangoni.forge.state.GateLooks;
+import dev.fmangoni.forge.status.gate.GateHistory;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -73,6 +74,8 @@ public final class Outline {
                 .after(Phase.GATING, "keep what the gate asked a person to look at",
                         () -> quickGate.lastFull().ifPresent(
                                 result -> GateLooks.record(run.state(), result.commands())))
+                .after(Phase.GATING, "note the gate in the version's list of gates, for its panel",
+                        () -> GateHistory.note(paths.root(), run.acceptance(), run.state()))
 
                 // → REVIEWING, or SECURITY_REPAIR on a serious finding
                 .step(Phase.SECURITY_CHECK, "secrets, dependencies, risky code, the running app",

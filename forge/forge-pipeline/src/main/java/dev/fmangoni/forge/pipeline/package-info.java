@@ -12,6 +12,6 @@
  *
  * <p><b>Start with:</b> {@code Outline.of}, then {@code Orchestrator.advance}.
  *
- * <p>Depends on: agent, agent.model, gate, gate.words, git, pipeline.run, pipeline.step, pipeline.turn, project, spec, spec.model, spec.tier, state.
+ * <p>Depends on: agent, agent.model, gate, gate.words, git, pipeline.run, pipeline.step, pipeline.turn, project, spec, spec.model, spec.tier, state, status.gate.
  */
 package dev.fmangoni.forge.pipeline;

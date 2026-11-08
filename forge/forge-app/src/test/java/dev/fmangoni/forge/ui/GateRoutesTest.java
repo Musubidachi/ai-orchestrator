@@ -10,6 +10,7 @@ import dev.fmangoni.forge.project.ForgeHome;
 import dev.fmangoni.forge.project.RunPaths;
 import dev.fmangoni.forge.state.RunState;
 import dev.fmangoni.forge.state.RunStore;
+import dev.fmangoni.forge.status.gate.GateHistory;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -91,6 +92,30 @@ class GateRoutesTest {
         assertEquals("waits", slow.path("state").asText(), response.body());
         assertEquals(310, slow.path("seconds").asInt(), response.body());
         assertEquals(310, slow.path("usual").asInt(), response.body());
+    }
+
+    @Test
+    @DisplayName("the gates noted on a version come back with the last one, and the session it followed")
+    void history() throws Exception {
+        RunState state = new RunState();
+        state.setId("001");
+        state.setSessions(6);
+        state.setCommandSeconds(new LinkedHashMap<>(Map.of(BUILD, List.of(5, 3), E2E, List.of(300, 320, 310))));
+        state.setNotRunAtLastGate(new ArrayList<>(List.of(E2E)));
+        RunPaths paths = RunPaths.under(home.runs(), "001");
+        GateHistory.note(paths.root(), List.of(BUILD, E2E), state);
+        RunStore.save(paths.stateFile(), state);
+
+        HttpResponse<String> response = get("/api/gate?id=001");
+        JsonNode gate = Json.mapper().readTree(response.body());
+
+        assertEquals(6, gate.path("after").asInt(), response.body());
+        JsonNode last = gate.path("history").path(0);
+        assertEquals(6, last.path("session").asInt(), response.body());
+        assertTrue(last.path("quick").asBoolean(), response.body());
+        assertEquals(310, last.path("spared").asInt(), response.body());
+        // An ISO time the page can read, not a number of seconds.
+        assertTrue(last.path("at").asText().contains("T"), response.body());
     }
 
     @Test

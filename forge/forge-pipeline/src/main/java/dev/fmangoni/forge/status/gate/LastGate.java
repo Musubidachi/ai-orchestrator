@@ -15,12 +15,20 @@ import java.util.List;
  * @param seconds     what the commands it ran took, this time
  * @param slowSeconds a command whose usual time is this or more waits for the full gate
  * @param commands    every acceptance command, in the order the gate runs them
+ * @param after       the session it followed; 0 when that is not known
+ * @param history     the gates on this version, oldest first, the last of them this one; empty for a
+ *                    version whose gates ran before they were noted ({@link GateHistory})
  */
 public record LastGate(boolean ran, boolean quick, boolean passed, String check, long seconds,
-                       int slowSeconds, List<GateCommand> commands) {
+                       int slowSeconds, List<GateCommand> commands, int after, List<PastGate> history) {
 
     /** No gate yet, or no project by that id. */
     static LastGate none() {
-        return new LastGate(false, false, false, "", 0, QuickGate.SLOW_SECONDS, List.of());
+        return new LastGate(false, false, false, "", 0, QuickGate.SLOW_SECONDS, List.of(), 0, List.of());
+    }
+
+    /** The same gate, with the session it followed and the gates before it. */
+    LastGate with(int after, List<PastGate> history) {
+        return new LastGate(ran, quick, passed, check, seconds, slowSeconds, commands, after, List.copyOf(history));
     }
 }

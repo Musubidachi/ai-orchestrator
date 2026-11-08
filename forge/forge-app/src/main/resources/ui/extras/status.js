@@ -11,6 +11,7 @@
  * and forge:quota, takes what each project waits for and when from wait.js, calls the page's helpers
  * only when one fires, and changes nothing of the page's but a class on each waiting project's
  * panel, set only once that project's card is filled. A project you paused is pause.js's to show.
+ * What the last gate ran is gate.js's (forge:gate), once the open panel has it.
  */
 (() => {
 
@@ -203,9 +204,7 @@ class StepList {
 
   sub(s, here) {
     const j = this.w.j;
-    if (s.name === "Gate" && s.tone === "pass" && j.gateSeconds) {
-      return `the last run took ${duration(j.gateSeconds)}`;
-    }
+    if (s.name === "Gate" && s.tone === "pass") return this.gate() || s.sub;
     if (s.name === "Review" && here && this.w.kind === "review") return this.review();
     if (s.name === "Accepted" && s.tone !== "pass") {
       return j.notVerifiedCount
@@ -213,6 +212,18 @@ class StepList {
         : "after the review";
     }
     return s.sub;
+  }
+
+  /* What the last gate ran and what that took, from gate.js once the open panel has fetched it. The
+     poll's own figure adds up every command's latest time, including ones a quick gate left out. */
+  gate() {
+    const g = window.ForgeGate && window.ForgeGate.of(this.w.j);
+    if (!g || !g.ran || !Array.isArray(g.commands) || !g.commands.length) return "";
+    const n = g.commands.length;
+    const ran = g.commands.filter(c => c.state === "passed" || c.state === "failed").length;
+    const which = ran === n ? (n === 1 ? "its one command" : `all ${n} commands`) : `${ran} of ${n} commands`;
+    const took = g.seconds > 0 ? duration(g.seconds) : "under 1s";
+    return `the last gate${g.quick ? " was quick and" : ""} ran ${which} in ${took}`;
   }
 
   review() {
@@ -281,6 +292,7 @@ class WaitingStatus {
     document.addEventListener("forge:jobs", e => { this.jobs = e.detail; this.render(); });
     document.addEventListener("forge:quota", e => { this.closed = e.detail; this.render(); });
     document.addEventListener("forge:pauses", () => this.render());
+    document.addEventListener("forge:gate", () => this.render());
   }
 
   /* Waits for both: a time said before the vendors are known could be the wrong one. */

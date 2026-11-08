@@ -97,6 +97,24 @@ test("a version waiting its turn names the one before it", async ({ page }) => {
   await expect(detail.locator('.wsteps li[aria-current="step"]')).toContainText("after 001 is accepted");
 });
 
+test("the gate step says what the last gate ran, not every command's latest time added up", async ({ page }) => {
+  // A quick gate: two commands ran in 2s, and the browser suite (usually 6m 20s) waits for the full one.
+  await page.route((url) => url.pathname === "/api/gate", (route) => route.fulfill({ json: {
+    ran: true, quick: true, passed: true, check: "", seconds: 2, slowSeconds: 120, after: 6, history: [],
+    commands: [
+      { command: "npm run build", state: "passed", seconds: 1, usual: 1 },
+      { command: "npm test", state: "passed", seconds: 1, usual: 1 },
+      { command: "npm run test:e2e", state: "waits", seconds: 390, usual: 380 },
+    ],
+  } }));
+  // The poll's own figure: every command's latest time, the waiting suite's included.
+  await board(page, (jobs, antigravityBack) => { reviewWait(jobs, antigravityBack).gateSeconds = 392; });
+  const detail = await panel(page, "001");
+
+  const gate = detail.locator(".wsteps li", { hasText: "Gate passed" });
+  await expect(gate.locator(".wsub")).toHaveText("the last gate was quick and ran 2 of 3 commands in 2s");
+});
+
 test("a project that is not waiting keeps its own panel", async ({ page }) => {
   // 003 is set here rather than taken from the fixture, which an earlier test leaves accepted.
   await board(page, (jobs, antigravityBack) => {

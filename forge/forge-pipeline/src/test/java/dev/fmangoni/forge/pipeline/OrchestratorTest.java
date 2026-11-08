@@ -39,6 +39,8 @@ import dev.fmangoni.forge.spec.model.Spec;
 import dev.fmangoni.forge.spec.tier.ModelTiers;
 import dev.fmangoni.forge.state.RunState;
 import dev.fmangoni.forge.state.RunStore;
+import dev.fmangoni.forge.status.gate.GateHistory;
+import dev.fmangoni.forge.status.gate.PastGate;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -573,6 +575,23 @@ class OrchestratorTest {
         assertEquals(Phase.DONE, state.getPhase());
         assertNull(state.getLastError());
         assertTrue(Files.isRegularFile(paths.repo().resolve("Main.java")));
+    }
+
+    @Test
+    @DisplayName("each gate is noted for the panel's list of gates, with the session it followed")
+    void gatesAreNoted() throws IOException {
+        Spec spec = spec("exit 0", 2);
+        Agents agents = agentsWhere(
+                new StubAgent(AgentKind.CLAUDE, writes("Main.java", "class Main {}"), finished()),
+                new StubAgent(AgentKind.CODEX, OrchestratorTest::writesNothing, CLEAN_REVIEW));
+
+        RunState state = advance(spec, freshState(), agents);
+
+        List<PastGate> gates = GateHistory.load(paths.root());
+        assertEquals(1, gates.size(), gates.toString());
+        assertEquals(state.getSessions(), gates.getFirst().session());
+        assertTrue(gates.getFirst().passed());
+        assertFalse(gates.getFirst().quick());
     }
 
     @Test

@@ -36,7 +36,7 @@ public class GateSummary {
         long seconds = commands.stream().filter(GateCommand::ran)
                 .mapToLong(command -> command.seconds() == null ? 0 : command.seconds()).sum();
         return new LastGate(true, !left.isEmpty(), failed.isEmpty(), check, seconds, QuickGate.SLOW_SECONDS,
-                commands);
+                commands, 0, List.of());
     }
 
     private List<GateCommand> commands(List<String> acceptance, Map<String, List<Integer>> times,

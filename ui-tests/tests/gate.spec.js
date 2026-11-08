@@ -30,6 +30,14 @@ const CHECK_FAILED = {
 };
 const NO_GATE = { ran: false, quick: false, passed: false, check: "", seconds: 0, slowSeconds: 120, commands: [] };
 
+/* One noted gate (status.gate.PastGate). Each quick one here left the browser suite, 380s usually. */
+const past = (session, quick, passed, seconds, failed = "") =>
+  ({ session, quick, passed, failed, seconds, spared: quick ? 380 : 0, at: "2026-11-08T10:00:00Z" });
+const FOUR_GATES = {
+  ...QUICK_PASSED, after: 4,
+  history: [past(1, false, true, 385), past(2, true, true, 2), past(3, true, false, 1, TEST), past(4, true, true, 2)],
+};
+
 /* 001 is being built, 002 has not started, and 003 finished. Every state is set here, because the
    specs before this one leave the fixture changed. 001's poll still has the page's "last gate" sum. */
 function fixture(jobs) {
@@ -124,6 +132,47 @@ test("a gate whose commands all passed says which check it stopped at", async ({
   await expect(gate.locator(".gtsay")).toHaveText("Every command passed; it stopped at a check: run file: run.bat.");
   await expect(gate.locator(".gtsay b")).toHaveText("run file: run.bat");
   await expect(gate.locator(".gtpart")).toHaveText(["Ran, passed", "Ran, passed", "Ran, passed"]);
+});
+
+test("the gate says which session it followed, and lists the gates before it", async ({ page }) => {
+  await board(page, FOUR_GATES);
+  const gate = (await panel(page, "001")).locator(".gtsec");
+
+  await expect(gate.locator(".gtcount")).toHaveText("after session 4 · 2 of 3 commands · 2s");
+  const list = gate.locator(".gthist");
+  await expect(list.locator("h3")).toHaveText("Gates on this version");
+  // Three quick gates, each leaving a suite that usually takes 380 seconds: 19 minutes.
+  await expect(list.locator(".gtspared")).toHaveText("About 19 minutes not spent waiting");
+  await expect(list.locator(".gtmore")).toHaveCount(0);
+  await expect(list.locator(".gtpwhen")).toHaveText(
+    ["After session 1", "After session 2", "After session 3", "After session 4"]);
+  await expect(list.locator(".gtpkind")).toHaveText(
+    ["Fullpassed6m 25s", "Quickpassed2s", "Quickfailed1s", "Quickpassed2s"]);
+  await expect(list.locator(".gtpnote")).toHaveText(["Passed", "Passed", "npm test failed", "Latest"]);
+  await expect(list.locator("li").nth(2)).toHaveClass(/\bgtp-fail\b/);
+  await expect(list.locator("li").nth(3)).toHaveClass(/\bgtp-now\b/);
+  await expect(list.locator('li[aria-current="true"]')).toHaveCount(1);
+  // The list sits between what a quick gate leaves and the footnote about it.
+  await expect(gate.locator(":scope > .gtnote + .gthist + .gtfoot")).toHaveCount(1);
+});
+
+test("a long list shows the latest gates, and a single gate has none", async ({ page }) => {
+  // Eleven full gates that passed, and the one this section is about, which failed at npm test.
+  const twelve = Array.from({ length: 12 }, (_, i) => (i < 11 ? past(i + 1, false, true, 300) : past(12, false, false, 4, TEST)));
+  await board(page, { ...FULL_FAILED, after: 12, history: twelve });
+  let gate = (await panel(page, "001")).locator(".gtsec");
+
+  await expect(gate.locator(".gtpast li")).toHaveCount(8);
+  await expect(gate.locator(".gtmore")).toHaveText("the last 8 of 12");
+  await expect(gate.locator(".gtpwhen").first()).toHaveText("After session 5");
+  // Only full gates: nothing was left for later, so no time is said to be spared.
+  await expect(gate.locator(".gtspared")).toHaveCount(0);
+
+  await page.unrouteAll({ behavior: "ignoreErrors" });
+  await board(page, { ...FULL_FAILED, after: 1, history: [past(1, false, false, 4, TEST)] });
+  gate = (await panel(page, "001")).locator(".gtsec");
+  await expect(gate.locator(".gtcount")).toHaveText("after session 1 · 2 of 3 commands · 4s");
+  await expect(gate.locator(".gthist")).toHaveCount(0);
 });
 
 test("a project with no gate yet has no section, and keeps the page's own stat", async ({ page }) => {

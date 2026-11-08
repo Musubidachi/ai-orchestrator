@@ -8,10 +8,14 @@
  * and what it did with each command, each drawn by how long it usually takes against the line a
  * quick gate stops at.
  *
+ * Under them, once a version has had more than one gate, the gates on it, oldest first, each with
+ * the session it followed, and the time its quick gates spared (status.gate.GateHistory).
+ *
  * An extra (see ui/CLAUDE.md): its tag in index.html is all that attaches it. It reads /api/gate
  * (route.GateRoutes) for the open project only, and again only when what the poll says about that
  * project changes. It calls the page's helpers only when an event fires, and hides one thing of the
- * page's while its section shows: the "last gate" stat, whose sum it replaces.
+ * page's while its section shows: the "last gate" stat, whose sum it replaces. What it fetched is
+ * window.ForgeGate.of(job) for the other extras, null until it is fresh; forge:gate says it arrived.
  */
 (() => {
 
@@ -90,7 +94,33 @@ const CSS = `
   .gtnote{margin:0;font-size:.8rem;line-height:1.45;color:var(--muted)}
   .gtfoot{display:flex;gap:.4rem;margin:0;padding-top:.55rem;border-top:1px solid var(--line);
           font-size:.78rem;line-height:1.45;color:var(--muted)}
-  .gtfoot svg{flex:none;margin-top:.15rem}`;
+  .gtfoot svg{flex:none;margin-top:.15rem}
+  .gthist{display:flex;flex-direction:column;gap:.5rem;padding-top:.55rem;border-top:1px solid var(--line)}
+  .gthtop{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:.2rem .75rem}
+  .gtmore{font-size:.78rem;color:var(--muted)}
+  .gtspared{font-size:.8rem;color:var(--green-fg)}
+  .gtpast{display:grid;grid-template-columns:repeat(auto-fill,minmax(8.25rem,1fr));gap:.45rem;
+          list-style:none;margin:0;padding:0}
+  .gtpast li{display:flex;flex-direction:column;gap:.1rem;min-width:0;padding:.4rem .6rem;
+             border:1px solid var(--line);border-radius:.5rem;background:var(--field)}
+  .gtpwhen, .gtpnote{font-size:.74rem;color:var(--muted)}
+  .gtpkind{display:flex;align-items:center;gap:.35rem;font-size:.84rem;font-weight:600}
+  .gtpkind svg{flex:none}
+  .gtpkind span{font-weight:400;color:var(--soft);font-variant-numeric:tabular-nums}
+  .gtpnote{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .gtpnote code{font-size:.72rem}
+  .gtp-pass .gtpkind svg{color:var(--pass)}
+  .gtp-fail{border-color:var(--red-bg)}
+  .gtp-fail .gtpkind svg{color:var(--fail)}
+  .gtp-fail .gtpnote{color:var(--red-fg)}
+  .gtpast li.gtp-now{border-color:var(--selline);background:var(--sel)}
+  .gtp-now .gtpwhen{color:var(--blue-fg)}
+  .gtp-now .gtpnote{color:var(--soft)}
+  .gtp-now.gtp-fail .gtpnote{color:var(--red-fg)}
+  .gtsr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}`;
+
+/* How many of a version's gates the list shows: the latest. */
+const SHOWN = 8;
 
 const RAN = c => c.state === "passed" || c.state === "failed";
 const took = s => (s == null ? "" : s > 0 ? duration(s) : "under 1s");
@@ -129,7 +159,9 @@ class Markup {
       + (this.scale.shown ? `<div class="gtscale" aria-hidden="true"><span>`
         + `<b style="left:${this.scale.at(this.scale.slow)}">${esc(this.scale.label())}</b></span></div>` : "")
       + `<ol class="gtcmds">${g.commands.map(c => this.command(c)).join("")}</ol>`
-      + (g.quick ? `<p class="gtnote">${esc(LEFT)}</p><p class="gtfoot">${INFO}<span>${esc(NEVER)}</span></p>` : "");
+      + (g.quick ? `<p class="gtnote">${esc(LEFT)}</p>` : "")
+      + new Past(g.history).html()
+      + (g.quick ? `<p class="gtfoot">${INFO}<span>${esc(NEVER)}</span></p>` : "");
   }
 
   head() {
@@ -141,8 +173,9 @@ class Markup {
       ? `<span class="gtpill gtok">${PASS}Passed</span>`
       : `<span class="gtpill gtbad">${FAIL}Failed</span>`;
     const ran = g.commands.filter(RAN).length;
+    const after = g.after > 0 ? `after session ${g.after} · ` : "";
     return `<div class="gthead">${kind}${verdict}<span class="gtcount">`
-      + `${esc(`${ran} of ${several(g.commands.length, "command", "commands")} · ${took(g.seconds)}`)}`
+      + `${esc(`${after}${ran} of ${several(g.commands.length, "command", "commands")} · ${took(g.seconds)}`)}`
       + `</span></div>`;
   }
 
@@ -173,6 +206,46 @@ class Markup {
   }
 }
 
+/* The gates on this version, oldest first; the last of them is the one the section is about. */
+class Past {
+  constructor(history) {
+    this.all = Array.isArray(history) ? history : [];
+  }
+
+  /* Nothing for a single gate, which the section above already is. */
+  html() {
+    const all = this.all;
+    if (all.length < 2) return "";
+    const shown = all.slice(-SHOWN);
+    const more = all.length > shown.length
+      ? `<span class="gtmore">${esc(`the last ${shown.length} of ${all.length}`)}</span>` : "";
+    const spared = this.spared();
+    return `<div class="gthist"><div class="gthtop"><h3>Gates on this version</h3>${more}`
+      + (spared ? `<span class="gtspared">${esc(spared)}</span>` : "") + `</div>`
+      + `<ol class="gtpast">${shown.map((p, i) => this.item(p, i === shown.length - 1)).join("")}</ol></div>`;
+  }
+
+  /* What the quick gates left for the full one, which nobody sat waiting for. */
+  spared() {
+    const minutes = Math.round(this.all.reduce((sum, p) => sum + (p.spared || 0), 0) / 60);
+    if (minutes < 1) return "";
+    const about = minutes < 90 ? several(minutes, "minute", "minutes")
+      : `${(minutes / 60).toFixed(1).replace(/\.0$/, "")} hours`;
+    return `About ${about} not spent waiting`;
+  }
+
+  item(p, now) {
+    const failed = p.failed ? `<code>${esc(p.failed)}</code> failed` : "Failed";
+    const note = p.passed ? (now ? "Latest" : "Passed") : failed;
+    const title = !p.passed && p.failed ? ` title="${esc(p.failed)}"` : "";
+    return `<li class="gtp-${p.passed ? "pass" : "fail"}${now ? " gtp-now" : ""}"${now ? ' aria-current="true"' : ""}>`
+      + `<span class="gtpwhen">${esc(`After session ${p.session}`)}</span>`
+      + `<span class="gtpkind">${esc(p.quick ? "Quick" : "Full")}${p.passed ? PASS : FAIL}`
+      + `<span class="gtsr">${p.passed ? "passed" : "failed"}</span><span>${esc(took(p.seconds))}</span></span>`
+      + `<span class="gtpnote"${title}>${note}</span></li>`;
+  }
+}
+
 /* Fetches the open project's last gate, and keeps its section and the stat it replaces in step. */
 class GateView {
   constructor() {
@@ -190,6 +263,12 @@ class GateView {
   /* Anything the poll says that changes when a gate runs, or begins to. */
   key(j) {
     return [j.phase, j.sessions, j.gateSeconds, j.lastFailingCommand, j.repairRounds].join("|");
+  }
+
+  /* What was fetched for a project, while the poll still says what it said then; otherwise null. */
+  fresh(j) {
+    const had = j && this.cache.get(j.id);
+    return had && had.key === this.key(j) ? had.data : null;
   }
 
   /* A panel opened by a click is not a poll; a class on a card is how the page opens one. */
@@ -222,6 +301,7 @@ class GateView {
         if (this.asking.get(id) === key) this.asking.delete(id);
         this.cache.set(id, {key, data});
         this.sweep();
+        document.dispatchEvent(new CustomEvent("forge:gate", {detail: {id}}));
       });
   }
 
@@ -255,6 +335,7 @@ class GateView {
 const style = document.createElement("style");
 style.textContent = CSS;
 document.head.appendChild(style);
-new GateView();
+const view = new GateView();
+window.ForgeGate = {of: j => view.fresh(j)};
 
 })();

@@ -48,7 +48,12 @@ what it did with each command (ran, failed, not reached, waits for the full gate
 each drawn by its usual time against the line a quick gate stops at. It reads `/api/gate?id=`
 (`GateRoutes`; what it reads is `status.gate`) for the open project only, again when the poll's
 phase, sessions or gate time for it change. While its section shows, it hides the "last gate" stat,
-which adds every command's latest time whether or not the last gate ran it.
+which adds every command's latest time whether or not the last gate ran it. The head says which
+session the gate followed, and once a version has had more than one gate, the latest eight are
+listed under it with the time its quick gates spared (`status.gate.GateHistory`, kept beside the
+version's state by a step the `Outline` attaches after each gate). It gives the page one name,
+`ForgeGate`, null until the open project's answer is fresh, and fires `forge:gate` when one
+arrives: the waiting card says from it what the last gate ran, instead of the poll's sum.
 
 ## Must not be traded away
 
