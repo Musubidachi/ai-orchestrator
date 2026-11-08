@@ -9,18 +9,38 @@
  * counts, on a wide screen as on a phone, so the line of counts above them goes; it once said
  * "4 needing you" beside a tile that said 0.
  *
+ * Projects with no other versions share a row the same way once two of them are under one heading
+ * whose projects want nothing done here: Not on this machine, or Accepted. "Five single projects"
+ * stands for five lines that each said the same thing. Under any other heading each keeps its own
+ * line, as each says something different. A phone shows the same rows in its ranked list, each where
+ * the first of its projects ranks, with its projects under it once it is opened.
+ *
  * An extra (see ui/CLAUDE.md): its tag in index.html is all that attaches it. It hears forge:jobs
  * and forge:quota, takes a waiting version's time from wait.js, and calls the page's helpers only
  * when one fires. Its rows go into the table where the page put the lines they stand for. Of the
  * page's own it changes only the order of the lines, classes and data attributes, and it adds two
  * short lines to the tiles: a version's line is hidden while its family is closed, never removed.
- * A phone keeps its ranked list, with no family rows. Projects with no other versions keep their
- * own lines. A version you paused is Paused on the row and in the chain, as pause.js says on its line.
+ * A version you paused is Paused on the row and in the chain, as pause.js says on its line.
  */
 (() => {
 
 /* More accepted versions than this are one link of the chain, and so are more of any other kind. */
 const MANY = 4;
+
+/* A row of single projects draws this many of them, and counts the rest. */
+const CHIPS = 8;
+
+/* The headings whose single projects share a row: nothing under them is to be done here. */
+const QUIET = new Set(["away", "accepted"]);
+
+/* "Five single projects", as a person would say it. */
+const SAID = ["No", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten"];
+const say = n => SAID[n] || String(n);
+
+/* What each order places: headings, fold lines and lines on a wide screen; on a phone, which has
+   no headings, the lines, fold lines and each project's details. */
+const WIDE = ":scope > .grouphead, :scope > .foldline, :scope > .job > .lrow";
+const PHONE = ":scope > .foldline, :scope > .job > .lrow, :scope > .job > .detail";
 
 /* What pause.js shows for a version you paused, or null; always null when pause.js is not attached. */
 const pauseOf = j => (window.ForgePause ? window.ForgePause.of(j) : null);
@@ -52,8 +72,8 @@ const WORDS = {
 };
 
 const filtered = k => `#jobs.fmon[data-filter=${k}] > .job:not([data-kinds~=${k}]),
-    #jobs.fmon[data-filter=${k}] > .fmrow:not([data-kinds~=${k}]),
-    #jobs.fmon[data-filter=${k}] > .grouphead:not([data-kinds~=${k}])`;
+  #jobs.fmon[data-filter=${k}] > .fmrow:not([data-kinds~=${k}]),
+  #jobs.fmon[data-filter=${k}] > .grouphead:not([data-kinds~=${k}])`;
 
 const CSS = `
   #jobsSummary.fmgone{display:none}
@@ -67,6 +87,7 @@ const CSS = `
   .fmrow[aria-expanded=true] .rank svg{transform:rotate(90deg)}
   .fmchain{grid-column:2/-1;grid-row:2;display:flex;flex-wrap:wrap;align-items:center;gap:.3rem 0;
            min-width:0}
+  .fmsingles .fmchain{gap:.3rem .4rem}
   .fmchip{display:inline-flex;align-items:center;gap:.3rem;padding:.08rem .5rem;border-radius:999px;
           border:1px solid transparent;font-size:.72rem;font-weight:600;white-space:nowrap}
   .fmchip.fmlead{box-shadow:0 0 0 1px currentColor}
@@ -77,18 +98,29 @@ const CSS = `
   .fmnow span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .fmnow .fmwhat{color:var(--soft)}
   .fmnow .fmwhen{color:var(--muted)}
+  ${KINDS.map(filtered).join(",\n  ")},
+  #jobs.fmon > .foldline.fmhid,
+  #jobs.fmon:not([data-filter=all]):not([data-filter=waiting]) > .foldline{display:none}
   @media (min-width:1200px){
     #tiles.fmon{display:flex;flex-wrap:wrap;gap:.5rem;margin:0 0 .75rem}
     #jobs.fmon .grouphead .gn,
     #jobs.fmon > .grouphead.fmempty,
-    #jobs.fmon > .job > .lrow.fmhid,
-    #jobs.fmon > .foldline.fmhid,
-    ${KINDS.map(filtered).join(",\n    ")},
-    #jobs.fmon:not([data-filter=all]):not([data-filter=waiting]) > .foldline{display:none}
+    #jobs.fmon > .job > .lrow.fmhid{display:none}
     #jobs.fmon > .job > .lrow.fmin .main{padding-left:1.25rem}
   }
+  /* A phone: a closed row hides its projects' details as well as their lines, and an open one has
+     them under it, set in, each with its details under its own line as before. The row's two short
+     lines go under its name, and its chain loses its links, which a wrapped chain began a line with. */
   @media (max-width:1199px){
-    .lrow.fmrow{display:none}
+    #jobs.fmon > .job > .fmhid{display:none}
+    #jobs.fmon > .job > .fmin{margin-left:1rem}
+    #jobs.fmon > .job > .lrow.fmin{width:calc(100% - 1rem)}
+    .lrow.fmrow{grid-template-rows:auto auto auto;row-gap:.3rem}
+    .lrow.fmrow[aria-expanded=true]{border-radius:1rem;border-bottom-color:var(--line);
+                                    background:var(--card)}
+    .fmrow .fmnow{grid-column:2/-1;grid-row:2;font-size:.75rem}
+    .fmrow .fmchain{grid-row:3;gap:.3rem .4rem}
+    .fmrow .fmlink{display:none}
   }
 `;
 
@@ -117,6 +149,40 @@ function byVersion(a, b) {
   return 0;
 }
 
+/* The board by family: 008 with 008.1 and 008.12, and a project with no versions on its own. */
+function byFamily(jobs) {
+  const members = new Map();
+  jobs.forEach(j => {
+    const name = rootOf(j.id);
+    if (!members.has(name)) members.set(name, []);
+    members.get(name).push(j);
+  });
+  return members;
+}
+
+/* The lines that share a row, by the row's name: each family of two or more, and the single
+   projects of a quiet heading once there are two of them. */
+function grouped(jobs, rank) {
+  const groups = new Map();
+  const lone = new Map();
+  byFamily(jobs).forEach((list, name) => {
+    if (list.length > 1) {
+      groups.set(name, new Family(name, list, rank));
+      return;
+    }
+    const key = groupOf(list[0]).key;
+    if (!QUIET.has(key)) return;
+    if (!lone.has(key)) lone.set(key, []);
+    lone.get(key).push(list[0]);
+  });
+  lone.forEach((list, key) => {
+    if (list.length < 2) return;
+    const singles = new Singles(key, list, rank);
+    groups.set(singles.name, singles);
+  });
+  return groups;
+}
+
 /* A project and every version of it on the board, the one most in need of saying first. */
 class Family {
   constructor(name, members, rank) {
@@ -140,13 +206,47 @@ class Family {
     return [...new Set(this.members.map(j => card(j.id).dataset.kinds))].join(" ");
   }
 
+  vendors() {
+    return [...new Set(this.members.map(j => vendorName(j.assignedTo)).filter(Boolean))].join(" and ");
+  }
+
   sub() {
-    const vendors = [...new Set(this.members.map(j => vendorName(j.assignedTo)).filter(Boolean))];
-    return [this.name, vendors.join(" and "), `${this.members.length} versions`].filter(Boolean).join(" · ");
+    return [this.name, this.vendors(), `${this.members.length} versions`].filter(Boolean).join(" · ");
   }
 
   total(field) {
     return this.members.reduce((t, j) => t + (j[field] || 0), 0);
+  }
+
+  /* The middle of its row. */
+  chain(closed, now) {
+    return new Chain(this, closed, now).html();
+  }
+
+  /* The two short lines beside its word. */
+  now(closed, now) {
+    return new Now(this, closed, now).lines();
+  }
+}
+
+/* Projects with no other versions under one quiet heading, on one row as a family's versions are. */
+class Singles extends Family {
+  constructor(key, members, rank) {
+    super("singles-" + key, members, rank);
+    this.title = `${say(members.length)} single projects`;
+  }
+
+  sub() {
+    const ids = [...this.members].sort(byVersion).map(j => j.id).join(", ");
+    return [ids, this.vendors()].filter(Boolean).join(" · ");
+  }
+
+  chain(closed, now) {
+    return new Chips(this, closed, now).html();
+  }
+
+  now() {
+    return new Together(this.members).lines();
   }
 }
 
@@ -182,9 +282,21 @@ class Chain {
   }
 
   link(tone, mark, text, j) {
-    const lead = j && j === this.family.lead ? " fmlead" : "";
+    const lead = j && j.id === this.family.lead.id ? " fmlead" : "";
     const title = j ? ` title="${esc(j.title)}"` : "";
     return `<span class="fmchip ${tone}${lead}"${title}>${mark}${esc(text)}</span>`;
+  }
+}
+
+/* A row of single projects: each its own link, with nothing between them, as none comes after
+   another. One on GitHub says what it was when it went there, as the shelf is said once beside them;
+   one whose repository is missing says so on its link, as that is something to look into. */
+class Chips extends Chain {
+  html() {
+    const sorted = [...this.family.members].sort(byVersion);
+    const chips = sorted.slice(0, CHIPS).map(j => this.version(j.shelvedBranch ? {...j, shelvedBranch: ""} : j));
+    if (sorted.length > CHIPS) chips.push(`<span class="fmchip fmmore">+${sorted.length - CHIPS} more</span>`);
+    return chips.join("");
   }
 }
 
@@ -228,6 +340,30 @@ class Now {
   }
 }
 
+/* The same two lines for a row of single projects: how many of them want your decision, and how many
+   are on GitHub, said once for all of them. */
+class Together {
+  constructor(members) {
+    this.members = members;
+  }
+
+  lines() {
+    return [this.what(), this.where()];
+  }
+
+  what() {
+    const n = this.members.filter(needsYou).length;
+    if (n) return `${n} ${n === 1 ? "awaits" : "await"} your decision`;
+    return this.members.every(j => j.phase === "ACCEPTED") ? `All ${this.members.length} accepted` : "";
+  }
+
+  where() {
+    const shelved = this.members.filter(j => j.shelvedBranch).length;
+    if (!shelved) return "";
+    return `${shelved === this.members.length ? "All" : shelved} on GitHub only`;
+  }
+}
+
 /* The family's line in the table: a button, like every line, that opens and closes the family. */
 class Row {
   constructor(name, toggle) {
@@ -249,7 +385,7 @@ class Row {
   fill(family, closed, now) {
     const q = sel => this.el.querySelector(sel);
     const stage = stageFor(family.lead);
-    const [what, when] = new Now(family, closed, now).lines();
+    const [what, when] = family.now(closed, now);
     const tokens = family.total("tokensSpent");
     q(".ttl").textContent = family.title;
     q(".sub").textContent = family.sub();
@@ -259,7 +395,8 @@ class Row {
     q(".tokens").textContent = tokens ? count(tokens) : "—";
     q(".fmwhat").textContent = what;
     q(".fmwhen").textContent = when;
-    put(q(".fmchain"), new Chain(family, closed, now).html());
+    put(q(".fmchain"), family.chain(closed, now));
+    this.el.classList.toggle("fmsingles", family instanceof Singles);
     this.el.dataset.kinds = family.kinds();
   }
 
@@ -269,24 +406,27 @@ class Row {
 }
 
 /*
- * The table's lines in the order the page placed them, with each family's row put in where its first
- * version was and its versions straight after it.
+ * The table's lines in one of the page's two orders, with each row put in where the first of its
+ * lines was and those lines straight after it.
  *
- * The page gives every heading, line and fold line its place, as --od, on each poll. This reads that
- * order back right after, and keeps it for opening and closing a family between polls.
+ * The page gives every line its place on each poll, in two orders the stylesheet picks between: --od
+ * on a wide screen, by heading, and --om on a phone, by rank, each project's details after its line.
+ * This reads one of them back right after, and keeps it for opening and closing a row between polls.
  */
 class Order {
-  constructor(box) {
+  constructor(box, prop, parts) {
     this.box = box;
+    this.prop = prop;
+    this.parts = parts;
     this.page = [];
     this.at = new Map();
+    this.names = new Map();
     this.placed = [];
   }
 
   read() {
-    const od = el => parseFloat(el.style.getPropertyValue("--od")) || 0;
-    this.page = [...this.box.querySelectorAll(":scope > .grouphead, :scope > .foldline, :scope > .job > .lrow")]
-      .sort((a, b) => od(a) - od(b));
+    const at = el => parseFloat(el.style.getPropertyValue(this.prop)) || 0;
+    this.page = [...this.box.querySelectorAll(this.parts)].sort((a, b) => at(a) - at(b));
     this.at = new Map(this.page.map((el, i) => [el, i]));
   }
 
@@ -296,7 +436,9 @@ class Order {
     return at === undefined ? Infinity : at;
   }
 
-  place(families, rows, open) {
+  /* `names` says which row each project's lines go under, by its id; a project in none keeps its own. */
+  place(families, rows, open, names) {
+    this.names = names;
     const out = [];
     const done = new Set();
     this.page.forEach(el => {
@@ -315,7 +457,7 @@ class Order {
       });
     });
     out.forEach((el, i) => {
-      el.style.setProperty("--od", i);
+      el.style.setProperty(this.prop, i);
       // A heading whose lines all went under a family row elsewhere has nothing left to head.
       if (el.classList.contains("grouphead")) {
         const next = out[i + 1];
@@ -325,11 +467,11 @@ class Order {
     this.placed = out;
   }
 
-  /* The family a line belongs to; none for a heading. */
+  /* The row a line or a project's details go under; none for a heading. */
   familyOf(el) {
     if (el.classList.contains("grouphead")) return null;
     if (el.classList.contains("foldline")) return el.dataset.family;
-    return rootOf(el.parentElement.dataset.id);
+    return this.names.get(el.parentElement.dataset.id) || null;
   }
 
   mark(el, open) {
@@ -374,7 +516,7 @@ class Counts {
   }
 }
 
-/* Groups the board into families on every poll, and opens and closes them between polls. */
+/* Groups the board into rows on every poll, and opens and closes them between polls. */
 class Families {
   constructor() {
     const style = document.createElement("style");
@@ -382,10 +524,12 @@ class Families {
     document.head.append(style);
     this.closed = {};
     this.families = new Map();
+    this.names = new Map();
     this.rows = new Map();
     this.open = new Set();
     this.counts = new Counts();
     this.order = null;
+    this.phone = null;
     document.addEventListener("forge:jobs", e => this.safely(() => this.update(e.detail)));
     document.addEventListener("forge:quota", e => {
       this.closed = e.detail || {};
@@ -406,6 +550,7 @@ class Families {
     const box = $("jobs");
     if (!this.order) this.start(box);
     this.order.read();
+    this.phone.read();
     this.group(jobs);
     this.fill();
     this.place();
@@ -416,22 +561,16 @@ class Families {
   /* Once: a click on a line or a tile, or the window crossing a phone's width, can change which
      project is marked, and the rows follow it. */
   start(box) {
-    this.order = new Order(box);
+    this.order = new Order(box, "--od", WIDE);
+    this.phone = new Order(box, "--om", PHONE);
     box.addEventListener("click", () => this.safely(() => this.mark()));
     $("tiles").addEventListener("click", () => this.safely(() => this.keepInView()));
     narrow.addEventListener("change", () => this.safely(() => this.mark()));
   }
 
   group(jobs) {
-    const members = new Map();
-    jobs.forEach(j => {
-      const name = rootOf(j.id);
-      if (!members.has(name)) members.set(name, []);
-      members.get(name).push(j);
-    });
-    this.families = new Map([...members]
-      .filter(([, list]) => list.length > 1)
-      .map(([name, list]) => [name, new Family(name, list, id => this.order.rank(id))]));
+    this.families = grouped(jobs, id => this.order.rank(id));
+    this.names = new Map([...this.families].flatMap(([name, g]) => g.members.map(j => [j.id, name])));
     this.rows.forEach((row, name) => {
       if (this.families.has(name)) return;
       row.remove();
@@ -448,18 +587,19 @@ class Families {
   }
 
   place() {
-    this.order.place(this.families, this.rows, this.open);
+    [this.order, this.phone].forEach(order => order.place(this.families, this.rows, this.open, this.names));
     heads.forEach((head, key) => { head.dataset.kinds = kindOf(key); });
     this.mark();
   }
 
-  /* Opening a family shows the version its row spoke for, unless one of them is open already. */
+  /* Opening a family shows the version its row spoke for, unless one of them is open already. On a
+     phone it only shows their lines, each of which opens its own details under it. */
   toggle(name) {
     this.safely(() => {
       if (this.open.has(name)) this.open.delete(name); else this.open.add(name);
       this.place();
       const family = this.families.get(name);
-      if (family && this.open.has(name) && !family.has(selected)) pick(family.lead.id);
+      if (family && this.open.has(name) && !narrow.matches && !family.has(selected)) pick(family.lead.id);
       this.mark();
     });
   }

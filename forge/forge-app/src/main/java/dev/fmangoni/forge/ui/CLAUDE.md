@@ -31,10 +31,13 @@ counts, and gives the page one name, `ForgeWait`, which the waiting card (`statu
 fails its own check and leaves the page as it was.
 
 `families.js` puts one row in the table for each project that has versions, where its first version
-stood, and draws the versions as a chain. The page still places every line on each poll; the extra
-reads that order back from `--od` and gives each line a new place, so opening a family is the
-page's own lines, hidden or shown by a class. It makes the tiles the table's only counts on a wide
-screen too, and hides the line of counts and the headings' numbers. A phone keeps its ranked list.
+stood, and draws the versions as a chain. Projects with no versions share one row the same way, two
+or more under one heading whose projects want nothing done here (Not on this machine, Accepted);
+under any other heading each keeps its own line. The page still places every line on each poll; the
+extra reads both of its orders back, `--od` for a wide screen and `--om` for a phone's ranked list,
+and gives each line a new place in each, so opening a row is the page's own lines, hidden or shown
+by a class. On a phone a closed row hides its projects' details too. It makes the tiles the
+table's only counts on a wide screen too, and hides the line of counts and the headings' numbers.
 
 `pause.js` makes Stop ask why, and the project is then held until Resume Now; one that is not
 running can be paused from its panel the same way. The endpoints are `PauseRoutes`
@@ -78,5 +81,5 @@ arrives: the waiting card says from it what the last gate ran, instead of the po
 `UiServerTest`, `SpecApiTest`, `SuggesterTest`, `CrossSiteTest`, `UiScriptTest`, `ExtrasTest`,
 `QueryTest`, `PauseRoutesTest`, `GateRoutesTest`, and the Playwright suite in `ui-tests/` against
 fixture roots (`status.spec.js` for the waiting card, `nextday.spec.js` for the next 24 hours,
-`families.spec.js` for one row per family, `pause.spec.js` for Stop with a reason, `gate.spec.js`
+`families.spec.js` for the family and single-project rows, `pause.spec.js` for Stop with a reason, `gate.spec.js`
 for the last gate).

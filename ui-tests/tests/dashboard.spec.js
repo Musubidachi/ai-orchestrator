@@ -304,7 +304,8 @@ test("the summary counts a shelved project where the table puts it", async ({ pa
     await route.fulfill({ response, json: jobs });
   });
   await page.reload();
-  await expect(page.locator("#row-009")).toBeVisible();
+  // There rather than visible: two projects not here share one row (extras/families.js).
+  await expect(page.locator("#row-009")).toBeAttached();
 
   const summary = page.locator("#jobsSummary");
   await expect(summary).toContainText("0 accepted");
