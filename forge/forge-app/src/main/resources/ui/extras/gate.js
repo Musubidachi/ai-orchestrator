@@ -26,7 +26,7 @@ const MARKS = {
   passed: PASS,
   failed: FAIL,
   unreached: icon('<path d="M6 12h12"/>', 3, 12),
-  waits: icon('<circle cx="12" cy="12" r="8"/><path d="M12 8v4l2.5 1.5"/>', 2.4, 12),
+  waits: icon('<path d="M5 5l7 7-7 7"/><path d="M13 5l7 7-7 7"/>', 2.4, 12),
   new: icon('<circle cx="12" cy="12" r="7"/>', 2.4, 12),
 };
 const PARTS = {
@@ -78,14 +78,14 @@ const CSS = `
   .gtmark{position:absolute;top:-.25rem;bottom:-.25rem;border-left:1px dashed var(--hold-line)}
   .gt-slow .gtmark{border-left-color:var(--wait)}
   .gt-passed .gtpart{color:var(--green-fg)}
-  .gt-passed .gtfill{background:var(--pass);opacity:.75}
+  .gt-passed .gtfill{background:var(--pass)}
   .gt-failed .gtpart{color:var(--red-fg)}
   .gt-failed .gtfill{background:var(--fail)}
   .gt-unreached .gtpart, .gt-new .gtpart{color:var(--muted)}
   .gt-unreached .gtfill{background:repeating-linear-gradient(135deg,#3d3d3a 0 3px,transparent 3px 6px)}
   .gt-waits .gtpart{color:var(--soft)}
-  .gt-waits .gtfill{background:repeating-linear-gradient(135deg,var(--hold-line) 0 3px,transparent 3px 6px);
-                    box-shadow:inset 0 0 0 1px var(--hold-line)}
+  .gt-waits .gtfill{background:repeating-linear-gradient(135deg,#2a2a28 0 5px,#1e1e1d 5px 10px);
+                    box-shadow:inset 0 0 0 1px #3a3a38}
   .gt-new .gtfill{display:none}
   .gtnote{margin:0;font-size:.8rem;line-height:1.45;color:var(--muted)}
   .gtfoot{display:flex;gap:.4rem;margin:0;padding-top:.55rem;border-top:1px solid var(--line);
