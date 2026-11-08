@@ -4,6 +4,7 @@ import dev.fmangoni.forge.deploy.Deployment;
 import dev.fmangoni.forge.feature.Feature;
 import dev.fmangoni.forge.project.RunPaths;
 import dev.fmangoni.forge.report.changes.ScreenChangesSection;
+import dev.fmangoni.forge.report.guide.ReportGuide;
 import dev.fmangoni.forge.report.outward.DeploymentsSection;
 import dev.fmangoni.forge.report.outward.MarketingSection;
 import dev.fmangoni.forge.report.outward.PicturesSection;
@@ -71,7 +72,8 @@ public final class ProjectReport {
                 + MarketingSection.render(paths, state.getId())
                 + ReviewSection.render(review)
                 + DecisionSection.render(paths, state, review)
-                + WHERE_TO_LOOK;
+                + WHERE_TO_LOOK
+                + ReportGuide.render();
         try {
             Files.writeString(paths.reportFile(), Html.page(state.getTitle() + " — Forge", body), StandardCharsets.UTF_8);
         } catch (IOException e) {
