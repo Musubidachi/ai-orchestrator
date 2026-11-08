@@ -34,6 +34,15 @@ reads that order back from `--od` and gives each line a new place, so opening a 
 page's own lines, hidden or shown by a class. It makes the tiles the table's only counts on a wide
 screen too, and hides the line of counts and the headings' numbers. A phone keeps its ranked list.
 
+`pause.js` makes Stop ask why, and the project is then held until Resume Now; one that is not
+running can be paused from its panel the same way. The endpoints are `PauseRoutes`
+(`/api/jobs/pause`, and `/api/pauses` for the reasons); what a pause does is `jobs.pause`. A held
+project's row and panel say so, with how long and why. It gives the page one name, `ForgePause`, and
+fires `forge:pauses` when the reasons change: the waiting card, the next 24 hours and the family
+rows ask it, so a project you paused is never also said to be waiting. Without it they show what
+they showed before. Stop on a finished project ends a button's job, a deploy say, and stays the
+page's own.
+
 ## Must not be traded away
 
 - **Only the editor itself may act.** `RequestGuard` checks Host (against DNS rebinding), Origin and
@@ -49,5 +58,6 @@ screen too, and hides the line of counts and the headings' numbers. A phone keep
 ## Tests
 
 `UiServerTest`, `SpecApiTest`, `SuggesterTest`, `CrossSiteTest`, `UiScriptTest`, `ExtrasTest`,
-`QueryTest`, and the Playwright suite in `ui-tests/` against fixture roots (`status.spec.js` for the
-waiting card, `nextday.spec.js` for the next 24 hours, `families.spec.js` for one row per family).
+`QueryTest`, `PauseRoutesTest`, and the Playwright suite in `ui-tests/` against fixture roots
+(`status.spec.js` for the waiting card, `nextday.spec.js` for the next 24 hours, `families.spec.js`
+for one row per family, `pause.spec.js` for Stop with a reason).

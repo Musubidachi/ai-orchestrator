@@ -10,11 +10,14 @@
  * An extra (see ui/CLAUDE.md): its tag in index.html is all that attaches it. It hears forge:jobs
  * and forge:quota, takes what each project waits for and when from wait.js, calls the page's helpers
  * only when one fires, and changes nothing of the page's but a class on each waiting project's
- * panel, set only once that project's card is filled.
+ * panel, set only once that project's card is filled. A project you paused is pause.js's to show.
  */
 (() => {
 
 const MINUTE = 60 * 1000;
+
+/* Paused by you (pause.js): said to be that, and not to be waiting, whatever else it waits for. */
+const held = j => !!(window.ForgePause && window.ForgePause.of(j));
 
 const icon = (path, weight, size) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" `
   + `fill="none" stroke="currentColor" stroke-width="${weight}" stroke-linecap="round" `
@@ -277,6 +280,7 @@ class WaitingStatus {
     document.head.append(style);
     document.addEventListener("forge:jobs", e => { this.jobs = e.detail; this.render(); });
     document.addEventListener("forge:quota", e => { this.closed = e.detail; this.render(); });
+    document.addEventListener("forge:pauses", () => this.render());
   }
 
   /* Waits for both: a time said before the vendors are known could be the wrong one. */
@@ -292,7 +296,7 @@ class WaitingStatus {
     const panel = document.getElementById("detail-" + j.id);
     if (!panel) return;
     let shown = false;
-    if (kindOf(groupOf(j).key) === "waiting") {
+    if (kindOf(groupOf(j).key) === "waiting" && !held(j)) {
       try {
         new Card(panel).show(new ForgeWait(j, this.closed, now), queue);
         shown = true;

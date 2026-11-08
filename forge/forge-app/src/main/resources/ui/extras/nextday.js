@@ -8,11 +8,15 @@
  * card gives, and calls the page's helpers only when one fires. It changes nothing of the page's but
  * a class on #quotaBar, set only once the strip is filled, which hides the vendor banners there.
  * Their Try Now buttons are under the strip's vendor messages, and press the page's own retryVendor.
+ * A project you paused (pause.js) starts at no time, so the strip leaves it out.
  */
 (() => {
 
 const MINUTE = 60 * 1000;
 const SPAN = 24 * 60 * MINUTE;
+
+/* Paused by you: nothing starts it until you press Resume Now, whatever else it waits for. */
+const held = j => !!(window.ForgePause && window.ForgePause.of(j));
 
 const CSS = `
   #quotaBar.wnd > .quota:has(.retry){display:none}
@@ -73,7 +77,7 @@ class Day {
     this.queueOn = queueOn;
     this.now = now;
     // Drawn only with a time inside the 24 hours: one waiting its turn has none.
-    this.timed = jobs.filter(j => kindOf(groupOf(j).key) === "waiting")
+    this.timed = jobs.filter(j => kindOf(groupOf(j).key) === "waiting" && !held(j))
       .map(j => new ForgeWait(j, closed, now))
       .filter(w => w.until && w.until - now < SPAN)
       .sort((a, b) => a.until - b.until);
@@ -237,6 +241,7 @@ class Strip {
     document.head.append(style);
     document.addEventListener("forge:jobs", e => { this.jobs = e.detail; this.render(); });
     document.addEventListener("forge:quota", e => { this.closed = e.detail; this.render(); });
+    document.addEventListener("forge:pauses", () => this.render());
   }
 
   /* The banners are hidden only once the strip is filled, so a failure here leaves them showing. */

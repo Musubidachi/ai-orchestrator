@@ -20,6 +20,7 @@ are not synchronized themselves.
 | one feature's ruling from the dashboard (starts nothing) | `Submissions.ruleFeature` |
 | the quick review's cards | `ReviewDecks` (reads only; submits through `Submissions`) |
 | stopping without killing a turn | `Shutdown` |
+| stop with a reason: holding a project until Resume Now, and why | `Pausing`, `PauseNote` (`jobs.pause`) |
 | the dashboard's rows | `StatusBoard` |
 | unattended `forge run` | `Scheduler` |
 
@@ -38,6 +39,10 @@ are not synchronized themselves.
   REVIEWING and SECURITY_CHECK write nothing so `turnInFlight` never covers them, and a building
   phase counts before the flag is written. Draining also stops each orchestrator between steps,
   so no new turn starts in the gap the shutdown is waiting for.
+- **A pause holds until a person presses Resume Now.** It is a cool-off set to
+  `Pausing.UNTIL_RESUMED`, which every runner already waits out and only an explicit Start clears.
+  The stop and the hold happen under the lock, so the slot the stop frees cannot go back to the
+  project before it is held. Start lifts the pause even when the start itself has to wait.
 - **A submission is saved before anything can refuse it**, and features alone never accept.
 - **Nothing runs for a project whose repository is not on this machine**: shelved on GitHub, or
   begun with its repository gone (`Eligibility.notHere`). Start, the scheduler and every reopening
@@ -48,4 +53,4 @@ are not synchronized themselves.
 
 `JobRunnerTest` (82 tests through the facade, stub agents, temporary roots; its projects start
 with a plan already on disk, so they test job control rather than the planning turn),
-`EligibilityTest`, `AssignmentTest`, `PruneTest`, `JobRunnerLockTest`.
+`EligibilityTest`, `AssignmentTest`, `PruneTest`, `JobRunnerLockTest`, `PauseTest`.

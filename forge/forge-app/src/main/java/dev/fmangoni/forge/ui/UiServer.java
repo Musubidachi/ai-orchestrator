@@ -10,6 +10,7 @@ import dev.fmangoni.forge.ui.http.Http;
 import dev.fmangoni.forge.ui.http.RequestGuard;
 import dev.fmangoni.forge.ui.route.ExtraRoutes;
 import dev.fmangoni.forge.ui.route.JobRoutes;
+import dev.fmangoni.forge.ui.route.PauseRoutes;
 import dev.fmangoni.forge.ui.route.PolishRoutes;
 import dev.fmangoni.forge.ui.route.ReviewRoutes;
 import dev.fmangoni.forge.ui.route.SpecRoutes;
@@ -72,6 +73,7 @@ public final class UiServer {
             new ReviewRoutes(jobs).register(endpoints);
             new PolishRoutes(jobs).register(endpoints);
             new ExtraRoutes().register(endpoints);
+            new PauseRoutes(jobs).register(endpoints);
             // Usage is recorded beside the ledger the CLIs write to, the same way the model tiers are found.
             new SystemRoutes(jobs, suggester != null, quota,
                     new UsageLedger(wishlistDir.getParent().resolve("usage.json"))).register(endpoints);

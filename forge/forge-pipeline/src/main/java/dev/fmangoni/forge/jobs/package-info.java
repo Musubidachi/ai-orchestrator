@@ -6,11 +6,11 @@
  *
  * <p><b>Not here:</b> Everything it delegates to: the machinery jobs share ({@code jobs.work}),
  * what may start and the launch ({@code jobs.queue}), what a button starts ({@code jobs.button}),
- * what a submission sets off ({@code jobs.submit}), the unattended run ({@code jobs.unattended})
- * and stopping safely ({@code jobs.stop}).
+ * what a submission sets off ({@code jobs.submit}), the unattended run ({@code jobs.unattended}),
+ * stopping safely ({@code jobs.stop}) and pausing with a reason ({@code jobs.pause}).
  *
  * <p><b>Start with:</b> {@code JobRunner}.
  *
- * <p>Depends on: agent, agent.ledger, deploy.github, jobs.button, jobs.polish, jobs.publish, jobs.queue, jobs.stop, jobs.submit, jobs.work, project, report.deck, review.decision.model, spec, spec.model, state, status.
+ * <p>Depends on: agent, agent.ledger, deploy.github, jobs.button, jobs.pause, jobs.polish, jobs.publish, jobs.queue, jobs.stop, jobs.submit, jobs.work, project, report.deck, review.decision.model, spec, spec.model, state, status.
  */
 package dev.fmangoni.forge.jobs;

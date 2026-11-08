@@ -9,6 +9,8 @@ import dev.fmangoni.forge.jobs.button.Narration;
 import dev.fmangoni.forge.jobs.button.Play;
 import dev.fmangoni.forge.jobs.button.SecurityRescan;
 import dev.fmangoni.forge.jobs.button.WalkthroughJob;
+import dev.fmangoni.forge.jobs.pause.PauseNote;
+import dev.fmangoni.forge.jobs.pause.Pausing;
 import dev.fmangoni.forge.jobs.publish.PublishJob;
 import dev.fmangoni.forge.jobs.publish.ShelfJob;
 import dev.fmangoni.forge.jobs.polish.Polish;
@@ -37,6 +39,7 @@ import dev.fmangoni.forge.state.RunStore;
 import dev.fmangoni.forge.status.JobStatus;
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -61,6 +64,7 @@ import java.util.function.Supplier;
  *   <li>{@link ReviewDecks} — the same review, dealt as cards for the quick review page;</li>
  *   <li>{@link Attachments} — screenshots put into a note (starts nothing, so not under the lock);</li>
  *   <li>{@link Shutdown} — stopping without destroying a turn;</li>
+ *   <li>{@link Pausing} — stopping with a reason, and holding a project until Resume Now;</li>
  *   <li>{@link StatusBoard} — the dashboard's rows.</li>
  * </ul>
  */
@@ -86,6 +90,7 @@ public final class JobRunner {
     private final Submissions submissions;
     private final ReviewDecks decks;
     private final Attachments attachments;
+    private final Pausing pausing;
 
     /**
      * Wakes periodically to pick work up again.
@@ -124,6 +129,7 @@ public final class JobRunner {
         this.submissions = new Submissions(projects, pool, rules, pipeline);
         this.decks = new ReviewDecks(projects, home.runs());
         this.attachments = new Attachments(projects);
+        this.pausing = new Pausing(projects, pool);
         ticker.scheduleWithFixedDelay(this::tick, 60, 60, TimeUnit.SECONDS);
     }
 
@@ -237,8 +243,9 @@ public final class JobRunner {
         fillCapacity();
     }
 
-    /** See {@link PipelineJobs#start}. */
+    /** See {@link PipelineJobs#start}. On a paused project it lifts the pause first: {@link Pausing#lift}. */
     public synchronized String start(String id) {
+        pausing.lift(id);
         return pipeline.start(id);
     }
 
@@ -398,6 +405,21 @@ public final class JobRunner {
     /** See {@link JobPool#stop}. */
     public String stop(String id) {
         return pool.stop(id);
+    }
+
+    /**
+     * See {@link Pausing#pause}.
+     *
+     * <p>Under the lock, and kept while the project it stops winds down: the slot that frees must
+     * not go back to it before it is held.
+     */
+    public synchronized String pause(String id, String reason) {
+        return here(id, () -> pausing.pause(id, reason));
+    }
+
+    /** See {@link Pausing#notes}. Reads only, so it takes no lock. */
+    public Map<String, PauseNote> pauses() {
+        return pausing.notes();
     }
 
     public boolean isRunning(String id) {

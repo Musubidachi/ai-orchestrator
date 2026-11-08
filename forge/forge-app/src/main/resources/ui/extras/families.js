@@ -15,12 +15,19 @@
  * page's own it changes only the order of the lines, classes and data attributes, and it adds two
  * short lines to the tiles: a version's line is hidden while its family is closed, never removed.
  * A phone keeps its ranked list, with no family rows. Projects with no other versions keep their
- * own lines.
+ * own lines. A version you paused is Paused on the row and in the chain, as pause.js says on its line.
  */
 (() => {
 
 /* More accepted versions than this are one link of the chain, and so are more of any other kind. */
 const MANY = 4;
+
+/* What pause.js shows for a version you paused, or null; always null when pause.js is not attached. */
+const pauseOf = j => (window.ForgePause ? window.ForgePause.of(j) : null);
+
+/* The page's word for a version, but Paused for one you paused. */
+const PAUSED = {text: "Paused", tone: "accent"};
+const stageFor = j => (pauseOf(j) ? PAUSED : stageOf(j));
 
 /* The phone's filters, which the tiles are on a wide screen too. */
 const KINDS = ["you", "waiting", "working", "accepted", "away"];
@@ -168,7 +175,7 @@ class Chain {
   }
 
   version(j) {
-    const stage = stageOf(j);
+    const stage = stageFor(j);
     const word = stage.text === "Waiting" && new ForgeWait(j, this.closed, this.now).kind === "review"
       ? "review" : WORDS[stage.text] || "";
     return this.link("t-" + stage.tone, MARKS[stage.text] || "", word ? `${j.id} ${word}` : j.id, j);
@@ -194,6 +201,8 @@ class Now {
     const j = this.j;
     if (j.running) return [j.activity || capital(j.phaseLabel), ""];
     if (notHere(j)) return [j.shelvedBranch ? "Bring it back to work on it" : "", ""];
+    const paused = pauseOf(j);
+    if (paused) return ["Paused by you", paused.reason ? `“${paused.reason}”` : ""];
     if (needsYou(j)) return ["Your decision", ""];
     if (j.phase === "ACCEPTED") return [`All ${this.family.members.length} accepted`, ""];
     if (j.queuePosition > 0 && !j.blockedReason) {
@@ -239,7 +248,7 @@ class Row {
 
   fill(family, closed, now) {
     const q = sel => this.el.querySelector(sel);
-    const stage = stageOf(family.lead);
+    const stage = stageFor(family.lead);
     const [what, when] = new Now(family, closed, now).lines();
     const tokens = family.total("tokensSpent");
     q(".ttl").textContent = family.title;
@@ -382,6 +391,7 @@ class Families {
       this.closed = e.detail || {};
       this.safely(() => this.fill());
     });
+    document.addEventListener("forge:pauses", () => this.safely(() => this.fill()));
   }
 
   safely(work) {
