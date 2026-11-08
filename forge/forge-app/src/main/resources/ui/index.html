@@ -593,8 +593,11 @@
 
 <script src="/attach.js"></script>
 <!-- Extras: each adds one thing to this page, is attached here and nowhere else, and hears what the
-     page loaded from the forge:jobs and forge:quota events. See ui/CLAUDE.md. -->
+     page loaded from the forge:jobs and forge:quota events. wait.js adds nothing itself: it is the
+     time a waiting project waits for, which the card and the strip share. See ui/CLAUDE.md. -->
+<script src="/extras/wait.js"></script>
 <script src="/extras/status.js"></script>
+<script src="/extras/nextday.js"></script>
 <script>
 const TEMPLATE = `## Goal
 

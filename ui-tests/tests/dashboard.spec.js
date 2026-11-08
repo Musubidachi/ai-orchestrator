@@ -1522,7 +1522,7 @@ test("a new idea from the idea generator fills the description, and a reroll rep
   expect(asked).toEqual([{ category: "", maxEffort: "" }, { category: "cli tool", maxEffort: "3" }]);
 });
 
-test("a vendor held for quota can be tried again from the bar that says so", async ({ page }) => {
+test("a vendor held for quota can be tried again from the next 24 hours", async ({ page }) => {
   // Codex was reset at the vendor and held here for three more days: nothing calls a held vendor,
   // and only a completed call lets a hold go.
   let held = true;
@@ -1538,13 +1538,18 @@ test("a vendor held for quota can be tried again from the bar that says so", asy
   });
 
   await page.reload();
-  const bar = page.locator("#quotaBar");
-  await expect(bar).toContainText("is out of quota");
-  await bar.locator(".retry").click();
+  // The strip above the table says so, and keeps the banner's Try Now under the vendor's message.
+  const strip = page.locator(".wnd24");
+  await expect(strip.locator(".wnsay")).toHaveText("Codex is out of quota.");
+  await strip.locator(".wnmsgs summary").click();
+  await strip.locator('.wnretry[data-vendor="CODEX"]').click();
 
   await expect.poll(() => retried).toBe("CODEX");
+  const bar = page.locator("#quotaBar");
   await expect(bar).toContainText("CODEX is no longer held");
   await expect(bar.locator(".retry")).toHaveCount(0);
+  // Every vendor open and nothing due: the strip goes, and what Try Now said stays a moment.
+  await expect(strip).toBeHidden();
 });
 
 test("a project with a run file can be played from its card, and one without is not offered it", async ({ page }) => {

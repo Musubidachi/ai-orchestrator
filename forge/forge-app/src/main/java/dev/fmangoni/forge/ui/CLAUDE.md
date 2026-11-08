@@ -23,6 +23,11 @@ one out, delete its file and its tag. `ExtrasTest` checks that every extra has a
 parses, and is wrapped: one that was not, and reused a name the page declares, would stop the
 page's own script and leave the dashboard empty.
 
+`wait.js` shows nothing. It works out what a waiting project waits for and the one time that
+counts, and gives the page one name, `ForgeWait`, which the waiting card (`status.js`) and the next
+24 hours (`nextday.js`) both use, so the two never give different times. Without it each of them
+fails its own check and leaves the page as it was.
+
 ## Must not be traded away
 
 - **Only the editor itself may act.** `RequestGuard` checks Host (against DNS rebinding), Origin and
@@ -39,4 +44,4 @@ page's own script and leave the dashboard empty.
 
 `UiServerTest`, `SpecApiTest`, `SuggesterTest`, `CrossSiteTest`, `UiScriptTest`, `ExtrasTest`,
 `QueryTest`, and the Playwright suite in `ui-tests/` against fixture roots (`status.spec.js` for the
-waiting card).
+waiting card, `nextday.spec.js` for the next 24 hours).

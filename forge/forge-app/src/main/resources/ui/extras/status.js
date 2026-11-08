@@ -8,13 +8,12 @@
  * hides is still said, once, under "Why it is waiting".
  *
  * An extra (see ui/CLAUDE.md): its tag in index.html is all that attaches it. It hears forge:jobs
- * and forge:quota, calls the page's helpers only when one fires, and changes nothing of the page's
- * but a class on each waiting project's panel, set only once that project's card is filled.
+ * and forge:quota, takes what each project waits for and when from wait.js, calls the page's helpers
+ * only when one fires, and changes nothing of the page's but a class on each waiting project's
+ * panel, set only once that project's card is filled.
  */
 (() => {
 
-const TURN = /^waiting for (\S+) to be (?:accepted first|approved)/;
-const NAMED = /^([A-Z]+) (?:reviews this|is out of quota|is unavailable)/;
 const MINUTE = 60 * 1000;
 
 const icon = (path, weight, size) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" `
@@ -68,74 +67,6 @@ const CSS = `
   .w-wait .wsub{color:var(--soft)}
   .w-fail .wmark{background:var(--red-bg);color:var(--red-fg)}
   .w-todo .wmark{border:2px solid #4a4a47;background:var(--card);color:var(--soft)}`;
-
-/* What one waiting project waits for, and the one time that counts. Reads no page and no DOM. */
-class Wait {
-  constructor(j, closed, now) {
-    this.j = j;
-    this.closed = closed;
-    this.now = now;
-    const turn = TURN.exec(j.blockedReason || "");
-    this.earlier = turn ? turn[1] : "";
-    this.kind = turn ? "turn"
-      : (j.lastError || "").startsWith("waiting to be reviewed") ? "review"
-      : j.phase === "SUSPENDED" || NAMED.test(j.blockedReason || "") ? "quota" : "other";
-    this.vendor = this.kind === "review" ? this.reviewer()
-      : this.kind === "quota" ? this.named(j.blockedReason) || j.assignedTo || "" : "";
-    this.window = this.backAt(this.vendor);
-    this.until = this.timeThatCounts();
-  }
-
-  /* The reviewer it waits for: the one the server names, else whichever is back soonest. */
-  reviewer() {
-    const soonest = this.reviewers()[0];
-    return this.named(this.j.reviewBlockedReason) || (soonest ? soonest.vendor : "")
-      || this.named(this.j.blockedReason);
-  }
-
-  named(reason) {
-    const found = NAMED.exec(reason || "");
-    return found ? found[1] : "";
-  }
-
-  /* The closed vendors that could review it, soonest back first. No builder reviews its own work. */
-  reviewers() {
-    return Object.values(this.closed)
-      .filter(c => c.vendor !== this.j.assignedTo && c.until > this.now)
-      .sort((a, b) => a.until - b.until);
-  }
-
-  /* When a closed vendor is back; null for one that is open. */
-  backAt(vendor) {
-    const c = vendor ? this.closed[vendor] : null;
-    return c && c.until > this.now ? c.until : null;
-  }
-
-  /* A review may start as soon as any reviewer is free, whatever the project stored. Anything else
-     needs both its stored retry time and its vendor's window behind it. */
-  timeThatCounts() {
-    if (this.kind === "review") return this.window;
-    if (this.kind === "turn") return null;
-    const times = [this.stored(), this.window].filter(Boolean);
-    return times.length ? new Date(Math.max(...times)) : null;
-  }
-
-  /* The retry time the project stored when it stopped, while that is still ahead. */
-  stored() {
-    const at = this.j.retryAfter ? new Date(this.j.retryAfter) : null;
-    return at && at > this.now ? at : null;
-  }
-
-  /* Whether the time that counts is the vendor's own, rather than one the project stored. */
-  vendorsTime() {
-    return !!this.window && !!this.until && this.window.getTime() === this.until.getTime();
-  }
-
-  /* The server's own sentence, said instead whenever the ledger gives no time. */
-  serverSays() {
-    return this.kind === "review" ? this.j.reviewBlockedReason || this.j.blockedReason : this.j.blockedReason;
-  }
-}
 
 /* The card's sentences. Only the say() sentence is HTML, and every value put into it is escaped. */
 class Words {
@@ -270,7 +201,7 @@ class StepList {
   sub(s, here) {
     const j = this.w.j;
     if (s.name === "Gate" && s.tone === "pass" && j.gateSeconds) {
-      return `passed, the last run took ${duration(j.gateSeconds)}`;
+      return `the last run took ${duration(j.gateSeconds)}`;
     }
     if (s.name === "Review" && here && this.w.kind === "review") return this.review();
     if (s.name === "Accepted" && s.tone !== "pass") {
@@ -363,7 +294,7 @@ class WaitingStatus {
     let shown = false;
     if (kindOf(groupOf(j).key) === "waiting") {
       try {
-        new Card(panel).show(new Wait(j, this.closed, now), queue);
+        new Card(panel).show(new ForgeWait(j, this.closed, now), queue);
         shown = true;
       } catch (e) {
         console.error("extras/status.js", j.id, e);
