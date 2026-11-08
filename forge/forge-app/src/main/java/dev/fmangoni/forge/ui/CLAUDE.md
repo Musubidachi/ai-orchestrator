@@ -43,6 +43,13 @@ rows ask it, so a project you paused is never also said to be waiting. Without i
 they showed before. Stop on a finished project ends a button's job, a deploy say, and stays the
 page's own.
 
+`gate.js` puts the last gate under the open project's stats: quick or full, passed or failed, and
+what it did with each command (ran, failed, not reached, waits for the full gate, not run yet),
+each drawn by its usual time against the line a quick gate stops at. It reads `/api/gate?id=`
+(`GateRoutes`; what it reads is `status.gate`) for the open project only, again when the poll's
+phase, sessions or gate time for it change. While its section shows, it hides the "last gate" stat,
+which adds every command's latest time whether or not the last gate ran it.
+
 ## Must not be traded away
 
 - **Only the editor itself may act.** `RequestGuard` checks Host (against DNS rebinding), Origin and
@@ -58,6 +65,7 @@ page's own.
 ## Tests
 
 `UiServerTest`, `SpecApiTest`, `SuggesterTest`, `CrossSiteTest`, `UiScriptTest`, `ExtrasTest`,
-`QueryTest`, `PauseRoutesTest`, and the Playwright suite in `ui-tests/` against fixture roots
-(`status.spec.js` for the waiting card, `nextday.spec.js` for the next 24 hours, `families.spec.js`
-for one row per family, `pause.spec.js` for Stop with a reason).
+`QueryTest`, `PauseRoutesTest`, `GateRoutesTest`, and the Playwright suite in `ui-tests/` against
+fixture roots (`status.spec.js` for the waiting card, `nextday.spec.js` for the next 24 hours,
+`families.spec.js` for one row per family, `pause.spec.js` for Stop with a reason, `gate.spec.js`
+for the last gate).
