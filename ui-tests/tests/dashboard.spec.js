@@ -65,8 +65,8 @@ test("the table groups projects by what they wait on, with the chosen one beside
   await expect(page.locator("#row-001")).toHaveAttribute("aria-current", "true");
   await expect(card(page, "001").locator(".move-head")).toHaveText("Next up.");
 
-  // The phone's filters belong to the phone.
-  await expect(page.locator("#tiles")).toBeHidden();
+  // The tiles are the table's only counts, on a wide screen as on a phone (extras/families.js).
+  await expect(page.locator("#tiles")).toBeVisible();
 });
 
 test("a family's versions waiting their turn are one group, the next shown and the rest folded", async ({ page }) => {
@@ -85,6 +85,9 @@ test("a family's versions waiting their turn are one group, the next shown and t
   });
   await page.reload();
   const row = (id) => page.locator(`[id="row-${id}"]`);
+  // The versions sit under their family's one row until it is opened (extras/families.js).
+  await expect(row("001.1")).toBeHidden();
+  await page.locator('.fmrow[data-family="001"]').click();
   await expect(row("001.1")).toBeVisible();
 
   const heads = await headings(page);
@@ -163,12 +166,14 @@ test("the down arrow moves the card, not just the number", async ({ page }) => {
   await expect(card(page, "001").locator(".id")).toContainText("rank 2");
 });
 
-test("the header controls do not overlap the summary", async ({ page }) => {
-  const summary = await page.locator("#jobsSummary").boundingBox();
+test("the header controls do not overlap the counts", async ({ page }) => {
+  // Negative margins once pulled the bar up over the line of counts whenever the note beside it was
+  // empty. The tiles are the counts now (extras/families.js), and come after the bar.
+  await expect(page.locator("#tiles")).toBeVisible();
   const bar = await page.locator(".jobsbar").boundingBox();
+  const tiles = await page.locator("#tiles").boundingBox();
 
-  // Negative margins once pulled the bar up over the text whenever the note beside it was empty.
-  expect(bar.y).toBeGreaterThanOrEqual(summary.y + summary.height - 1);
+  expect(tiles.y).toBeGreaterThanOrEqual(bar.y + bar.height - 1);
 });
 
 test("the report opens inside the card and closes again", async ({ page }) => {

@@ -28,6 +28,12 @@ counts, and gives the page one name, `ForgeWait`, which the waiting card (`statu
 24 hours (`nextday.js`) both use, so the two never give different times. Without it each of them
 fails its own check and leaves the page as it was.
 
+`families.js` puts one row in the table for each project that has versions, where its first version
+stood, and draws the versions as a chain. The page still places every line on each poll; the extra
+reads that order back from `--od` and gives each line a new place, so opening a family is the
+page's own lines, hidden or shown by a class. It makes the tiles the table's only counts on a wide
+screen too, and hides the line of counts and the headings' numbers. A phone keeps its ranked list.
+
 ## Must not be traded away
 
 - **Only the editor itself may act.** `RequestGuard` checks Host (against DNS rebinding), Origin and
@@ -44,4 +50,4 @@ fails its own check and leaves the page as it was.
 
 `UiServerTest`, `SpecApiTest`, `SuggesterTest`, `CrossSiteTest`, `UiScriptTest`, `ExtrasTest`,
 `QueryTest`, and the Playwright suite in `ui-tests/` against fixture roots (`status.spec.js` for the
-waiting card, `nextday.spec.js` for the next 24 hours).
+waiting card, `nextday.spec.js` for the next 24 hours, `families.spec.js` for one row per family).
