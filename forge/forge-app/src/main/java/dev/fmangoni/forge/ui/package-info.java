@@ -10,6 +10,6 @@
  *
  * <p><b>Start with:</b> {@code UiServer.start}, {@code RequestGuard}.
  *
- * <p>Depends on: agent.ledger, jobs, report.shell, ui.editor, ui.http, ui.route, ui.suggest.
+ * <p>Depends on: agent.ledger, jobs, report.shell, ui.editor, ui.http, ui.pictures, ui.route, ui.suggest.
  */
 package dev.fmangoni.forge.ui;

@@ -1,0 +1,384 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Forge — pictures</title>
+<style>
+  :root {
+    --bg:#fbfbfa; --fg:#1a1a19; --muted:#6b6b68; --line:#e4e4e1; --card:#fff;
+    --accent:#2563eb; --pass:#1a7f4b; --fail:#b3261e; --wait:#9a6700;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg:#161615; --fg:#ededeb; --muted:#9a9a96; --line:#2e2e2c; --card:#1e1e1d;
+      --accent:#7aa2f7; --pass:#4ade80; --fail:#f87171; --wait:#e3b341;
+    }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;display:flex;flex-direction:column;background:var(--bg);color:var(--fg);
+       font:16px/1.55 ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+  a{color:var(--accent)}
+  .muted{color:var(--muted)}
+  header{display:flex;align-items:center;gap:1rem;padding:.8rem 1.25rem;border-bottom:1px solid var(--line)}
+  header .proj{flex:1;font-weight:600;min-width:0}
+  header .proj .muted{font-weight:400;margin-left:.5rem;font-size:.85rem}
+  .progress{height:5px;background:var(--line)}
+  .progress .bar{height:100%;width:0;background:var(--accent);transition:width .25s ease}
+  main{flex:1;display:flex;justify-content:center;padding:2rem 1.25rem}
+  .card{width:100%;max-width:60rem;background:var(--card);border:1px solid var(--line);border-radius:.9rem;
+        padding:1.5rem 1.75rem;align-self:flex-start;animation:deal .22s ease-out}
+  @keyframes deal{from{opacity:0;transform:translateY(10px) scale(.985)}to{opacity:1;transform:none}}
+  @media (prefers-reduced-motion: reduce){.card{animation:none}.progress .bar{transition:none}}
+  @media (max-width: 600px){main{padding:1rem}.card{padding:1.1rem 1rem}}
+  .meta{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;font-size:.8rem;color:var(--muted);margin-bottom:.7rem}
+  .tag{border-radius:1rem;padding:.1rem .65rem;font-weight:600;font-size:.75rem;text-transform:uppercase;
+       letter-spacing:.04em;border:1px solid currentColor}
+  .tag.ok{color:var(--pass)} .tag.look{color:var(--wait)} .tag.problem{color:var(--fail)}
+  h1{font-size:1.45rem;line-height:1.3;margin:0 0 .8rem;font-weight:650}
+  .back{color:var(--wait);font-size:.9rem;margin:.2rem 0 .6rem}
+  .sheet{display:block;margin:.4rem 0 .7rem;border:1px solid var(--line);border-radius:.5rem;overflow:hidden;background:#000}
+  .sheet img{display:block;width:100%;height:auto;max-height:72vh;object-fit:contain}
+  .nosheet{padding:1.6rem;text-align:center;border:1px dashed var(--line);border-radius:.5rem;color:var(--muted);margin:.4rem 0 .7rem}
+  pre.lines{white-space:pre-wrap;word-break:break-word;font:12.5px/1.5 ui-monospace,Consolas,monospace;background:var(--bg);
+            border:1px solid var(--line);border-radius:.45rem;padding:.6rem .75rem;margin:.4rem 0 .8rem;max-height:15rem;overflow:auto}
+  details{margin:.6rem 0 1rem;font-size:.9rem}
+  details summary{cursor:pointer;color:var(--muted)}
+  details pre{white-space:pre-wrap;font:inherit;font-size:.88rem;margin:.5rem 0 .4rem;color:var(--fg)}
+  input[type=text]{width:100%;padding:.6rem .75rem;border:1px solid var(--line);border-radius:.45rem;
+                   background:var(--bg);color:var(--fg);font:inherit;font-size:.95rem}
+  input.wanted{border-color:var(--fail)}
+  .choices{display:flex;gap:.8rem;margin-top:1.1rem}
+  .choices button{flex:1;padding:1rem .8rem;font:inherit;font-size:1.05rem;font-weight:650;border-radius:.6rem;
+                  border:2px solid var(--line);background:var(--card);color:var(--fg);cursor:pointer}
+  .choices button:hover{border-color:var(--fg)}
+  .choices .redo{color:var(--wait)} .choices .redo.on{border-color:var(--wait);background:color-mix(in srgb,var(--wait) 12%,var(--card))}
+  .choices .keep{color:var(--pass)} .choices .keep.on{border-color:var(--pass);background:color-mix(in srgb,var(--pass) 12%,var(--card))}
+  .later{margin-top:.7rem;background:none;border:none;color:var(--muted);font:inherit;font-size:.85rem;cursor:pointer;
+         text-decoration:underline;padding:0}
+  ul.summary{margin:.4rem 0 1rem;padding-left:1.1rem;font-size:.95rem}
+  ul.summary li{margin:.25rem 0}
+  ul.batches{list-style:none;margin:.6rem 0 0;padding:0}
+  ul.batches li{padding:.6rem 0;border-top:1px solid var(--line)}
+  .warn{border-left:3px solid var(--wait);padding:.5rem .8rem;margin:.8rem 0;font-size:.9rem;background:var(--bg)}
+  button.big{width:100%;padding:1rem;font:inherit;font-size:1.1rem;font-weight:700;border-radius:.6rem;border:none;
+             background:var(--accent);color:#fff;cursor:pointer;margin-top:.6rem}
+  button.big:disabled{opacity:.5;cursor:default}
+  .next{margin:1.2rem 0 0;padding:1rem 0 0;border-top:1px solid var(--line);text-align:left}
+  .next p{margin:.3rem 0}
+  .next button{font:inherit;padding:.55rem 1rem;border-radius:.5rem;border:1px solid var(--line);background:var(--card);
+               color:var(--fg);cursor:pointer;margin:.3rem .5rem .3rem 0}
+  .next button:hover{border-color:var(--accent)}
+  .next code{font-size:.82rem;word-break:break-all}
+  #result{margin-top:1rem;font-size:1rem}
+  .done{text-align:center}
+  .done .mark{font-size:3.2rem;line-height:1;margin:.3rem 0 .6rem}
+  footer{display:flex;align-items:center;gap:1rem;padding:.8rem 1.25rem;border-top:1px solid var(--line);font-size:.82rem;color:var(--muted)}
+  footer button{font:inherit;padding:.35rem .9rem;border-radius:.4rem;border:1px solid var(--line);background:var(--card);
+                color:var(--fg);cursor:pointer}
+  footer button:disabled{opacity:.4;cursor:default}
+  kbd{border:1px solid var(--line);border-radius:.3rem;padding:0 .35rem;font:inherit;font-size:.8rem;background:var(--card)}
+</style>
+</head>
+<body>
+<header>
+  <a href="/">&larr; Dashboard</a>
+  <div class="proj"><span id="title">Pictures</span><span class="muted" id="where"></span></div>
+  <a id="rules" target="_blank" hidden>What to check</a>
+</header>
+<div class="progress"><div class="bar" id="bar"></div></div>
+<main id="stage" aria-live="polite"><div class="card"><p class="muted">Dealing the review sheets…</p></div></main>
+<footer>
+  <button id="prev" disabled>Back</button>
+  <span id="keys"></span>
+</footer>
+
+<script>
+"use strict";
+
+/*
+ * A picture batch's review, one picture at a time: its review sheet, what the check printed, and
+ * two answers, keep it or draw it again. Drawing again needs a note, which Forge adds to the prompt
+ * as the one sentence saying what to fix; keeping a picture the check found a problem with needs
+ * one too, saying why it stands. Like the quick review, nothing is sent until the last card's
+ * button, and then all of it at once. Each answer names the picture it is about, so one drawn again
+ * meanwhile is refused rather than ruled on unseen.
+ */
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g,
+  c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]));
+let batchId = new URLSearchParams(location.search).get("id") || "";
+
+let batch = null;
+let steps = [];
+let at = 0;
+let sent = false;
+/* Draft -> {verdict, note, stamp, title, problem}. Absent until answered; "Decide later" removes it. */
+const rulings = {};
+
+const VERDICT = {
+  OK: ["ok", "Check passed"],
+  LOOK: ["look", "Look closely"],
+  PROBLEM: ["problem", "Check found a problem"],
+  ERROR: ["problem", "Check did not run"],
+};
+
+async function getJson(url) {
+  return fetch(url)
+    .then(async res => ({ok: res.ok, body: await res.json()}))
+    .catch(e => ({ok: false, body: {error: String(e)}}));
+}
+
+async function load() {
+  if (!batchId) {
+    const all = await getJson("/api/pictures");
+    if (!all.ok) return nothing("The editor did not answer.", all.body.error);
+    if (all.body.length !== 1) return chooseBatch(all.body);
+    batchId = all.body[0].id;
+    history.replaceState(null, "", "?id=" + encodeURIComponent(batchId));
+  }
+  const r = await getJson("/api/pictures/batch?id=" + encodeURIComponent(batchId));
+  if (!r.ok) return nothing("Nothing to review", r.body.error || "The editor did not answer.");
+  batch = r.body;
+  document.title = "Pictures — " + batch.title;
+  $("title").textContent = batch.title;
+  if (batch.rules) { $("rules").href = batch.rules; $("rules").hidden = false; }
+  if (batch.problem) return nothing("This batch cannot be read", batch.problem);
+
+  steps = [...batch.jobs.filter(j => j.state === "CHECKED").map(job => ({kind: "job", job})), {kind: "final"}];
+  if (steps.length === 1) return showEmpty();
+  show(0);
+}
+
+function nothing(heading, why) {
+  $("stage").innerHTML = `<div class="card"><h1>${esc(heading)}</h1><p class="muted">${esc(why)}</p></div>`;
+}
+
+function chooseBatch(batches) {
+  if (!batches.length) {
+    return nothing("No picture batches", "A batch is a folder under runs/ with a batch.json in it.");
+  }
+  $("stage").innerHTML = `<div class="card"><h1>Picture batches</h1><ul class="batches">${batches.map(b =>
+    `<li><a href="?id=${encodeURIComponent(b.id)}">${esc(b.title)}</a>
+       <span class="muted">— ${esc(b.counts ? b.counts.CHECKED : 0)} to review</span></li>`).join("")}</ul></div>`;
+}
+
+function show(index) {
+  at = Math.max(0, Math.min(index, steps.length - 1));
+  const step = steps[at];
+  $("bar").style.width = (steps.length > 1 ? Math.round(100 * at / (steps.length - 1)) : 100) + "%";
+  $("where").textContent = step.kind === "final" ? "" : `${at + 1} of ${steps.length - 1}`;
+  $("prev").disabled = at === 0 || sent;
+  (step.kind === "job" ? showJob : showFinal)(step);
+}
+
+function hint(html) { $("keys").innerHTML = html; }
+
+function needsReason(job) { return !job.check || job.check.verdict === "PROBLEM" || job.check.verdict === "ERROR"; }
+
+/* ------------------------------------------------------------------ one picture */
+
+function showJob(step) {
+  const j = step.job;
+  const ruled = rulings[j.draft] || {};
+  const verdict = VERDICT[j.check ? j.check.verdict : "ERROR"] || VERDICT.ERROR;
+  const again = j.drawings > 1 ? `<span>· drawn ${j.drawings} times</span>` : "";
+  const sheet = j.sheet
+    ? `<a class="sheet" href="${esc(j.sheet)}" target="_blank" title="Open full size"><img src="${esc(j.sheet)}" alt="Review sheet for ${esc(j.title)}"></a>`
+    : j.picture
+      ? `<a class="sheet" href="${esc(j.picture)}" target="_blank" title="Open full size"><img src="${esc(j.picture)}" alt="${esc(j.title)}"></a>`
+      : `<div class="nosheet">No review sheet</div>`;
+  const lines = j.check && j.check.lines.length ? `<pre class="lines">${esc(j.check.lines.join("\n"))}</pre>` : "";
+  const links = [j.picture ? `<a href="${esc(j.picture)}" target="_blank">Open the picture</a>` : "",
+                 j.check && j.check.log ? `<a href="${esc(j.check.log)}" target="_blank">Check log</a>` : ""]
+    .filter(Boolean).join(" · ");
+  const reason = needsReason(j);
+  $("stage").innerHTML = `
+    <section class="card job" data-draft="${esc(j.draft)}">
+      <div class="meta"><span>Job ${j.number} of ${j.total}</span><span class="tag ${verdict[0]}">${verdict[1]}</span>${again}</div>
+      <h1>${esc(j.title)}</h1>
+      ${j.drawings > 1 && j.note ? `<p class="back">Drawn again after you said: “${esc(j.note)}”</p>` : ""}
+      ${sheet}
+      ${lines}
+      <details><summary>Prompt</summary><pre>${esc(j.prompt)}</pre>${links ? `<p>${links}</p>` : ""}</details>
+      <input type="text" id="note" value="${esc(ruled.note || "")}"
+             placeholder="${reason ? "What to fix, to draw it again; why it stands, to keep it" : "What to fix (needed to draw it again)"}">
+      <div class="choices">
+        <button class="redo${ruled.verdict === "redo" ? " on" : ""}" data-v="redo">&larr; Draw again</button>
+        <button class="keep${ruled.verdict === "keep" ? " on" : ""}" data-v="keep">Keep &rarr;</button>
+      </div>
+      <button class="later" data-v="">Decide later</button>
+    </section>`;
+  $("stage").querySelectorAll("[data-v]").forEach(b => {
+    b.onclick = () => {
+      const note = $("note").value.trim();
+      const v = b.dataset.v;
+      if (!v) { delete rulings[j.draft]; show(at + 1); return; }
+      // A redraw with nothing said would be the same prompt again, and the same picture.
+      if (v === "redo" && !note) return want("Say what to fix, then press Draw again");
+      if (v === "keep" && reason && !note) return want("The check found a problem: say why it stands, then press Keep");
+      rulings[j.draft] = {verdict: v, note, stamp: j.stamp, title: j.title, problem: reason};
+      show(at + 1);
+    };
+  });
+  hint("<kbd>&larr;</kbd> draw again &nbsp; <kbd>&rarr;</kbd> keep &nbsp; <kbd>&darr;</kbd> later &nbsp; <kbd>&uarr;</kbd> back");
+}
+
+function want(placeholder) {
+  $("note").classList.add("wanted");
+  $("note").placeholder = placeholder;
+  $("note").focus();
+}
+
+/* ------------------------------------------------------------------ the whole sitting, and sending it */
+
+function showFinal() {
+  const answered = Object.entries(rulings);
+  const keeping = answered.filter(([, r]) => r.verdict === "keep");
+  const redoing = answered.filter(([, r]) => r.verdict === "redo");
+  const later = steps.length - 1 - answered.length;
+  const lines = [];
+  keeping.forEach(([, r]) => lines.push(`<li><b>Keep:</b> ${esc(r.title)}`
+    + (r.note ? ` <span class="muted">— “${esc(r.note)}”</span>` : "") + `</li>`));
+  redoing.forEach(([, r]) => lines.push(`<li><b>Draw again:</b> ${esc(r.title)} <span class="muted">— “${esc(r.note)}”</span></li>`));
+  if (later) lines.push(`<li class="muted">${later} left for later</li>`);
+  const overruled = keeping.filter(([, r]) => r.problem).length;
+  const warn = overruled
+    ? `<div class="warn">${overruled} kept although ${overruled === 1 ? "its check" : "their checks"} found a problem.</div>` : "";
+  const label = answered.length ? `Send ${answered.length} answer${answered.length === 1 ? "" : "s"}` : "Nothing to send";
+  $("stage").innerHTML = `
+    <section class="card final">
+      <div class="meta"><span>Your review of ${esc(batch.title)}</span></div>
+      <h1>${redoing.length ? "Some to draw again" : answered.length ? "Ready to send" : "Nothing answered yet"}</h1>
+      <ul class="summary">${lines.join("")}</ul>
+      ${warn}
+      <button class="big" id="submit" ${answered.length ? "" : "disabled"}>${esc(label)}</button>
+      <div id="result" class="muted"></div>
+    </section>`;
+  $("submit").onclick = submit;
+  hint("<kbd>&uarr;</kbd> back &nbsp; nothing is sent until you press the button");
+}
+
+async function submit() {
+  const button = $("submit");
+  button.disabled = true;
+  $("result").textContent = "Sending…";
+  const body = {id: batch.id, rulings: Object.entries(rulings).map(([draft, r]) =>
+    ({draft, stamp: r.stamp, verdict: r.verdict, note: r.note || ""}))};
+  const r = await fetch("/api/pictures/rule", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify(body),
+  }).then(res => res.json()).catch(e => ({error: String(e)}));
+  if (r.error) {
+    // Nothing was kept, so the answers are still here to send again.
+    $("result").textContent = "Could not send: " + r.error;
+    button.disabled = false;
+    return;
+  }
+  sent = true;
+  $("prev").disabled = true;
+  const skipped = Object.entries(r.skipped || {}).map(([draft, why]) =>
+    `<li><b>${esc((rulings[draft] || {}).title || draft)}:</b> ${esc(why)}</li>`).join("");
+  $("stage").innerHTML = `
+    <section class="card done">
+      <div class="mark">✓</div>
+      <h1>Sent</h1>
+      <p>${esc(r.result || "Done.")}</p>
+      ${skipped ? `<ul class="summary" style="text-align:left">${skipped}</ul>` : ""}
+      <div class="next" id="next"></div>
+      <p><a href="/">Back to the dashboard</a></p>
+    </section>`;
+  hint("");
+  nextSteps();
+}
+
+/* ------------------------------------------------------------------ what to do next */
+
+function showEmpty() {
+  $("bar").style.width = "100%";
+  $("stage").innerHTML = `
+    <section class="card">
+      <h1>No pictures to review</h1>
+      <p class="muted">${esc(left(batch))}</p>
+      <div class="next" id="next"></div>
+    </section>`;
+  hint("");
+  nextSteps(batch);
+}
+
+function left(b) {
+  const c = b.counts || {};
+  const parts = [];
+  if (c.TO_DRAW + c.REDRAW) parts.push(`${c.TO_DRAW + c.REDRAW} to draw`);
+  if (c.DRAWN) parts.push(`${c.DRAWN} being checked`);
+  if (c.WAITING) parts.push(`${c.WAITING} waiting for earlier pictures`);
+  if (c.KEPT) parts.push(`${c.KEPT} kept`);
+  if (c.PLACED) parts.push(`${c.PLACED} placed`);
+  return parts.length ? parts.join(", ") + "." : "Nothing is left.";
+}
+
+async function nextSteps(known) {
+  let b = known;
+  if (!b) {
+    const r = await getJson("/api/pictures/batch?id=" + encodeURIComponent(batch.id));
+    if (!r.ok) return;
+    b = r.body;
+  }
+  const toDraw = (b.counts.TO_DRAW || 0) + (b.counts.REDRAW || 0);
+  const html = [];
+  if (toDraw) {
+    html.push(`<p>${toDraw} picture${toDraw === 1 ? "" : "s"} to draw. Send ${esc(b.agent)} its prompt; it is also in <code>${esc(b.promptFile)}</code>.</p>`
+      + `<button id="copy">Copy ${esc(b.agent)}'s prompt</button>`);
+  }
+  if (b.placeable) {
+    html.push(`<p>${b.placeable} kept picture${b.placeable === 1 ? " is" : "s are"} ready to place in the project.</p>`
+      + `<button id="place">Place ${b.placeable} kept picture${b.placeable === 1 ? "" : "s"}</button> <span id="placed" class="muted"></span>`);
+  }
+  $("next").innerHTML = html.join("");
+  $("next").hidden = !html.length;
+  if ($("copy")) $("copy").onclick = () => copy(b.message, $("copy"));
+  if ($("place")) $("place").onclick = () => place(b.id, $("place"));
+}
+
+async function copy(text, button) {
+  try {
+    await navigator.clipboard.writeText(text);
+    button.textContent = "Copied";
+  } catch (e) {
+    button.textContent = "Could not copy: open the file";
+  }
+}
+
+async function place(id, button) {
+  button.disabled = true;
+  const r = await fetch("/api/pictures/place", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({id}),
+  }).then(res => res.json()).catch(e => ({error: String(e)}));
+  $("placed").textContent = r.error ? "Could not ask: " + r.error : r.result + " The dashboard shows how it went.";
+  if (r.error) button.disabled = false;
+}
+
+/* ------------------------------------------------------------------ keys */
+
+$("prev").onclick = () => show(at - 1);
+
+document.addEventListener("keydown", event => {
+  if (!batch || sent || !steps.length || event.ctrlKey || event.metaKey || event.altKey) return;
+  // Typing a note is not answering the card.
+  if (event.target instanceof HTMLInputElement) return;
+  const press = sel => { const b = $("stage").querySelector(sel); if (b) { event.preventDefault(); b.click(); } };
+  if (event.key === "ArrowUp") { if (at > 0) { event.preventDefault(); show(at - 1); } return; }
+  if (steps[at].kind !== "job") return;
+  if (event.key === "ArrowLeft") press(".redo");
+  if (event.key === "ArrowRight") press(".keep");
+  if (event.key === "ArrowDown") press(".later");
+});
+
+load();
+</script>
+</body>
+</html>

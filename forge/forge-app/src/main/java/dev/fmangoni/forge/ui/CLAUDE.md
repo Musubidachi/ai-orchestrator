@@ -4,8 +4,8 @@ The local editor and dashboard: `UiServer` on the JDK's HTTP server, bound to lo
 the page from the jar (`src/main/resources/ui/index.html`) and a small JSON API. `UiServer` only
 wires; the endpoints are in `SpecRoutes`, `JobRoutes`, `SystemRoutes`, `ReviewRoutes` and
 `PolishRoutes`, each registered through `Endpoints` as a read or a write. The quick review
-(`ui/review.html`, `/review`) and Polish (`ui/polish.html`, `/polish`) are pages of their own, served
-from the jar the same way. `ui/attach.js` (`/attach.js`) is shared by all of them and by each
+(`ui/review.html`, `/review`), Polish (`ui/polish.html`, `/polish`) and a picture batch's review
+(`ui/pictures.html`, `/pictures`) are pages of their own, served from the jar the same way. `ui/attach.js` (`/attach.js`) is shared by all of them and by each
 report's form: a box marked `data-attach="<project id>"` takes a pasted, dropped or picked image,
 posts it to `/api/jobs/attach` (`jobs.submit.Attachments`), and gets `[image: .forge-images/…]` put
 in its text. Notes stay plain text, so nothing downstream had to learn about pictures.
@@ -92,6 +92,15 @@ the card and the Now column say it. The waiting card (`status.js`) and a paused 
 keep their own. A panel takes the extra's class only once its list is filled, so a failure, like
 deleting the tag, leaves the page's own panel.
 
+`pictures.js` puts a card above the vendors' banners for each picture batch: a folder under
+`runs/` with a `batch.json`, whose pictures an agent outside Forge draws (`pictures.PictureBatches`,
+ENHANCEMENTS.md item 6). The card counts the jobs by where they stand, links to the review, copies
+the agent's prompt and asks to place the kept pictures. It reads `/api/pictures` every ten seconds
+and uses none of the page's helpers. The review is `ui/pictures.html` at `/pictures?id=`: one
+picture at a time, like the quick review, every answer sent at once to `/api/pictures/rule`. The
+endpoints are `PictureRoutes` (in `ui.pictures`), attached in `UiServer`; registering them starts
+the watcher (`pictures.work.PictureWatch`) that runs the checks and the placings asked for.
+
 ## Must not be traded away
 
 - **Only the editor itself may act.** `RequestGuard` checks Host (against DNS rebinding), Origin and
@@ -107,8 +116,9 @@ deleting the tag, leaves the page's own panel.
 ## Tests
 
 `UiServerTest`, `SpecApiTest`, `SuggesterTest`, `CrossSiteTest`, `UiScriptTest`, `ExtrasTest`,
-`QueryTest`, `PauseRoutesTest`, `GateRoutesTest`, and the Playwright suite in `ui-tests/` against
+`QueryTest`, `PauseRoutesTest`, `GateRoutesTest`, `PictureRoutesTest`, and the Playwright suite in `ui-tests/` against
 fixture roots (`status.spec.js` for the waiting card, `nextday.spec.js` for the next 24 hours,
 `families.spec.js` for the family and single-project rows, `pause.spec.js` for Stop with a reason, `gate.spec.js`
 for the last gate, `review-pictures.spec.js` for the pictures on the quick review, `restyle.spec.js`
-for the board's layout and its panel, `restyle-panel.spec.js` for what the panel shows).
+for the board's layout and its panel, `restyle-panel.spec.js` for what the panel shows,
+`pictures.spec.js` for a picture batch's card, review and placing).
