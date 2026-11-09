@@ -1,7 +1,7 @@
 # Forge — enhancements to make checking easier
 
 Proposed 2026-11-06, while building the checks for the Twin Thrones event mockups
-(`runs/008/art/tools/`). Each says what it would save you and what in Forge it builds on, and
+(`runs/008-pictures/tools/`). Each says what it would save you and what in Forge it builds on, and
 **Built:** under one that has been.
 
 ## For Forge
@@ -35,7 +35,7 @@ The same comparison over every evidence screenshot, against the copy from the la
 accepted, shown as a red overlay rather than a failure, would let you look only where something
 moved. Compare by shape rather than colour where a theme is expected to recolour: the event
 checks do this with grey correlation per 16 px cell after straightening the picture (see
-`runs/008/art/tools/lockmap.py`).
+`runs/008-pictures/tools/lockmap.py`).
 
 **Built:** `report.changes.ScreenChangesSection`, one line in `ProjectReport`. It finds the
 family's version accepted last (accepted versions keep their evidence, so nothing is copied at
@@ -79,27 +79,30 @@ Each event names its own pair (`halloween-main-game.default.txt` beside
 ### 6. Picture jobs as Forge jobs
 
 The picture work (car masters, event screens) runs outside Forge from job lists, and the image
-agent writes its own **Record**, which is the agent's claim. The job lists already have what a
-spec needs: a check command that exits non-zero on a problem (`tools/events.py check`,
-`tools/finish.py`) and a review sheet per job. As a spec kind, the check would be the acceptance
-command and the sheet the evidence; Forge would keep the record, resume after a usage limit, and
-**Quick Review** would deal the sheets as Keep / Redo cards.
+agent writes its own **Record**, which is the agent's claim. The job lists already have what Forge
+needs: a check command that exits non-zero on a problem (`tools/events.py check`,
+`tools/finish.py`) and a review sheet per job.
 
-**Not built yet, on purpose.** Unlike the others it is not one class attached in one place; it
-needs three decisions first:
+Decided 2026-11-09:
 
-- **Where the work happens.** An agent may only work in its `runs/NNN/repo`, and the picture work
-  writes into `runs/008/art/` and, on accept, into run 008's pictures and the event's spec. Either
-  each picture batch becomes a repository of its own (and `accept` a separate, clicked step), or
-  the rule gets an exception, which `CLAUDE.md` says never to make.
-- **Which agent draws.** Forge's agents are the coding CLIs. The pictures come from one model's
-  built-in image tool, so the job needs that vendor and a brief that says "one call per image,
-  prompt as written", and nothing in Forge checks which tool made a file.
-- **What a Redo does.** A card sent back has to become the next turn's instructions for that one
-  job, not a repair of the whole batch, which is how the review form works today.
+- **Where the work happens.** Each batch is a run folder of its own (`runs/008-pictures`), with a
+  `batch.json` and no `state.json`, so nothing that looks after projects sees it. The agent draws
+  in its `repo/`; the cards, the tools and the checks sit beside it, out of its reach. Placing a
+  kept picture in the project it is for (the cards' accept) is a step a person clicks.
+- **Which agent draws.** Astra, outside Forge, with its built-in image tool. Forge writes the jobs
+  left to draw (`repo/next-jobs.md`) and the one message that starts it (`repo/astra-prompt.md`),
+  which stays the same after a usage limit because the list holds only what is left.
+- **What a Redo does.** That job alone is drawn again: the same prompt, with the person's note
+  added as the one sentence saying what to fix. The other jobs carry on.
 
-Once those are settled, the pieces are a spec kind (the check as the acceptance command, the sheets
-as evidence) and a card kind in `report.deck` for the sheets.
+**Built:** `pictures.PictureBatches` (forge-pipeline) and `ui.pictures.PictureRoutes`, attached in
+`UiServer`. A watcher (`pictures.work.PictureWatch`) looks at every batch every five seconds: it
+runs a card's check on each picture once it is saved (exit 42 is a LOOK), keeps the record
+(`record.json`), and writes the agent's list again. A card per batch on the dashboard
+(`extras/pictures.js`) counts the jobs and copies the prompt; `/pictures` deals the review sheets
+as Keep / Draw again cards and sends them at once; Place runs each kept picture's place command,
+adding the batch's `anyway` word when a person kept one whose check found a problem. **STOP** and
+`Only after` lines hold the jobs after them until the pictures before are kept.
 
 ### 7. A quick gate while the builder says unfinished
 

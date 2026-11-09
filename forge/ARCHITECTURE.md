@@ -11,7 +11,7 @@ refuses an upward import before any test runs. Each module has a `CLAUDE.md` say
 | Module | Packages | Uses |
 |---|---|---|
 | `forge-app` | ui, cli, the page | everything; builds `forge/target/forge.jar` |
-| `forge-pipeline` | brief, pipeline, status, jobs | forge-report |
+| `forge-pipeline` | brief, pipeline, status, jobs, pictures | forge-report |
 | `forge-report` | report | forge-marketing |
 | `forge-marketing` | marketing | forge-deploy |
 | `forge-deploy` | deploy, deploy.github, deploy.shelf | forge-review |
@@ -31,7 +31,8 @@ each other, directly or around a loop. `LayersTest` enforces this on every build
  10  report · status          the HTML a person reads, the quick review's cards · what the dashboard
                              shows per project, and the vendor league
   9  marketing · design       marketing kit: drafts and checks, never publishes · design options:
-                             each vendor draws looks in a folder of its own, a person picks one
+     · pictures              each vendor draws looks in a folder of its own, a person picks one ·
+                             picture batches: an agent outside Forge draws, Forge checks and places
   8  deploy · pipeline        Deploy button, explicit click only · one project through its phases
   7  brief   state            pipeline prompts · a run's persisted state.json
   6  gate                     Forge runs the acceptance commands itself: the judge of done
@@ -44,7 +45,7 @@ each other, directly or around a loop. `LayersTest` enforces this on every build
 ```
 
 The number is the longest chain of imports beneath a package, not a rank of importance. Each name
-above is a subject, and most are a small tree: 79 packages in all, none holding more than eight
+above is a subject, and most are a small tree: 100 packages in all, none holding more than eight
 classes.
 
 ## Inside a subject
