@@ -70,6 +70,19 @@ found by those words), it puts each picture beside its screenshot, between the q
 note. It reads them from the report's own Pictures section (`report.outward.PicturesSection`), so
 they are the ones the report shows; when it cannot, the card says so and links to the report.
 
+`restyle.js` lays the board out as the mockups draw it. At every width the next 24 hours and the
+projects are two numbered sections: the queue switch moves into the first (a small card says every
+vendor is open and holds it when the strip has nothing to show), the projects' counts and buttons
+into the second's heading, and spend, usage and the league fold under the table, left open or
+closed as they were (`localStorage`). From 1200 pixels the table gets a header and a Now column
+that says what each project waits for (from `ForgeWait` and `ForgePause`), and hides the rank (kept
+in the line's small print), the open items, the pause line and the group headings, which the tiles
+stand in for. Each lane's caption is split around its mark. The page still chooses a project as
+before, but its panel shows only once a line is clicked, pushes the table aside, and closes with its
+× or Esc (left to a field being typed in, and to a dialog). Up to 1399 pixels the Tokens column is
+hidden, and Worked too while the panel is open. It moves the page's own elements rather than copying
+them, so deleting its tag brings back the board as it was.
+
 ## Must not be traded away
 
 - **Only the editor itself may act.** `RequestGuard` checks Host (against DNS rebinding), Origin and
@@ -88,4 +101,5 @@ they are the ones the report shows; when it cannot, the card says so and links t
 `QueryTest`, `PauseRoutesTest`, `GateRoutesTest`, and the Playwright suite in `ui-tests/` against
 fixture roots (`status.spec.js` for the waiting card, `nextday.spec.js` for the next 24 hours,
 `families.spec.js` for the family and single-project rows, `pause.spec.js` for Stop with a reason, `gate.spec.js`
-for the last gate, `review-pictures.spec.js` for the pictures on the quick review).
+for the last gate, `review-pictures.spec.js` for the pictures on the quick review, `restyle.spec.js`
+for the board's layout and its panel).

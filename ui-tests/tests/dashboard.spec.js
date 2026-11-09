@@ -46,10 +46,12 @@ test("the table groups projects by what they wait on, with the chosen one beside
   // 003 is finished and waiting for a decision; 001 and 002 have never started, and could.
   expect(await headings(page)).toEqual(["Needs you", "Queued"]);
 
-  // With nothing chosen yet, the project that needs you is the one shown.
+  // With nothing chosen yet, the project that needs you is the one chosen. Its panel shows once its
+  // line is (extras/restyle.js).
+  await expect(page.locator("#row-003")).toHaveAttribute("aria-current", "true");
+  await page.locator("#row-003").click();
   await expect(card(page, "003").locator(".detail")).toBeVisible();
   await expect(card(page, "001").locator(".detail")).toBeHidden();
-  await expect(page.locator("#row-003")).toHaveAttribute("aria-current", "true");
   // What it is asking for is said once, at the top, rather than left to the row of buttons.
   await expect(card(page, "003").locator(".move-label")).toHaveText("Your move");
 
@@ -1196,9 +1198,10 @@ test("a shelved project says where it went, and offers only to bring it back", a
   });
   await page.reload();
 
-  // Seen without opening anything: its own group, and a pill that says it.
+  // Seen without opening anything: its own group, and a pill that says it. (A wide table names its
+  // groups with the tiles rather than headings: extras/restyle.js.)
   await expect(page.locator("#row-003 .stage .pill")).toHaveText("On GitHub only");
-  await expect(page.locator(".grouphead .gt", { hasText: "Not on this machine" })).toBeVisible();
+  await expect(page.locator(".grouphead .gt", { hasText: "Not on this machine" })).toBeAttached();
 
   const gamma = await open(page, "003");
   const line = gamma.locator(".shelfline");
@@ -1226,7 +1229,7 @@ test("a project whose repository is gone says so at a glance, offers nothing tha
   await page.reload();
 
   await expect(page.locator("#row-003 .stage .pill")).toHaveText("Repository missing");
-  await expect(page.locator(".grouphead .gt", { hasText: "Not on this machine" })).toBeVisible();
+  await expect(page.locator(".grouphead .gt", { hasText: "Not on this machine" })).toBeAttached();
 
   const gamma = await open(page, "003");
   const line = gamma.locator(".shelfline");
@@ -1588,6 +1591,8 @@ test("a project with a run file can be played from its card, and one without is 
 
 test("the league ranks the vendors from what the runs record, and says how it scores", async ({ page }) => {
   const league = page.locator("#league");
+  // Folded under the table with the spend and usage (extras/restyle.js).
+  await page.locator(".rsfoot > summary").click();
   await expect(league).toBeVisible();
   // Closed until asked for: the summary alone names everyone and their points.
   const summary = page.locator("#leagueSummary");

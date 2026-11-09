@@ -97,10 +97,11 @@ test("a project and its versions are one row, the versions drawn as a chain", as
   expect(mine.y).toBeGreaterThan(above.y);
   expect(below.y).toBeGreaterThan(mine.y);
 
-  // A heading whose lines all went under the family's row has nothing left to head.
-  await expect(heading(page, "Waiting for review")).toBeVisible();
-  await expect(heading(page, "Waiting their turn")).toBeHidden();
-  await expect(heading(page, /^Accepted/)).toBeHidden();
+  // A heading whose lines all went under the family's row has nothing left to head. (By its class:
+  // a wide table hides every heading, extras/restyle.js.)
+  await expect(heading(page, "Waiting for review")).not.toHaveClass(/\bfmempty\b/);
+  await expect(heading(page, "Waiting their turn")).toHaveClass(/\bfmempty\b/);
+  await expect(heading(page, /^Accepted/)).toHaveClass(/\bfmempty\b/);
 });
 
 test("opening the family shows each version's own line, and closed, its row stands for them", async ({ page }) => {
@@ -116,8 +117,9 @@ test("opening the family shows each version's own line, and closed, its row stan
   await expect(row(page, "001.4")).toBeHidden();
   await expect(page.locator('.foldline[data-family="001"]'))
     .toHaveText(/^and 2 more Lighthouse Keeper versions after it/);
-  // Opening it shows the version its row spoke for.
-  await expect(page.locator('[id="job-001.2"] .detail')).toBeVisible();
+  // Opening it chooses the version its row spoke for, whose panel shows once its line is chosen
+  // (extras/restyle.js).
+  await expect(page.locator('[id="job-001.2"]')).toHaveClass(/\bopen\b/);
   await expect(row(page, "001.2")).toHaveAttribute("aria-current", "true");
   await expect(fam).toHaveAttribute("aria-current", "false");
 
@@ -130,7 +132,10 @@ test("opening the family shows each version's own line, and closed, its row stan
   expect(last).toBeGreaterThan(first);
   expect(next).toBeGreaterThan(last);
 
-  // Closed again, its versions are hidden, and its row is marked for the one still open beside it.
+  // Its line opens its panel beside the table (extras/restyle.js). Closed again, the family hides its
+  // versions, and its row is marked for the one still open beside it.
+  await row(page, "001.2").click();
+  await expect(page.locator('[id="job-001.2"] .detail')).toBeVisible();
   await fam.click();
   await expect(fam).toHaveAttribute("aria-expanded", "false");
   await expect(row(page, "001.2")).toBeHidden();
@@ -176,8 +181,8 @@ test("a tile filters the wide table too, keeping a family whose versions answer 
   await expect(row(page, "002")).toBeHidden();
   await expect(row(page, "003")).toBeHidden();
   await expect(heading(page, "Needs you")).toBeHidden();
-  // The project that was open is filtered away, so the first one the filter leaves opens instead.
-  await expect(page.locator('[id="job-001.2"] .detail')).toBeVisible();
+  // The project that was chosen is filtered away, so the first one the filter leaves is instead.
+  await expect(page.locator('[id="job-001.2"]')).toHaveClass(/\bopen\b/);
   await expect(familyRow(page)).toHaveAttribute("aria-current", "true");
 
   await page.locator('#tiles [data-key="all"]').click();
@@ -208,7 +213,7 @@ test("single projects not on this machine share one row, opened like a family", 
   await expect(singles.locator(".fmlink")).toHaveCount(0);
   await expect(singles.locator(".fmwhat")).toHaveText("1 awaits your decision");
   await expect(singles.locator(".fmwhen")).toHaveText("2 on GitHub only");
-  await expect(heading(page, "Not on this machine")).toBeVisible();
+  await expect(heading(page, "Not on this machine")).not.toHaveClass(/\bfmempty\b/);
   for (const id of ["002", "003", "004"]) await expect(row(page, id)).toBeHidden();
 
   await singles.click();
@@ -218,8 +223,8 @@ test("single projects not on this machine share one row, opened like a family", 
     await expect(row(page, id)).toBeVisible();
     expect((await row(page, id).boundingBox()).y).toBeGreaterThan(top);
   }
-  // Opening it shows the one its row spoke for.
-  await expect(page.locator("#job-002 .detail")).toBeVisible();
+  // Opening it chooses the one its row spoke for.
+  await expect(page.locator("#job-002")).toHaveClass(/\bopen\b/);
 
   await singles.click();
   for (const id of ["002", "003", "004"]) await expect(row(page, id)).toBeHidden();
@@ -231,7 +236,7 @@ test("single projects that want something done keep their own lines", async ({ p
   await board(page, (jobs) => Object.assign(jobs.find(j => j.id === "002"),
     { phase: "DONE", reviewState: "clean", blockingFindings: 0, queuePosition: 0 }));
 
-  await expect(heading(page, "Needs you")).toBeVisible();
+  await expect(heading(page, "Needs you")).not.toHaveClass(/\bfmempty\b/);
   for (const id of ["002", "003"]) await expect(row(page, id)).toBeVisible();
   await expect(page.locator(".fmrow.fmsingles")).toHaveCount(0);
   await expect(familyRow(page)).toBeVisible();
