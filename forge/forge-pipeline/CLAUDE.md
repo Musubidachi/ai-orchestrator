@@ -1,6 +1,6 @@
 # forge-pipeline
 
-Running projects: the pipeline (one project through its phases), the jobs around it (what runs, when, on whose say-so), the pipeline's prompts, and the dashboard status.
+Running projects: the pipeline (one project through its phases), the jobs around it (what runs, when, on whose say-so), the pipeline's prompts, and the dashboard status. Also picture batches (`pictures`): pictures an agent outside Forge draws, which Forge checks, deals out for review and places.
 
 **May use:** forge-report and below. Maven refuses anything higher; `LayersTest` holds the direction between packages inside.
 
