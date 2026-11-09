@@ -1,5 +1,5 @@
 /*
- * The board as the mockup draws it: two numbered sections, the next 24 hours and the projects, and
+ * The board as the mockup draws it: two sections, the next 24 hours and the projects, and
  * the projects as a table of cards that says what each one waits for now.
  *
  * The board said everything in small grey type: a rank, a stage and a column of open items on every
@@ -39,17 +39,12 @@ const YOUR_MARK = 10;
 const CSS = `
   .rsthead, .rsnow, .rshint, .rsclose, .rscap{display:none}
 
-  /* Both sections: a card, and a numbered heading. */
+  /* Both sections: a card, and a heading. */
   #jobsView.rs .wnd24, .rsday{display:flex;flex-direction:column;gap:14px;margin:0 0 28px;
     padding:16px 18px;background:var(--panel);border:1px solid var(--line);border-radius:14px}
   #jobsView.rs .wnhead, .rsdhead{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;margin:0}
-  #jobsView.rs .wnhead h2, .rsdhead h2, .rshead h2{display:flex;align-items:center;gap:10px;margin:0;
-    font-size:16px;font-weight:700;line-height:1.3;letter-spacing:0;text-transform:none;color:var(--fg);
-    white-space:nowrap}
-  #jobsView.rs .wnhead h2::before, .rsdhead h2::before, .rshead h2::before{content:"1";content:"1" / "";
-    display:inline-flex;align-items:center;justify-content:center;flex:none;width:24px;height:24px;
-    border-radius:50%;background:var(--accent);color:var(--on-accent);font-size:12px;font-weight:700}
-  .rshead h2::before{content:"2";content:"2" / ""}
+  #jobsView.rs .wnhead h2, .rsdhead h2, .rshead h2{margin:0;font-size:16px;font-weight:700;
+    line-height:1.3;letter-spacing:0;text-transform:none;color:var(--fg);white-space:nowrap}
   #jobsView.rs .wnsay, .rssay{flex:1 1 18rem;min-width:0;margin:0;font-size:14px;line-height:1.45;
     color:var(--soft)}
   #jobsView.rs .wnhead .auto, .rsdhead .auto{margin-left:auto;font-size:13.5px}

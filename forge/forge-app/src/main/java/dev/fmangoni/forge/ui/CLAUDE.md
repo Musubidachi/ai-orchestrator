@@ -71,7 +71,7 @@ note. It reads them from the report's own Pictures section (`report.outward.Pict
 they are the ones the report shows; when it cannot, the card says so and links to the report.
 
 `restyle.js` lays the board out as the mockups draw it. At every width the next 24 hours and the
-projects are two numbered sections: the queue switch moves into the first (a small card says every
+projects are two sections: the queue switch moves into the first (a small card says every
 vendor is open and holds it when the strip has nothing to show), the projects' counts and buttons
 into the second's heading, and spend, usage and the league fold under the table, left open or
 closed as they were (`localStorage`). From 1200 pixels the table gets a header and a Now column
@@ -82,6 +82,15 @@ before, but its panel shows only once a line is clicked, pushes the table aside,
 × or Esc (left to a field being typed in, and to a dialog). Up to 1399 pixels the Tokens column is
 hidden, and Worked too while the panel is open. It moves the page's own elements rather than copying
 them, so deleting its tag brings back the board as it was.
+
+`restyle-panel.js` draws a project's panel as the mockup does: its five steps listed top to bottom,
+as the waiting card lists its own, at the first that is yours or has failed; its counts three to a
+row, worked, sessions and tokens first; the builder's handoff as a quote said to be its, without the
+count of steps once none are left; its buttons in one row, without their groups' headings; and the
+builder's vendor named as the table names it. From 1200 pixels the phase tag and line go, since
+the card and the Now column say it. The waiting card (`status.js`) and a paused panel (`pause.js`)
+keep their own. A panel takes the extra's class only once its list is filled, so a failure, like
+deleting the tag, leaves the page's own panel.
 
 ## Must not be traded away
 
@@ -102,4 +111,4 @@ them, so deleting its tag brings back the board as it was.
 fixture roots (`status.spec.js` for the waiting card, `nextday.spec.js` for the next 24 hours,
 `families.spec.js` for the family and single-project rows, `pause.spec.js` for Stop with a reason, `gate.spec.js`
 for the last gate, `review-pictures.spec.js` for the pictures on the quick review, `restyle.spec.js`
-for the board's layout and its panel).
+for the board's layout and its panel, `restyle-panel.spec.js` for what the panel shows).

@@ -1,7 +1,7 @@
 const { test, expect } = require("@playwright/test");
 
 /**
- * The board as the mockup draws it (ui/extras/restyle.js): two numbered sections, a table of cards
+ * The board as the mockup draws it (ui/extras/restyle.js): two sections, a table of cards
  * that says what each project waits for now, and a project's panel that stays closed until its own
  * line is chosen.
  *
